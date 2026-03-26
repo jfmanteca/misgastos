@@ -68,7 +68,7 @@ function HomePage({cuentas,movimientos}){
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
 
   return(
-    <div style={{padding:"0 16px 100px"}}>
+    <div style={{className:"page-inner"}}>
       <div style={S.sec}>Patrimonio Total</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
         <div style={{background:"linear-gradient(135deg,#1a2332,#2a3f5f)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
@@ -174,7 +174,7 @@ function AddPage({cuentas,userId,onSaved}){
   const tl={egreso:"Egreso",ingreso:"Ingreso",traspaso:"Traspaso",inversion:"Inversiones"}
 
   return(
-    <div style={{padding:"0 16px 100px"}}>
+    <div style={{className:"page-inner"}}>
       <div style={S.sec}>Nuevo Movimiento</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
         {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}))}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tc[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tl[t]}</button>)}
@@ -238,7 +238,7 @@ function DashboardPage({movimientos,onViewMonth}){
   useEffect(()=>{setPi(allMonths.length-1)},[allMonths.length])
 
   return(
-    <div style={{padding:"0 16px 100px"}}>
+    <div style={{className:"page-inner"}}>
       <div style={S.sec}>Dashboard</div>
 
       {/* Gastos Mensuales */}
@@ -318,7 +318,7 @@ function MonthDetail({monthKey:mk2,movimientos,cuentas,onBack}){
   const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
 
   return(
-    <div style={{padding:"0 16px 100px"}}>
+    <div style={{className:"page-inner"}}>
       <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#60a5fa",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}><Ic d={IC.left} s={16}/> Dashboard</button>
       <div style={S.sec}>Movimientos — {fmtMonth(mk2)}</div>
       <div style={{...S.crdP,marginBottom:20,textAlign:"center"}}>
@@ -347,7 +347,7 @@ function DebtPage({deuda}){
   const pp=tb>0?((tp/tb)*100).toFixed(0):0
 
   return(
-    <div style={{padding:"0 16px 100px"}}>
+    <div style={{className:"page-inner"}}>
       <div style={S.sec}>Deuda Edgardo</div>
       <div style={{background:"linear-gradient(135deg,#2a1a1a,#4a1a1a)",borderRadius:16,padding:24,marginBottom:20,border:"1px solid rgba(239,68,68,.15)",textAlign:"center"}}>
         <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Saldo Actual</div>
@@ -399,7 +399,7 @@ function ExtractPage({cuentas,userId,onSaved}){
   }
 
   return(
-    <div style={{padding:"0 16px 100px"}}>
+    <div style={{className:"page-inner"}}>
       <div style={S.sec}>Importar Extracto</div>
       <div style={{...S.crdP,marginBottom:20}}>
         <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>Pegá el extracto bancario (tabs, comas o punto y coma)</div>
@@ -472,25 +472,107 @@ export default function App(){
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
-    <div style={{minHeight:"100vh",background:"#0b1120",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",maxWidth:480,margin:"0 auto",position:"relative"}}>
-      <div style={{padding:"20px 16px 12px",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div><h1 style={{fontSize:20,fontWeight:800,color:"#f1f5f9",margin:0,letterSpacing:-.5}}>MisGastos</h1><div style={{fontSize:11,color:"#475569",marginTop:2}}>{user.email}</div></div>
-          <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8}}><Ic d={IC.logout} s={18}/></button>
+    <div style={{minHeight:"100vh",background:"#0b1120",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+      {/* Desktop sidebar */}
+      <div className="sidebar">
+        <div style={{padding:"24px 20px 20px"}}>
+          <h1 style={{fontSize:22,fontWeight:800,color:"#f1f5f9",margin:0,letterSpacing:-.5}}>MisGastos</h1>
+          <div style={{fontSize:11,color:"#475569",marginTop:4}}>{user.email}</div>
         </div>
-      </div>
-      <div style={{paddingTop:16}}>{C}</div>
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"linear-gradient(180deg,rgba(11,17,32,0) 0%,rgba(11,17,32,.95) 20%,#0b1120 40%)",paddingTop:20,paddingBottom:12}}>
-        <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",padding:"0 8px"}}>
+        <nav style={{flex:1,padding:"8px 12px"}}>
           {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
-            <button key={n.id} onClick={()=>setPg(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"8px 12px",color:a?"#3b82f6":"#475569"}}>
-              {n.id==="add"?<div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 12px rgba(59,130,246,.3)",color:"#fff"}}><Ic d={n.ic} s={22}/></div>:<Ic d={n.ic} s={20}/>}
-              <span style={{fontSize:10,fontWeight:a?600:400}}>{n.l}</span>
+            <button key={n.id} onClick={()=>setPg(n.id)} style={{
+              display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",marginBottom:4,
+              borderRadius:12,border:"none",cursor:"pointer",transition:"all .15s",
+              background:a?"rgba(59,130,246,.12)":"transparent",
+              color:a?"#60a5fa":"#64748b"
+            }}>
+              <Ic d={n.ic} s={20}/>
+              <span style={{fontSize:14,fontWeight:a?600:400}}>{n.l}</span>
             </button>
           )})}
+        </nav>
+        <div style={{padding:"16px 12px",borderTop:"1px solid rgba(255,255,255,.04)"}}>
+          <button onClick={logout} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"transparent",color:"#475569",fontSize:14}}>
+            <Ic d={IC.logout} s={18}/> Cerrar sesión
+          </button>
         </div>
       </div>
-      <style>{`input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}select{appearance:auto}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}*{box-sizing:border-box}`}</style>
+
+      {/* Main content */}
+      <div className="main-content">
+        {/* Mobile header */}
+        <div className="mobile-header">
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div><h1 style={{fontSize:20,fontWeight:800,color:"#f1f5f9",margin:0,letterSpacing:-.5}}>MisGastos</h1><div style={{fontSize:11,color:"#475569",marginTop:2}}>{user.email}</div></div>
+            <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8}}><Ic d={IC.logout} s={18}/></button>
+          </div>
+        </div>
+
+        {/* Desktop header */}
+        <div className="desktop-header">
+          <h2 style={{fontSize:18,fontWeight:700,color:"#f1f5f9",margin:0}}>
+            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":""}
+          </h2>
+        </div>
+
+        <div className="page-content">{C}</div>
+
+        {/* Mobile bottom nav */}
+        <div className="mobile-nav">
+          <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",padding:"0 8px"}}>
+            {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
+              <button key={n.id} onClick={()=>setPg(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"8px 12px",color:a?"#3b82f6":"#475569"}}>
+                {n.id==="add"?<div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 12px rgba(59,130,246,.3)",color:"#fff"}}><Ic d={n.ic} s={22}/></div>:<Ic d={n.ic} s={20}/>}
+                <span style={{fontSize:10,fontWeight:a?600:400}}>{n.l}</span>
+              </button>
+            )})}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        *{box-sizing:border-box}
+        input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+        select{appearance:auto}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}
+
+        .page-inner{padding:0 16px 100px}
+
+        .sidebar{display:none}
+        .mobile-header{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+        .desktop-header{display:none}
+        .main-content{max-width:480px;margin:0 auto;position:relative}
+        .page-content{padding-top:16px}
+        .mobile-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(180deg,rgba(11,17,32,0) 0%,rgba(11,17,32,.95) 20%,#0b1120 40%);padding-top:20px;padding-bottom:12px}
+
+        @media(min-width:768px){
+          .sidebar{
+            display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
+            background:#0a0f1a;border-right:1px solid rgba(255,255,255,.06);z-index:10;
+          }
+          .mobile-header{display:none}
+          .mobile-nav{display:none}
+          .desktop-header{
+            display:block;padding:24px 32px 16px;border-bottom:1px solid rgba(255,255,255,.04);
+          }
+          .main-content{
+            margin-left:240px;max-width:none;padding-bottom:32px;
+          }
+          .page-content{
+            padding:16px 32px 32px;max-width:900px;
+          }
+          .page-inner{padding:0!important}
+        }
+
+        @media(min-width:1200px){
+          .sidebar{width:280px}
+          .main-content{margin-left:280px}
+          .page-content{max-width:1000px;padding:24px 48px 48px}
+        }
+      `}</style>
     </div>
   )
 }
