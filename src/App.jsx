@@ -588,10 +588,22 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
 
-  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto})}
+  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
   const saveEdit=async()=>{
-    await supabase.from("movimientos").update({fecha:editForm.fecha,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:parseFloat(editForm.monto)}).eq("id",editId)
+    const orig=movimientos.find(m=>m.id===editId)
+    const newMonto=parseFloat(editForm.monto)
+    // Adjust account balance: reverse old effect, apply new effect
+    if(orig?.cuenta_id){
+      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",orig.cuenta_id).single()
+      if(fresh){
+        const reversal=orig.tipo==="egreso"?orig.monto:orig.tipo==="ingreso"?-orig.monto:0
+        const newDelta=editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0
+        if(reversal!==0||newDelta!==0)
+          await supabase.from("cuentas").update({saldo:fresh.saldo+reversal+newDelta}).eq("id",orig.cuenta_id)
+      }
+    }
+    await supabase.from("movimientos").update({fecha:editForm.fecha,tipo:editForm.tipo,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:newMonto}).eq("id",editId)
     setEditId(null);setEditForm({});onSaved()
   }
   const deleteRow=async(id)=>{
@@ -680,9 +692,15 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           <div key={e.id} style={{padding:16,borderBottom:"1px solid rgba(255,255,255,.04)",background:"rgba(59,130,246,.05)"}}>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
               <input type="date" value={editForm.fecha} onChange={ev=>setEditForm(f=>({...f,fecha:ev.target.value}))} style={{...S.inp,fontSize:12}}/>
-              <input type="number" value={editForm.monto} onChange={ev=>setEditForm(f=>({...f,monto:ev.target.value}))} style={{...S.inp,fontSize:12,...mo}}/>
+              <input type="number" value={editForm.monto} onChange={ev=>setEditForm(f=>({...f,monto:ev.target.value}))} style={{...S.inp,fontSize:12,...mo}} placeholder="Monto (negativo = devolución)"/>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+              <select value={editForm.tipo} onChange={ev=>setEditForm(f=>({...f,tipo:ev.target.value}))} style={{...S.inp,fontSize:12}}>
+                <option value="egreso">Egreso</option>
+                <option value="ingreso">Ingreso</option>
+                <option value="traspaso">Traspaso</option>
+                <option value="inversion">Inversión</option>
+              </select>
               <input value={editForm.categoria} onChange={ev=>setEditForm(f=>({...f,categoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Categoría"/>
               <input value={editForm.subcategoria} onChange={ev=>setEditForm(f=>({...f,subcategoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Detalle"/>
             </div>
@@ -701,9 +719,12 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               </div>
               <div style={{fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
             </div>
-            <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
-              {e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}
-            </div>
+            {(()=>{
+              const devolucion=e.tipo==="egreso"&&e.monto<0
+              const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
+              const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
+              return<div style={{fontSize:16,fontWeight:700,color:col,...mo,whiteSpace:"nowrap"}}>{sign}{f$(Math.abs(e.monto))}</div>
+            })()}
             <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:4,flexShrink:0}}><Ic d={IC.edit} s={14}/></button>
           </div>
         ))}
