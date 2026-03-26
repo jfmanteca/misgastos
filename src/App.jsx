@@ -13,7 +13,7 @@ const fS=n=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n
 const today=()=>new Date().toISOString().split("T")[0]
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
-const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"}
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"}
 const mo={fontFamily:"'SF Mono',Consolas,monospace"}
 const S={
   sec:{fontSize:13,textTransform:"uppercase",letterSpacing:2,color:"#8b9dc3",marginBottom:12},
@@ -60,6 +60,7 @@ function LoginPage({onLogin}){
 
 // ══════════════ HOME ══════════════
 function HomePage({cuentas,movimientos}){
+  const[hide,setHide]=useState(false)
   const cuentasByNombre={}
   cuentas.forEach(c=>{cuentasByNombre[c.nombre]=c})
   const tP=(cuentasByNombre["Efectivo $"]?.saldo||0)+(cuentasByNombre["BAPRO $"]?.saldo||0)+(cuentasByNombre["Mercado Pago $"]?.saldo||0)
@@ -67,18 +68,24 @@ function HomePage({cuentas,movimientos}){
   const curMonth=monthOf(today())
   const recent=movimientos.filter(m=>monthOf(m.fecha)<=curMonth).slice(0,12)
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
+  const h=v=>hide?"••••••":v
 
   return(
-    <div style={{className:"page-inner"}}>
-      <div style={S.sec}>Patrimonio Total</div>
+    <div className="page-inner">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={S.sec}>Patrimonio Total</div>
+        <button onClick={()=>setHide(!hide)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",padding:4}}>
+          <Ic d={hide?IC.eyeOff:IC.eye} s={18}/>
+        </button>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
         <div style={{background:"linear-gradient(135deg,#1a2332,#2a3f5f)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
           <div style={{fontSize:11,color:"#6b8bb5",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Pesos</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#e8f0fe",...mo}}>{f$(tP)}</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#e8f0fe",...mo}}>{h(f$(tP))}</div>
         </div>
         <div style={{background:"linear-gradient(135deg,#1a2a1a,#2a4f2a)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
           <div style={{fontSize:11,color:"#6bb56b",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Dólares</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#c8f0c8",...mo}}>{f$(tU,true)}</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#c8f0c8",...mo}}>{h(f$(tU,true))}</div>
         </div>
       </div>
 
@@ -90,13 +97,13 @@ function HomePage({cuentas,movimientos}){
         {[["Efectivo","Efectivo $","Efectivo USD","#f59e0b"],["BAPRO","BAPRO $","BAPRO USD","#60a5fa"]].map(([n,pk,uk,c])=>(
           <div key={n} style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
             <div style={{width:10,height:10,borderRadius:"50%",background:c,flexShrink:0}}/><div style={{flex:"0 0 103px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{n}</div>
-            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{f$(cuentasByNombre[pk]?.saldo||0)}</div></div>
-            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#a7f3d0",...mo}}>{f$(cuentasByNombre[uk]?.saldo||0,true)}</div></div>
+            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre[pk]?.saldo||0))}</div></div>
+            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#a7f3d0",...mo}}>{h(f$(cuentasByNombre[uk]?.saldo||0,true))}</div></div>
           </div>
         ))}
         <div style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12}}>
           <div style={{width:10,height:10,borderRadius:"50%",background:"#a78bfa",flexShrink:0}}/><div style={{flex:"0 0 103px",fontSize:13,color:"#94a3b8",fontWeight:500}}>Mercado Pago</div>
-          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{f$(cuentasByNombre["Mercado Pago $"]?.saldo||0)}</div></div>
+          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre["Mercado Pago $"]?.saldo||0))}</div></div>
           <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,color:"#334155"}}>—</div></div>
         </div>
       </div>
@@ -105,9 +112,13 @@ function HomePage({cuentas,movimientos}){
       <div style={S.crd}>
         {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
         {recent.map((e,i)=>(
-          <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-            <div><div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{e.subcategoria||e.categoria}</div><div style={{fontSize:11,color:"#475569"}}>{e.fecha} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div></div>
-            <div style={{fontSize:14,fontWeight:600,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo}}>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</div>
+          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:12}}>
+            <div style={{flex:"0 0 70px",fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""}</div>
+            <div style={{flex:"0 0 100px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{e.categoria}</div>
+            <div style={{flex:1,fontSize:13,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||"—"}</div>
+            <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
+              {hide?"••••":<>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</>}
+            </div>
           </div>
         ))}
       </div>
@@ -187,7 +198,7 @@ function AddPage({cuentas,userId,onSaved}){
         <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{EGRESO_CATS.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div></div>
         {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
-          <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="D">D</option></select></div>
+          <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
           <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
         </div>
       </>}
@@ -254,9 +265,9 @@ function DashboardPage({movimientos,onViewMonth}){
         <div style={{display:"flex",alignItems:"flex-end",gap:6,height:200}}>
           {vis.map((k,i)=>{const h=Math.max(4,(monthly[k].pesos/maxP)*160);const last=si+i===months.length-1;return(
             <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonth(k)}>
-              <div style={{fontSize:11,color:"#94a3b8",fontWeight:500,...mo}}>{fS(monthly[k].pesos)}</div>
+              <div style={{fontSize:13,color:"#94a3b8",fontWeight:600,...mo}}>{fS(monthly[k].pesos)}</div>
               <div style={{width:"100%",height:h,borderRadius:"6px 6px 2px 2px",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
-              <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
+              <div style={{fontSize:12,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
             </div>
           )})}
         </div>
@@ -292,8 +303,8 @@ function DashboardPage({movimientos,onViewMonth}){
             <svg width="260" height="260" viewBox="-95 -95 190 190">
               {arcs.map((a,i)=><path key={i} d={a.d} fill={a.c} stroke="#0b1120" strokeWidth="1"/>)}
               <circle cx="0" cy="0" r="40" fill="#141c28"/>
-              <text x="0" y="-6" textAnchor="middle" fill="#e2e8f0" fontSize="15" fontWeight="700" style={mo}>{f$(pt)}</text>
-              <text x="0" y="12" textAnchor="middle" fill="#64748b" fontSize="10">TOTAL</text>
+              <text x="0" y="-6" textAnchor="middle" fill="#e2e8f0" fontSize="17" fontWeight="700" style={mo}>{f$(pt)}</text>
+              <text x="0" y="14" textAnchor="middle" fill="#64748b" fontSize="11">TOTAL</text>
             </svg>
           </div>
           {ps.map(([cat,total],i)=>{const pct=pt>0?((total/pt)*100).toFixed(1):0;return(
@@ -374,50 +385,74 @@ function DebtPage({deuda}){
 }
 
 // ══════════════ MOVIMIENTOS ══════════════
-function MovimientosPage({movimientos,cuentas}){
+function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[selMonth,setSelMonth]=useState(monthOf(today()))
   const[filterCat,setFilterCat]=useState("")
   const[filterFrom,setFilterFrom]=useState("")
   const[filterTo,setFilterTo]=useState("")
+  const[searched,setSearched]=useState(false)
+  const[editId,setEditId]=useState(null)
+  const[editForm,setEditForm]=useState({})
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
 
   const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
   const fmtMonthFull=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
 
+  // Previous month key
+  const prevMonth=(k)=>{const[y,m]=k.split("-").map(Number);const pm=m===1?12:m-1;const py=m===1?y-1:y;return`${py}-${String(pm).padStart(2,"0")}`}
+
   let filtered=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
-  if(filterCat) filtered=filtered.filter(m=>m.categoria===filterCat)
-  if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
-  if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
+  if(searched){
+    if(filterCat) filtered=filtered.filter(m=>m.categoria===filterCat)
+    if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
+    if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
+  }
   filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha))
 
   const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth).map(m=>m.categoria))].sort()
   const totalEgresos=filtered.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
-  const totalIngresos=filtered.filter(m=>m.tipo==="ingreso").reduce((s,m)=>s+m.monto,0)
+
+  // Ingresos: sueldo del mes anterior + ingresos del mes actual (sin sueldo del mes actual)
+  const prevMk=prevMonth(selMonth)
+  const sueldoPrevMonth=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").reduce((s,m)=>s+m.monto,0)
+  const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
+  const totalIngresos=sueldoPrevMonth+ingresosThisMonth
+
+  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto})}
+  const cancelEdit=()=>{setEditId(null);setEditForm({})}
+  const saveEdit=async()=>{
+    await supabase.from("movimientos").update({fecha:editForm.fecha,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:parseFloat(editForm.monto)}).eq("id",editId)
+    setEditId(null);setEditForm({});onSaved()
+  }
+  const deleteRow=async(id)=>{
+    if(!confirm("¿Eliminar este movimiento?"))return
+    await supabase.from("movimientos").delete().eq("id",id);onSaved()
+  }
+
+  const doSearch=()=>setSearched(true)
+  const clearFilters=()=>{setFilterCat("");setFilterFrom("");setFilterTo("");setSearched(false)}
 
   return(
     <div className="page-inner">
       <div style={S.sec}>Movimientos</div>
 
-      {/* Month selector */}
       <div style={{marginBottom:16}}>
-        <select value={selMonth} onChange={e=>setSelMonth(e.target.value)} style={{...S.inp,fontSize:16,fontWeight:600}}>
+        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false)}} style={{...S.inp,fontSize:16,fontWeight:600}}>
           {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
         </select>
       </div>
 
-      {/* Totals */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
         <div style={{...S.crdP,textAlign:"center"}}>
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos</div>
-          <div style={{fontSize:20,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
         </div>
         <div style={{...S.crdP,textAlign:"center"}}>
           <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos</div>
-          <div style={{fontSize:20,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
         </div>
       </div>
 
-      {/* Filters */}
       <div style={{...S.crdP,marginBottom:20}}>
         <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Filtros</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
@@ -437,24 +472,41 @@ function MovimientosPage({movimientos,cuentas}){
             <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:12}}/>
           </div>
         </div>
-        {(filterCat||filterFrom||filterTo)&&<button onClick={()=>{setFilterCat("");setFilterFrom("");setFilterTo("")}} style={{marginTop:10,padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Limpiar filtros</button>}
+        <div style={{display:"flex",gap:8,marginTop:12}}>
+          <button onClick={doSearch} style={{flex:1,padding:"10px 0",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff"}}>Buscar</button>
+          {searched&&<button onClick={clearFilters} style={{padding:"10px 16px",borderRadius:10,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Limpiar</button>}
+        </div>
       </div>
 
-      {/* Count */}
       <div style={{fontSize:13,color:"#64748b",marginBottom:12}}>{filtered.length} movimientos</div>
 
-      {/* List */}
       <div style={S.crd}>
         {filtered.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:14}}>Sin movimientos</div>}
         {filtered.map((e,i)=>(
-          <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-            <div>
-              <div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{e.subcategoria||e.categoria}</div>
-              <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{e.fecha} · {e.categoria} · {cuentaNombre(e.cuenta_id)}{e.tc?` · TC ${e.tc}`:""}</div>
+          editId===e.id?
+          <div key={e.id} style={{padding:16,borderBottom:"1px solid rgba(255,255,255,.04)",background:"rgba(59,130,246,.05)"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+              <input type="date" value={editForm.fecha} onChange={ev=>setEditForm(f=>({...f,fecha:ev.target.value}))} style={{...S.inp,fontSize:12}}/>
+              <input type="number" value={editForm.monto} onChange={ev=>setEditForm(f=>({...f,monto:ev.target.value}))} style={{...S.inp,fontSize:12,...mo}}/>
             </div>
-            <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap",marginLeft:12}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+              <input value={editForm.categoria} onChange={ev=>setEditForm(f=>({...f,categoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Categoría"/>
+              <input value={editForm.subcategoria} onChange={ev=>setEditForm(f=>({...f,subcategoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Detalle"/>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Guardar</button>
+              <button onClick={cancelEdit} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Cancelar</button>
+              <button onClick={()=>deleteRow(e.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>Eliminar</button>
+            </div>
+          </div>
+          :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:10}}>
+            <div style={{flex:"0 0 65px",fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""}</div>
+            <div style={{flex:"0 0 95px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{e.categoria}</div>
+            <div style={{flex:1,fontSize:14,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||"—"}</div>
+            <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
               {e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}
             </div>
+            <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:4,flexShrink:0}}><Ic d={IC.edit} s={14}/></button>
           </div>
         ))}
       </div>
@@ -553,7 +605,7 @@ export default function App(){
   let C
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
   else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
-  else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas}/>
+  else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
   else if(pg==="dash")C=<DashboardPage movimientos={movimientos} onViewMonth={viewMonth}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
