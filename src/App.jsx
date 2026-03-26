@@ -167,13 +167,11 @@ function AddPage({cuentas,userId,onSaved}){
         if(!fm.amt||fm.from===fm.to){setSaving(false);return}
         const amt=parseFloat(fm.amt)
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"traspaso",categoria:"Traspaso",subcategoria:`${cuentas.find(c=>c.id===fm.from)?.nombre} → ${cuentas.find(c=>c.id===fm.to)?.nombre}`,monto:amt,cuenta_id:fm.from,cuenta_destino_id:fm.to})
-        await supabase.rpc("update_saldo",{p_cuenta_id:fm.from,p_delta:-amt}).catch(()=>{})
-        await supabase.rpc("update_saldo",{p_cuenta_id:fm.to,p_delta:amt}).catch(()=>{})
-        // Fallback: direct update if RPC not available
-        const fromC=cuentas.find(c=>c.id===fm.from)
-        const toC=cuentas.find(c=>c.id===fm.to)
-        if(fromC)await supabase.from("cuentas").update({saldo:fromC.saldo-amt}).eq("id",fm.from)
-        if(toC)await supabase.from("cuentas").update({saldo:toC.saldo+amt}).eq("id",fm.to)
+        // Read fresh balances from DB
+        const{data:fromFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.from).single()
+        const{data:toFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.to).single()
+        if(fromFresh)await supabase.from("cuentas").update({saldo:fromFresh.saldo-amt}).eq("id",fm.from)
+        if(toFresh)await supabase.from("cuentas").update({saldo:toFresh.saldo+amt}).eq("id",fm.to)
       }else if(mt==="inversion"){
         if(!fm.amt||!fm.it){setSaving(false);return}
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:parseFloat(fm.amt),cuenta_id:fm.cuenta})
@@ -181,11 +179,11 @@ function AddPage({cuentas,userId,onSaved}){
         if(!fm.amt||!fm.cat){setSaving(false);return}
         const amt=parseFloat(fm.amt)
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null})
-        // Update saldo: egreso with negative amount = refund (adds to balance)
-        const cuenta=cuentas.find(c=>c.id===fm.cuenta)
-        if(cuenta){
-          const delta=mt==="egreso"?-amt:amt  // if amt is -10000, delta becomes +10000
-          await supabase.from("cuentas").update({saldo:cuenta.saldo+delta}).eq("id",fm.cuenta)
+        // Read fresh balance from DB, then update
+        const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.cuenta).single()
+        if(fresh){
+          const delta=mt==="egreso"?-amt:amt  // if amt is -10000 (refund), delta = +10000
+          await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",fm.cuenta)
         }
         // If pago deuda edgardo, add to deuda table
         if(mt==="egreso"&&fm.cat==="Pago deuda"&&fm.sub==="Edgardo"){
@@ -296,29 +294,34 @@ function DashboardPage({movimientos,onViewMonth}){
 
       {/* Inversiones - same months as gastos */}
       {vis.some(k=>monthly[k]?.inv>0)&&<div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:12,color:"#64748b",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>Inversiones mensuales</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Inversiones mensuales</div>
+          <div style={{display:"flex",gap:4}}>
+            <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
+            <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
+          </div>
+        </div>
         <div style={{display:"flex",alignItems:"flex-end",gap:6,height:140}}>
           {vis.map(k=>{
             const invH=monthly[k]?.inv>0?(monthly[k].inv/maxI)*110:4
             return(
-            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonth(k)}>
               {monthly[k]?.inv>0&&<div style={{fontSize:13,color:"#f59e0b",fontWeight:600,...mo}}>{fS(monthly[k].inv)}</div>}
               <div style={{width:"100%",height:invH,borderRadius:"6px 6px 2px 2px",background:monthly[k]?.inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
               <div style={{fontSize:12,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
             </div>)
           })}
         </div>
+        {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver inversiones del mes</div>}
       </div>}
 
       {/* Pie */}
       <div style={S.crdP}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Gastos por categoría</div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <NavBtn dir="l" dis={pieIdx<=0} fn={()=>setPi(i=>i-1)}/>
-            <span style={{fontSize:13,color:"#e2e8f0",fontWeight:600,minWidth:60,textAlign:"center"}}>{fmtMonth(pk)}</span>
-            <NavBtn dir="r" dis={pieIdx>=allMonths.length-1} fn={()=>setPi(i=>i+1)}/>
-          </div>
+          <select value={pieIdx} onChange={e=>setPi(parseInt(e.target.value))} style={{...S.inp,width:"auto",padding:"8px 14px",fontSize:13,fontWeight:600,background:"rgba(255,255,255,.04)"}}>
+            {allMonths.map((m,idx)=><option key={m} value={idx}>{fmtMonth(m)}</option>)}
+          </select>
         </div>
         {ps.length===0?<div style={{textAlign:"center",color:"#475569",padding:30,fontSize:13}}>Sin datos</div>:<>
           <div style={{display:"flex",justifyContent:"center",marginBottom:24}}>
@@ -477,6 +480,22 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   }
   const deleteRow=async(id)=>{
     if(!confirm("¿Eliminar este movimiento?"))return
+    // Find the movement to reverse its saldo impact
+    const mov=movimientos.find(m=>m.id===id)
+    if(mov&&mov.cuenta_id){
+      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_id).single()
+      if(fresh){
+        let reversal=0
+        if(mov.tipo==="egreso") reversal=mov.monto  // egreso was -monto, so add it back
+        else if(mov.tipo==="ingreso") reversal=-mov.monto  // ingreso was +monto, so subtract
+        if(reversal!==0) await supabase.from("cuentas").update({saldo:fresh.saldo+reversal}).eq("id",mov.cuenta_id)
+      }
+      // If traspaso, also reverse the destination
+      if(mov.tipo==="traspaso"&&mov.cuenta_destino_id){
+        const{data:freshDest}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_destino_id).single()
+        if(freshDest) await supabase.from("cuentas").update({saldo:freshDest.saldo-mov.monto}).eq("id",mov.cuenta_destino_id)
+      }
+    }
     await supabase.from("movimientos").delete().eq("id",id);onSaved()
   }
 
@@ -579,189 +598,161 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 
 // ══════════════ EXTRACTO (PDF PARSER REAL) ══════════════
 function ExtractPage({cuentas,userId,onSaved}){
-  const[parsed,setParsed]=useState([])
-  const[done,setDone]=useState(false)
-  const[saving,setSaving]=useState(false)
-  const[cardInfo,setCardInfo]=useState("")
-  const[vtoDate,setVtoDate]=useState("")
-  const fileRef=useRef(null)
+  const[visaItems,setVisaItems]=useState([])
+  const[masterItems,setMasterItems]=useState([])
+  const[visaVto,setVisaVto]=useState("")
+  const[masterVto,setMasterVto]=useState("")
+  const[saving,setSaving]=useState("")
+  const[done,setDone]=useState("")
+  const visaRef=useRef(null)
+  const masterRef=useRef(null)
 
   const MM={"Ene":"01","Feb":"02","Mar":"03","Abr":"04","May":"05","Jun":"06","Jul":"07","Ago":"08","Sep":"09","Oct":"10","Nov":"11","Dic":"12","Enero":"01","Febrero":"02","Marzo":"03","Abril":"04","Mayo":"05","Junio":"06","Julio":"07","Agosto":"08","Septiembre":"09","Octubre":"10","Noviembre":"11","Diciembre":"12","Noviem":"11","Diciem":"12","Setiem":"09"}
+  const catMap={"SPOTIFY":"Apps","NETFLIX":"Apps","YOUTUBE":"Apps","GOOGLE":"Apps","APPLE":"Apps","LINKEDIN":"Apps","ADOBE":"Apps","OPENAI":"Apps","CLAUDE":"Apps","EMOVA":"Transporte","SUBTE":"Transporte","AUTOPISTA":"Auto","MAPFRE":"Auto","UBER":"Transporte","DIDI":"Transporte","RAPPI":"Compras","COTO":"Compras","DISCO":"Compras","SUPERMERCADO":"Compras","FARMACITY":"Compras","ZARA":"Compras","GRIMOLDI":"Compras","DEXTER":"Compras","NIKE":"Compras","ADIDAS":"Compras","MC DONALD":"Salidas","BURGER":"Salidas","RESTAURANT":"Salidas","GRILL":"Salidas","SUSHI":"Salidas","BIRRA":"Salidas","ALMIRO":"Salidas","ESTACIONAMIENTO":"Transporte","PARKING":"Transporte","CLUB ATLETICO BO":"Boca Juniors","SPORT CLUB":"Entrenamiento","TELEPEAJ":"Auto","VIALES":"Auto","AUBASA":"Auto","CODERHOUSE":"Estudios","PERSFLOW":"Departamento","URBA":"Auto","FUNDACIO":"Regalos","VIVARIUM":"Salidas"}
+  const autoCat=desc=>{const u=desc.toUpperCase();for(const[k,v] of Object.entries(catMap)){if(u.includes(k))return v};return""}
 
   const parseMC=(text)=>{
-    // Extract vencimiento
     const vtoMatch=text.match(/Vencimiento actual:\s+(\d{2})-(\w+)-(\d{2})/)
-    if(vtoMatch){const[,d,m,y]=vtoMatch;setVtoDate(`20${y}-${MM[m]||"01"}-${d}`)}
-    setCardInfo("Mastercard BAPRO")
-
-    const results=[]
-    const lines=text.split("\n")
-    let inSection=false
+    let vto=""
+    if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
+    const results=[];const lines=text.split("\n");let inSection=false
     for(const line of lines){
       if(line.includes("COMPRAS DEL MES")||line.includes("DEBITOS AUTOMATICOS")||line.includes("CUOTAS DEL MES"))inSection=true
       if(line.includes("TOTAL TITULAR"))break
       if(!inSection)continue
-
-      // Match MC line: DD-Mmm-YY DESCRIPTION CUPON_NRO [PESOS] [DOLARES]
-      const m=line.match(/^(\d{2})-(\w{3})-(\d{2})\s+(.+?)\s+(\d{5})\s+([\d.,-]+)?\s*([\d.,-]+)?$/)
-      if(m){
-        const[,d,mon,y,desc,cupon,pesos,usd]=m
-        const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
-        const amtP=parseN(pesos),amtU=parseN(usd)
-        if(amtP!==0||amtU!==0){
-          results.push({desc:desc.trim(),pesos:amtP,usd:amtU,status:"pending",cat:"",editCat:false})
-        }
-      }
+      const m2=line.match(/^(\d{2})-(\w{3})-(\d{2})\s+(.+?)\s+(\d{5})\s+([\d.,-]+)?\s*([\d.,-]+)?$/)
+      if(m2){const[,,,,,, pesos,usd]=m2;const desc=m2[4].trim();const parseN=s=>s?parseFloat(s.replace(/\./g,"").replace(",",".")):0;const amtP=parseN(pesos);if(amtP!==0)results.push({desc,pesos:amtP,status:"pending",cat:autoCat(desc)})}
     }
-    return results
+    return{vto,results}
   }
 
   const parseVisa=(text)=>{
-    // Extract vencimiento  
     const vtoMatch=text.match(/VENCIMIENTO\s+(\d{2})\s+(\w+)\s+(\d{2})/)
-    if(vtoMatch){const[,d,m,y]=vtoMatch;setVtoDate(`20${y}-${MM[m]||"01"}-${d}`)}
-    setCardInfo("Visa BAPRO")
-
-    const results=[]
-    const lines=text.split("\n")
+    let vto=""
+    if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
+    const results=[];const lines=text.split("\n")
     for(const line of lines){
       if(line.includes("Total Consumos de"))break
-      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV")||line.includes("CANCEL"))continue
-
-      // Match Visa line: YY Month DD COMPROBANTE [TYPE] DESCRIPTION [C.MM/NN] AMOUNT [USD]
-      const m=line.match(/^\s*(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
-      if(m){
-        const[,y,mon,d,comp,tipo,desc,pesos,usd]=m
-        const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
-        const amtP=parseN(pesos),amtU=parseN(usd)
-        if(amtP!==0||amtU!==0){
-          results.push({desc:desc.trim().replace(/\s+C\.\d+\/\d+$/,""),pesos:amtP,usd:amtU,status:"pending",cat:""})
-        }
-      }
+      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV")||line.includes("CANCEL")||line.includes("INTERESES")||line.includes("IIBB")||line.includes("IVA RG")||line.includes("DB.RG"))continue
+      const m2=line.match(/^\s*(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
+      if(m2){const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const parseN=s=>s?parseFloat(s.replace(/\./g,"").replace(",",".")):0;const amtP=parseN(m2[7]);if(amtP!==0)results.push({desc,pesos:amtP,status:"pending",cat:autoCat(desc)})}
     }
-    return results
+    return{vto,results}
   }
 
-  const handleFile=async(e)=>{
-    const file=e.target.files[0]
-    if(!file)return
-    // Read PDF as text using pdf.js or fallback
+  const handleFile=(type)=>(e)=>{
+    const file=e.target.files[0];if(!file)return
     const reader=new FileReader()
-    reader.onload=async(ev)=>{
+    reader.onload=(ev)=>{
       const text=ev.target.result
-      // Detect card type
-      let results=[]
-      if(text.includes("MASTERCARD")||text.includes("Mastercard")){
-        results=parseMC(text)
-      }else if(text.includes("VISA")||text.includes("Visa")){
-        results=parseVisa(text)
-      }else{
-        // Try both
-        results=parseMC(text)
-        if(results.length===0)results=parseVisa(text)
-      }
-      // Auto-categorize based on description keywords
-      const catMap={"SPOTIFY":"Apps","NETFLIX":"Apps","YOUTUBE":"Apps","GOOGLE":"Apps","APPLE":"Apps","LINKEDIN":"Apps","ADOBE":"Apps","OPENAI":"Apps","CLAUDE":"Apps","EMOVA":"Transporte","SUBTE":"Transporte","AUTOPISTA":"Auto","MAPFRE":"Auto","UBER":"Transporte","DIDI":"Transporte","RAPPI":"Compras","COTO":"Compras","DISCO":"Compras","SUPERMERCADO":"Compras","FARMACITY":"Compras","FARMACIA":"Compras","ZARA":"Compras","GRIMOLDI":"Compras","DEXTER":"Compras","NIKE":"Compras","ADIDAS":"Compras","MC DONALD":"Salidas","BURGER":"Salidas","RESTAURANT":"Salidas","GRILL":"Salidas","SUSHI":"Salidas","BIRRA":"Salidas","ALMIRO":"Salidas","COSTA GASTRO":"Salidas","ESTACIONAMIENTO":"Transporte","PARKING":"Transporte","CLUB ATLETICO BO":"Boca Juniors","SPORT CLUB":"Entrenamiento","TELEPEAJ":"Auto","VIALES":"Auto","AUBASA":"Auto","CODERHOUSE":"Estudios","PERSFLOW":"Departamento","URBA":"Auto","FUNDACIO":"Regalos","BOLETOMOVIL":"Viajes","VIVARIUM":"Salidas"}
-      results=results.map(r=>{
-        let cat=""
-        const upper=r.desc.toUpperCase()
-        for(const[key,val] of Object.entries(catMap)){
-          if(upper.includes(key)){cat=val;break}
-        }
-        return{...r,cat}
-      })
-      setParsed(results)
+      if(type==="visa"){const r=parseVisa(text);setVisaItems(r.results);setVisaVto(r.vto)}
+      else{const r=parseMC(text);setMasterItems(r.results);setMasterVto(r.vto)}
     }
     reader.readAsText(file)
   }
 
-  const setStatus=(i,s)=>{const n=[...parsed];n[i]={...n[i],status:s};setParsed(n)}
-  const setCat=(i,c)=>{const n=[...parsed];n[i]={...n[i],cat:c};setParsed(n)}
-  const editDesc=(i,d)=>{const n=[...parsed];n[i]={...n[i],desc:d};setParsed(n)}
-  const editAmt=(i,a)=>{const n=[...parsed];n[i]={...n[i],pesos:parseFloat(a)||0};setParsed(n)}
-
-  const doImport=async()=>{
-    setSaving(true)
-    const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
-    const accepted=parsed.filter(p=>p.status==="accepted"&&p.pesos!==0)
-    const rows=accepted.map(p=>({user_id:userId,fecha:vtoDate||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.desc,monto:Math.abs(p.pesos),cuenta_id:bapro?.id,tc:cardInfo.includes("Visa")?"V":"M"}))
-    if(rows.length>0){
-      await supabase.from("movimientos").insert(rows)
-      if(bapro){
-        const totalDelta=rows.reduce((s,r)=>s-r.monto,0)
-        await supabase.from("cuentas").update({saldo:bapro.saldo+totalDelta}).eq("id",bapro.id)
-      }
-    }
-    onSaved();setDone(true);setSaving(false)
-    setTimeout(()=>{setDone(false);setParsed([])},2000)
+  const setStatus=(type,i,s)=>{
+    const setter=type==="visa"?setVisaItems:setMasterItems
+    setter(prev=>{const n=[...prev];n[i]={...n[i],status:s};return n})
+  }
+  const setCat=(type,i,c)=>{
+    const setter=type==="visa"?setVisaItems:setMasterItems
+    setter(prev=>{const n=[...prev];n[i]={...n[i],cat:c};return n})
+  }
+  const editDesc=(type,i,d)=>{
+    const setter=type==="visa"?setVisaItems:setMasterItems
+    setter(prev=>{const n=[...prev];n[i]={...n[i],desc:d};return n})
   }
 
-  const pending=parsed.filter(p=>p.status==="pending").length
-  const accepted=parsed.filter(p=>p.status==="accepted").length
+  const doConfirm=async(type)=>{
+    setSaving(type)
+    const items=type==="visa"?visaItems:masterItems
+    const vto=type==="visa"?visaVto:masterVto
+    const tc=type==="visa"?"V":"M"
+    const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
+    const accepted=items.filter(p=>p.status==="accepted"&&p.pesos!==0)
+    const rows=accepted.map(p=>({user_id:userId,fecha:vto||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.desc,monto:Math.abs(p.pesos),cuenta_id:bapro?.id,tc}))
+    if(rows.length>0){
+      await supabase.from("movimientos").insert(rows)
+      // Read fresh balance
+      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",bapro?.id).single()
+      if(fresh){
+        const totalDelta=rows.reduce((s,r)=>s-r.monto,0)
+        await supabase.from("cuentas").update({saldo:fresh.saldo+totalDelta}).eq("id",bapro.id)
+      }
+    }
+    onSaved();setDone(type);setSaving("")
+    setTimeout(()=>{setDone("");if(type==="visa")setVisaItems([]);else setMasterItems([])},2000)
+  }
+
+  const renderCard=(type,items,vto,setVto,fileRef)=>{
+    const accepted=items.filter(p=>p.status==="accepted").length
+    const pending=items.filter(p=>p.status==="pending").length
+    const isVisa=type==="visa"
+    const color=isVisa?"#3b82f6":"#f59e0b"
+    const label=isVisa?"VISA":"MASTERCARD"
+
+    return(
+      <div style={{...S.crdP,marginBottom:20,border:`1px solid ${color}22`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:16,fontWeight:700,color}}>{label}</div>
+          {vto&&<div style={{fontSize:12,color:"#64748b"}}>Vto: {vto}</div>}
+        </div>
+
+        {items.length===0?<>
+          <input ref={fileRef} type="file" accept=".pdf,.txt" onChange={handleFile(type)} style={{display:"none"}}/>
+          <button onClick={()=>fileRef.current?.click()} style={{width:"100%",padding:20,borderRadius:14,border:`2px dashed ${color}33`,background:`${color}08`,color,fontSize:14,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <Ic d={IC.upload} s={20}/> Subir PDF {label}
+          </button>
+        </>:<>
+          {vto&&<div style={{marginBottom:12}}><label style={S.lbl}>Fecha de débito</label><input type="date" value={vto} onChange={e=>setVto(e.target.value)} style={{...S.inp,fontSize:12}}/></div>}
+
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <div style={{flex:1,textAlign:"center",padding:8,borderRadius:10,background:"rgba(245,158,11,.08)"}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#f59e0b",...mo}}>{pending}</div>
+              <div style={{fontSize:10,color:"#64748b"}}>Pendientes</div>
+            </div>
+            <div style={{flex:1,textAlign:"center",padding:8,borderRadius:10,background:"rgba(74,222,128,.08)"}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#4ade80",...mo}}>{accepted}</div>
+              <div style={{fontSize:10,color:"#64748b"}}>Aceptados</div>
+            </div>
+          </div>
+
+          <div style={{maxHeight:400,overflowY:"auto",borderRadius:12,border:"1px solid rgba(255,255,255,.04)"}}>
+            {items.map((p,i)=>p.status==="rejected"?null:(
+              <div key={i} style={{padding:"12px 14px",borderBottom:"1px solid rgba(255,255,255,.03)",background:p.status==="accepted"?"rgba(74,222,128,.03)":"transparent"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <input value={p.desc} onChange={e=>editDesc(type,i,e.target.value)} style={{...S.inp,fontSize:12,padding:"6px 10px",flex:1,background:"transparent"}}/>
+                  <span style={{fontSize:14,fontWeight:700,color:p.pesos<0?"#4ade80":"#f87171",...mo,whiteSpace:"nowrap"}}>{p.pesos<0?"+":"-"}{f$(Math.abs(p.pesos))}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <select value={p.cat} onChange={e=>setCat(type,i,e.target.value)} style={{...S.inp,fontSize:11,padding:"4px 8px",flex:1,color:p.cat?"#e2e8f0":"#475569"}}>
+                    <option value="">Categoría...</option>
+                    {EGRESO_CATS.map(c=><option key={c}>{c}</option>)}
+                  </select>
+                  {p.status==="pending"?<>
+                    <button onClick={()=>setStatus(type,i,"accepted")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>✓</button>
+                    <button onClick={()=>setStatus(type,i,"rejected")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>✗</button>
+                  </>:<button onClick={()=>setStatus(type,i,"pending")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>↩</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {accepted>0&&<button onClick={()=>doConfirm(type)} disabled={saving===type} style={{marginTop:14,width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",background:done===type?"#16a34a":`linear-gradient(135deg,${color},${isVisa?"#1d4ed8":"#b45309"})`,color:"#fff"}}>
+            {done===type?"✓ Confirmado":saving===type?"Guardando...":`Confirmar ${accepted} gastos de ${label}`}
+          </button>}
+        </>}
+      </div>
+    )
+  }
 
   return(
     <div className="page-inner">
-      <div style={S.sec}>Importar Extracto de Tarjeta</div>
-
-      <div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:13,color:"#94a3b8",marginBottom:16}}>Subí el PDF del resumen de Visa o Mastercard de BAPRO. Se detecta automáticamente el tipo de tarjeta.</div>
-        {vtoDate&&<div style={{marginBottom:12}}>
-          <label style={S.lbl}>Fecha de vencimiento (cuando se debita)</label>
-          <input type="date" value={vtoDate} onChange={e=>setVtoDate(e.target.value)} style={S.inp}/>
-        </div>}
-        <input ref={fileRef} type="file" accept=".pdf,.txt" onChange={handleFile} style={{display:"none"}}/>
-        <button onClick={()=>fileRef.current?.click()} style={{width:"100%",padding:24,borderRadius:14,border:"2px dashed rgba(139,92,246,.3)",background:"rgba(139,92,246,.05)",color:"#a78bfa",fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-          <Ic d={IC.upload} s={28}/>
-          Seleccionar PDF de tarjeta
-        </button>
-        {cardInfo&&<div style={{marginTop:12,fontSize:13,color:"#60a5fa",textAlign:"center"}}>{cardInfo} · Vto: {vtoDate}</div>}
-      </div>
-
-      {parsed.length>0&&<>
-        <div style={{display:"flex",gap:12,marginBottom:16}}>
-          <div style={{...S.crdP,flex:1,textAlign:"center",padding:12}}>
-            <div style={{fontSize:20,fontWeight:700,color:"#f59e0b",...mo}}>{pending}</div>
-            <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Pendientes</div>
-          </div>
-          <div style={{...S.crdP,flex:1,textAlign:"center",padding:12}}>
-            <div style={{fontSize:20,fontWeight:700,color:"#4ade80",...mo}}>{accepted}</div>
-            <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Aceptados</div>
-          </div>
-          <div style={{...S.crdP,flex:1,textAlign:"center",padding:12}}>
-            <div style={{fontSize:20,fontWeight:700,color:"#64748b",...mo}}>{parsed.filter(p=>p.status==="rejected").length}</div>
-            <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Rechazados</div>
-          </div>
-        </div>
-
-        <div style={S.crd}>
-          {parsed.map((p,i)=>p.status==="rejected"?null:(
-            <div key={i} style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.04)",background:p.status==="accepted"?"rgba(74,222,128,.03)":"transparent"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <div style={{flex:1}}>
-                  <input value={p.desc} onChange={e=>editDesc(i,e.target.value)} style={{...S.inp,fontSize:13,padding:"8px 12px",background:"transparent",border:"1px solid rgba(255,255,255,.06)"}}/>
-                </div>
-                <div style={{fontSize:16,fontWeight:700,color:p.pesos<0?"#4ade80":"#f87171",...mo,whiteSpace:"nowrap"}}>
-                  {p.pesos<0?"+":"-"}{f$(Math.abs(p.pesos))}
-                </div>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <select value={p.cat} onChange={e=>setCat(i,e.target.value)} style={{...S.inp,fontSize:12,padding:"6px 10px",flex:1}}>
-                  <option value="">Categoría...</option>
-                  {EGRESO_CATS.map(c=><option key={c}>{c}</option>)}
-                </select>
-                {p.status==="pending"?<>
-                  <button onClick={()=>setStatus(i,"accepted")} style={{padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Aceptar</button>
-                  <button onClick={()=>setStatus(i,"rejected")} style={{padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>Rechazar</button>
-                </>:<button onClick={()=>setStatus(i,"pending")} style={{padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Deshacer</button>}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {accepted>0&&<button onClick={doImport} disabled={saving} style={{marginTop:20,width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:done?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff"}}>
-          {done?"✓ Importados":saving?"Importando...":`Importar ${accepted} movimientos aceptados`}
-        </button>}
-      </>}
+      <div style={S.sec}>Importar Extractos de Tarjeta</div>
+      <div style={{fontSize:13,color:"#64748b",marginBottom:20}}>Subí cada PDF por separado. Revisá y aceptá concepto por concepto. Recién al confirmar se impactan en tus movimientos y saldos.</div>
+      {renderCard("visa",visaItems,visaVto,setVisaVto,visaRef)}
+      {renderCard("master",masterItems,masterVto,setMasterVto,masterRef)}
     </div>
   )
 }
@@ -1021,7 +1012,8 @@ export default function App(){
       <style>{`
         *{box-sizing:border-box}
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
-        select{appearance:auto}
+        select{appearance:auto;background-color:#131a2b!important;color:#e2e8f0}
+        select option{background:#131a2b;color:#e2e8f0}
         ::-webkit-scrollbar{width:5px}
         ::-webkit-scrollbar-track{background:transparent}
         ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:5px}
