@@ -146,12 +146,12 @@ function HomePage({cuentas,movimientos}){
 }
 
 // ══════════════ CARGAR ══════════════
-function AddPage({cuentas,userId,onSaved}){
+function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTypes}){
   const[mt,setMt]=useState("egreso")
   const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:""})
   const[ok,setOk]=useState(false)
   const[saving,setSaving]=useState(false)
-  const subs=EGRESO_SUBS[fm.cat]||[]
+  const subs=egresoSubs[fm.cat]||[]
 
   useEffect(()=>{
     if(cuentas.length>0&&!fm.cuenta){
@@ -212,7 +212,7 @@ function AddPage({cuentas,userId,onSaved}){
       <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
 
       {mt==="egreso"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{EGRESO_CATS.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{egresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div></div>
         {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
           <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
@@ -220,7 +220,7 @@ function AddPage({cuentas,userId,onSaved}){
         </div>
       </>}
       {mt==="ingreso"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{INGRESO_CATS.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{ingresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
         <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
       </>}
       {mt==="traspaso"&&<div style={{marginBottom:16}}>
@@ -229,7 +229,7 @@ function AddPage({cuentas,userId,onSaved}){
         <label style={S.lbl}>Cuenta Destino</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
       </div>}
       {mt==="inversion"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Inversión</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{INV_TYPES.map(t=><button key={t} onClick={()=>setFm(f=>({...f,it:t}))} style={S.btn(fm.it===t,"#f59e0b")}>{t}</button>)}</div></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Inversión</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{invTypes.map(t=><button key={t} onClick={()=>setFm(f=>({...f,it:t}))} style={S.btn(fm.it===t,"#f59e0b")}>{t}</button>)}</div></div>
         <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
       </>}
       <button onClick={go} disabled={saving} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:ok?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:ok||fm.amt?1:.4}}>{ok?"✓ Guardado":saving?"Guardando...":"Guardar"}</button>
@@ -597,7 +597,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 }
 
 // ══════════════ EXTRACTO (PDF PARSER REAL) ══════════════
-function ExtractPage({cuentas,userId,onSaved}){
+function ExtractPage({cuentas,userId,onSaved,egresoCats}){
   const[visaItems,setVisaItems]=useState([])
   const[masterItems,setMasterItems]=useState([])
   const[visaVto,setVisaVto]=useState("")
@@ -728,7 +728,7 @@ function ExtractPage({cuentas,userId,onSaved}){
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   <select value={p.cat} onChange={e=>setCat(type,i,e.target.value)} style={{...S.inp,fontSize:11,padding:"4px 8px",flex:1,color:p.cat?"#e2e8f0":"#475569"}}>
                     <option value="">Categoría...</option>
-                    {EGRESO_CATS.map(c=><option key={c}>{c}</option>)}
+                    {(egresoCats||EGRESO_CATS).map(c=><option key={c}>{c}</option>)}
                   </select>
                   {p.status==="pending"?<>
                     <button onClick={()=>setStatus(type,i,"accepted")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>✓</button>
@@ -781,14 +781,14 @@ function ABMPage({cuentas,userId,onSaved}){
 
   useEffect(()=>{loadABM()},[loadABM])
 
-  const addCatEgreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_egreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM()}
-  const delCatEgreso=async(id)=>{await supabase.from("categorias_egreso").delete().eq("id",id);loadABM()}
-  const addSubEgreso=async()=>{if(!newSub.trim()||!selCatId)return;await supabase.from("subcategorias_egreso").insert({user_id:userId,categoria_id:selCatId,nombre:newSub.trim()});setNewSub("");loadABM()}
-  const delSubEgreso=async(id)=>{await supabase.from("subcategorias_egreso").delete().eq("id",id);loadABM()}
-  const addCatIngreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_ingreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM()}
-  const delCatIngreso=async(id)=>{await supabase.from("categorias_ingreso").delete().eq("id",id);loadABM()}
-  const addTipoInv=async()=>{if(!newVal.trim())return;await supabase.from("tipos_inversion").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM()}
-  const delTipoInv=async(id)=>{await supabase.from("tipos_inversion").delete().eq("id",id);loadABM()}
+  const addCatEgreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_egreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM();onSaved()}
+  const delCatEgreso=async(id)=>{await supabase.from("categorias_egreso").delete().eq("id",id);loadABM();onSaved()}
+  const addSubEgreso=async()=>{if(!newSub.trim()||!selCatId)return;await supabase.from("subcategorias_egreso").insert({user_id:userId,categoria_id:selCatId,nombre:newSub.trim()});setNewSub("");loadABM();onSaved()}
+  const delSubEgreso=async(id)=>{await supabase.from("subcategorias_egreso").delete().eq("id",id);loadABM();onSaved()}
+  const addCatIngreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_ingreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM();onSaved()}
+  const delCatIngreso=async(id)=>{await supabase.from("categorias_ingreso").delete().eq("id",id);loadABM();onSaved()}
+  const addTipoInv=async()=>{if(!newVal.trim())return;await supabase.from("tipos_inversion").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM();onSaved()}
+  const delTipoInv=async(id)=>{await supabase.from("tipos_inversion").delete().eq("id",id);loadABM();onSaved()}
   const addCuenta=async()=>{if(!newCuenta.nombre.trim())return;await supabase.from("cuentas").insert({user_id:userId,nombre:newCuenta.nombre.trim(),moneda:newCuenta.moneda,saldo:parseFloat(newCuenta.saldo)||0});setNewCuenta({nombre:"",moneda:"ARS",saldo:""});onSaved()}
   const delCuenta=async(id)=>{if(!confirm("¿Eliminar esta cuenta?"))return;await supabase.from("cuentas").delete().eq("id",id);onSaved()}
 
@@ -908,6 +908,10 @@ export default function App(){
   const[movimientos,setMovimientos]=useState([])
   const[deuda,setDeuda]=useState([])
   const[detailMonth,setDetailMonth]=useState(null)
+  const[catEgreso,setCatEgreso]=useState([])
+  const[subEgreso,setSubEgreso]=useState([])
+  const[catIngreso,setCatIngreso]=useState([])
+  const[tiposInv,setTiposInv]=useState([])
 
   // Auth listener
   useEffect(()=>{
@@ -919,12 +923,17 @@ export default function App(){
   // Load data
   const loadData=useCallback(async()=>{
     if(!user)return
-    const[{data:c},{data:m},{data:d}]=await Promise.all([
+    const[{data:c},{data:m},{data:d},{data:ce},{data:se},{data:ci},{data:ti}]=await Promise.all([
       supabase.from("cuentas").select("*").order("nombre"),
       supabase.from("movimientos").select("*").order("fecha",{ascending:false}),
-      supabase.from("deuda_edgardo").select("*").order("fecha",{ascending:true})
+      supabase.from("deuda_edgardo").select("*").order("fecha",{ascending:true}),
+      supabase.from("categorias_egreso").select("*").order("nombre"),
+      supabase.from("subcategorias_egreso").select("*").order("nombre"),
+      supabase.from("categorias_ingreso").select("*").order("nombre"),
+      supabase.from("tipos_inversion").select("*").order("nombre"),
     ])
     setCuentas(c||[]);setMovimientos(m||[]);setDeuda(d||[])
+    setCatEgreso(ce||[]);setSubEgreso(se||[]);setCatIngreso(ci||[]);setTiposInv(ti||[])
   },[user])
 
   useEffect(()=>{loadData()},[loadData])
@@ -934,18 +943,24 @@ export default function App(){
   if(loading)return<div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b"}}>Cargando...</div>
   if(!user)return<LoginPage/>
 
+  // Build dynamic categories from ABM tables (fallback to hardcoded if empty)
+  const dynEgresoCats=catEgreso.length>0?catEgreso.map(c=>c.nombre):EGRESO_CATS
+  const dynEgresoSubs=catEgreso.length>0?Object.fromEntries(catEgreso.map(c=>[c.nombre,subEgreso.filter(s=>s.categoria_id===c.id).map(s=>s.nombre)])):EGRESO_SUBS
+  const dynIngresoCats=catIngreso.length>0?catIngreso.map(c=>c.nombre):INGRESO_CATS
+  const dynInvTypes=tiposInv.length>0?tiposInv.map(t=>t.nombre):INV_TYPES
+
   const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
   const viewMonth=k=>{setDetailMonth(k);setPg("md")}
   const onSaved=()=>loadData()
 
   let C
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
-  else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
+  else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats} invTypes={dynInvTypes}/>
   else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
   else if(pg==="dash")C=<DashboardPage movimientos={movimientos} onViewMonth={viewMonth}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
-  else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
+  else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
