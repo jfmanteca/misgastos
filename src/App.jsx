@@ -192,7 +192,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
           await supabase.from("deuda_edgardo").insert({user_id:userId,fecha:fm.date,descripcion:"Pago por deuda",monto:-amt,saldo:lastSaldo-amt})
         }
       }
-      setOk(true);onSaved()
+      setOk(true);await onSaved()
       setTimeout(()=>{setOk(false);setFm(f=>({...f,cat:"",sub:"",amt:"",tc:"",it:""}))},1200)
     }catch(e){console.error(e)}
     setSaving(false)
@@ -378,7 +378,7 @@ function DashboardPage({movimientos,onViewMonth}){
 
 // ══════════════ MONTH DETAIL ══════════════
 function MonthDetail({monthKey:mk2,movimientos,cuentas,onBack}){
-  const me=movimientos.filter(m=>monthOf(m.fecha)===mk2).sort((a,b)=>b.fecha.localeCompare(a.fecha))
+  const me=movimientos.filter(m=>monthOf(m.fecha)===mk2).sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
   const total=me.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
   const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
@@ -462,7 +462,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
     if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
     if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
   }
-  filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha))
+  filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
 
   const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth&&(!filterTipo||m.tipo===filterTipo)).map(m=>m.categoria))].sort()
   const totalEgresos=filtered.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
@@ -925,7 +925,7 @@ export default function App(){
     if(!user)return
     const[{data:c},{data:m},{data:d},{data:ce},{data:se},{data:ci},{data:ti}]=await Promise.all([
       supabase.from("cuentas").select("*").order("nombre"),
-      supabase.from("movimientos").select("*").order("fecha",{ascending:false}),
+      supabase.from("movimientos").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),
       supabase.from("deuda_edgardo").select("*").order("fecha",{ascending:true}),
       supabase.from("categorias_egreso").select("*").order("nombre"),
       supabase.from("subcategorias_egreso").select("*").order("nombre"),
