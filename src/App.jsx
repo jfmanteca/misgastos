@@ -330,9 +330,10 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
   movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0};if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&!isUSDCuenta(m.cuenta_id))monthly[k].pesos+=m.monto;if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&isUSDCuenta(m.cuenta_id))monthly[k].usd+=m.monto;if(m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))monthly[k].inv+=m.monto})
   const months=Object.keys(monthly).sort()
   const[bo,setBo]=useState(0)
-  const vb=8,si=Math.max(0,months.length-vb-bo),ei=si+vb
+  const vb=6,si=Math.max(0,months.length-vb-bo),ei=si+vb
   const vis=months.slice(si,ei)
   const maxP=Math.max(...Object.values(monthly).map(m=>m.pesos),1)
+  const maxU=Math.max(...Object.values(monthly).map(m=>m.usd),1)
   const maxI=Math.max(...Object.values(monthly).map(m=>m.inv),1)
 
   // Pie chart
@@ -355,24 +356,41 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
     <div style={{className:"page-inner"}}>
       <div style={S.sec}>Dashboard</div>
 
-      {/* Gastos Mensuales */}
+      {/* Gastos Mensuales — dual bar */}
       <div style={{...S.crdP,marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Gastos mensuales</div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Gastos mensuales</div>
+            <div style={{display:"flex",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#3b82f6"}}/><span style={{fontSize:10,color:"#64748b"}}>$</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#34d399"}}/><span style={{fontSize:10,color:"#64748b"}}>USD</span></div>
+            </div>
+          </div>
           <div style={{display:"flex",gap:4}}>
             <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
             <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:200}}>
-          {vis.map((k,i)=>{const h=Math.max(4,(monthly[k].pesos/maxP)*160);const last=si+i===months.length-1;const hasUSD=monthly[k]?.usd>0;return(
-            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonth(k)}>
-              <div style={{fontSize:13,color:"#94a3b8",fontWeight:600,...mo}}>{fS(monthly[k].pesos)}</div>
-              {hasUSD&&<div style={{fontSize:9,color:"#34d399",fontWeight:600,...mo}}>+{fS(monthly[k].usd)}USD</div>}
-              <div style={{width:"100%",height:h,borderRadius:"6px 6px 2px 2px",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
-              <div style={{fontSize:12,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
-            </div>
-          )})}
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:210}}>
+          {vis.map((k,i)=>{
+            const last=si+i===months.length-1
+            const hP=Math.max(4,(monthly[k].pesos/maxP)*160)
+            const hasUSD=monthly[k]?.usd>0
+            const hU=hasUSD?Math.max(4,(monthly[k].usd/maxU)*160):0
+            return(
+              <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <div style={{display:"flex",gap:2,justifyContent:"center",width:"100%"}}>
+                  <span style={{fontSize:10,color:last?"#60a5fa":"#94a3b8",fontWeight:600,...mo}}>{fS(monthly[k].pesos)}</span>
+                  {hasUSD&&<span style={{fontSize:10,color:"#34d399",fontWeight:600,...mo}}>/{fS(monthly[k].usd)}</span>}
+                </div>
+                <div style={{display:"flex",gap:3,width:"100%",alignItems:"flex-end",height:160}}>
+                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hP,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
+                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hasUSD?hU:0,borderRadius:"4px 4px 2px 2px",cursor:hasUSD?"pointer":"default",background:hasUSD?"linear-gradient(180deg,#34d399,#059669)":"transparent"}}/>
+                </div>
+                <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
+              </div>
+            )
+          })}
         </div>
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver movimientos</div>}
       </div>
