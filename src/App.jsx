@@ -15,6 +15,12 @@ const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
 const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"}
 const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace"}
+// Category emoji icons for visual identification
+const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
+const catIcon=c=>{for(const[k,v] of Object.entries(CAT_ICON)){if(c?.includes(k))return v};return"📌"}
+// Account logos as colored text badges
+const ACC_LOGO={"Efectivo":"💵","BAPRO":"🏛️","Mercado Pago":"💜"}
+const accLogo=name=>{for(const[k,v] of Object.entries(ACC_LOGO)){if(name?.includes(k))return v};return"💰"}
 // Category color map for badges
 const CAT_COLORS={"Salidas":"#f97316","Compras":"#3b82f6","Departamento":"#8b5cf6","Auto":"#ef4444","Apps":"#06b6d4","Entrenamiento":"#10b981","Transporte":"#f59e0b","Préstamo":"#64748b","Boca Juniors":"#facc15","Módulo":"#14b8a6","Cuidado Personal":"#ec4899","Regalos":"#a78bfa","Comida laboral":"#fb923c","Estudios":"#6366f1","Pago deuda":"#7f1d1d","Gastos Tarjeta":"#475569","Otros":"#334155","Sueldo":"#22c55e","Inversiones":"#eab308","Traspaso":"#60a5fa"}
 const catColor=c=>CAT_COLORS[c]||"#475569"
@@ -83,31 +89,33 @@ function HomePage({cuentas,movimientos}){
         </button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:28}}>
-        <div style={{background:"linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(96,165,250,.15)",boxShadow:"0 8px 32px rgba(37,99,235,.15)"}}>
+        <div style={{background:"linear-gradient(135deg,#0c1929 0%,#1e40af 50%,#7c3aed 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(96,165,250,.15)",boxShadow:"0 8px 32px rgba(37,99,235,.15)"}}>
           <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>PESOS</div>
           <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tP))}</div>
         </div>
-        <div style={{background:"linear-gradient(135deg,#14532d 0%,#16a34a 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(74,222,128,.15)",boxShadow:"0 8px 32px rgba(22,163,74,.15)"}}>
+        <div style={{background:"linear-gradient(135deg,#052e16 0%,#059669 50%,#14b8a6 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(74,222,128,.15)",boxShadow:"0 8px 32px rgba(5,150,105,.15)"}}>
           <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>DÓLARES</div>
           <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tU,true))}</div>
         </div>
       </div>
 
       <div style={S.sec}>Cuentas</div>
-      <div style={{...S.crd,marginBottom:24}}>
-        <div style={{display:"flex",padding:"10px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{flex:"0 0 115px"}}/><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Pesos</div><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>USD</div>
+      <div style={{...S.crd,marginBottom:28}}>
+        <div style={{display:"flex",padding:"10px 18px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{flex:"0 0 130px"}}/><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>Pesos</div><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
         </div>
-        {[["Efectivo","Efectivo $","Efectivo USD","#f59e0b"],["BAPRO","BAPRO $","BAPRO USD","#60a5fa"]].map(([n,pk,uk,c])=>(
-          <div key={n} style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
-            <div style={{width:10,height:10,borderRadius:"50%",background:c,flexShrink:0}}/><div style={{flex:"0 0 103px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{n}</div>
-            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre[pk]?.saldo||0))}</div></div>
-            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#a7f3d0",...mo}}>{h(f$(cuentasByNombre[uk]?.saldo||0,true))}</div></div>
+        {[["Efectivo","Efectivo $","Efectivo USD","#f59e0b","💵"],["BAPRO","BAPRO $","BAPRO USD","#60a5fa","🏛️"]].map(([n,pk,uk,c,icon])=>(
+          <div key={n} style={{display:"flex",alignItems:"center",padding:"16px 18px",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:`${c}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{icon}</div>
+            <div style={{flex:"0 0 82px",fontSize:14,color:"#e2e8f0",fontWeight:600}}>{n}</div>
+            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre[pk]?.saldo||0))}</div></div>
+            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{h(f$(cuentasByNombre[uk]?.saldo||0,true))}</div></div>
           </div>
         ))}
-        <div style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12}}>
-          <div style={{width:10,height:10,borderRadius:"50%",background:"#a78bfa",flexShrink:0}}/><div style={{flex:"0 0 103px",fontSize:13,color:"#94a3b8",fontWeight:500}}>Mercado Pago</div>
-          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre["Mercado Pago $"]?.saldo||0))}</div></div>
+        <div style={{display:"flex",alignItems:"center",padding:"16px 18px",gap:12}}>
+          <div style={{width:36,height:36,borderRadius:10,background:"rgba(167,139,250,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>💜</div>
+          <div style={{flex:"0 0 82px",fontSize:14,color:"#e2e8f0",fontWeight:600}}>Mercado Pago</div>
+          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre["Mercado Pago $"]?.saldo||0))}</div></div>
           <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,color:"#334155"}}>—</div></div>
         </div>
       </div>
@@ -117,8 +125,8 @@ function HomePage({cuentas,movimientos}){
         {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
         {recent.map((e,i)=>(
           <div key={e.id} style={{display:"flex",alignItems:"center",padding:"16px 18px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:14}}>
-            <div style={{width:40,height:40,borderRadius:12,background:`${catColor(e.categoria)}18`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <div style={{width:10,height:10,borderRadius:"50%",background:catColor(e.categoria)}}/>
+            <div style={{width:42,height:42,borderRadius:12,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>
+              {catIcon(e.categoria)}
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:14,color:"#f1f5f9",fontWeight:600,marginBottom:3}}>{e.subcategoria||e.categoria}</div>
@@ -173,10 +181,10 @@ function AddPage({cuentas,userId,onSaved}){
         if(!fm.amt||!fm.cat){setSaving(false);return}
         const amt=parseFloat(fm.amt)
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null})
-        // Update saldo
+        // Update saldo: egreso with negative amount = refund (adds to balance)
         const cuenta=cuentas.find(c=>c.id===fm.cuenta)
         if(cuenta){
-          const delta=mt==="egreso"?-amt:amt
+          const delta=mt==="egreso"?-amt:amt  // if amt is -10000, delta becomes +10000
           await supabase.from("cuentas").update({saldo:cuenta.saldo+delta}).eq("id",fm.cuenta)
         }
         // If pago deuda edgardo, add to deuda table
@@ -234,6 +242,7 @@ function AddPage({cuentas,userId,onSaved}){
 // ══════════════ DASHBOARD ══════════════
 function DashboardPage({movimientos,onViewMonth}){
   const[pi,setPi]=useState(0)
+  const[expandedCat,setExpandedCat]=useState(null)
   // Group by month
   const monthly={}
   movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0};if(m.tipo==="egreso")monthly[k].pesos+=m.monto;if(m.tipo==="inversion")monthly[k].inv+=m.monto})
@@ -285,17 +294,19 @@ function DashboardPage({movimientos,onViewMonth}){
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver movimientos</div>}
       </div>
 
-      {/* Inversiones */}
-      {months.some(k=>monthly[k].inv>0)&&<div style={{...S.crdP,marginBottom:20}}>
+      {/* Inversiones - same months as gastos */}
+      {vis.some(k=>monthly[k]?.inv>0)&&<div style={{...S.crdP,marginBottom:20}}>
         <div style={{fontSize:12,color:"#64748b",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>Inversiones mensuales</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:100}}>
-          {months.slice(-12).map(k=>(
-            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              {monthly[k].inv>0&&<div style={{fontSize:11,color:"#f59e0b",...mo}}>{fS(monthly[k].inv)}</div>}
-              <div style={{width:"100%",height:monthly[k].inv>0?(monthly[k].inv/maxI)*80:4,borderRadius:"4px 4px 1px 1px",background:monthly[k].inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
-              <div style={{fontSize:10,color:"#94a3b8"}}>{fmtMonth(k).slice(0,3)}</div>
-            </div>
-          ))}
+        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:140}}>
+          {vis.map(k=>{
+            const invH=monthly[k]?.inv>0?(monthly[k].inv/maxI)*110:4
+            return(
+            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+              {monthly[k]?.inv>0&&<div style={{fontSize:13,color:"#f59e0b",fontWeight:600,...mo}}>{fS(monthly[k].inv)}</div>}
+              <div style={{width:"100%",height:invH,borderRadius:"6px 6px 2px 2px",background:monthly[k]?.inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
+              <div style={{fontSize:12,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
+            </div>)
+          })}
         </div>
       </div>}
 
@@ -318,13 +329,42 @@ function DashboardPage({movimientos,onViewMonth}){
               <text x="0" y="14" textAnchor="middle" fill="#64748b" fontSize="11">TOTAL</text>
             </svg>
           </div>
-          {ps.map(([cat,total],i)=>{const pct=pt>0?((total/pt)*100).toFixed(1):0;return(
+          {ps.map(([cat,total],i)=>{
+            const pct=pt>0?((total/pt)*100).toFixed(1):0
+            const isExpanded=expandedCat===cat
+            // Get subcategory breakdown
+            const subTotals={}
+            pe.filter(e=>e.categoria===cat).forEach(e=>{const s=e.subcategoria||"Sin detalle";subTotals[s]=(subTotals[s]||0)+e.monto})
+            const subSorted=Object.entries(subTotals).sort((a,b)=>b[1]-a[1])
+            return(
             <div key={cat} style={{marginBottom:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:12,height:12,borderRadius:3,background:COLORS[i%COLORS.length]}}/><span style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{cat}</span></div>
-                <div style={{display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:14,color:"#94a3b8",fontWeight:500}}>{pct}%</span><span style={{fontSize:16,fontWeight:700,color:"#e2e8f0",...mo}}>{f$(total)}</span></div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,cursor:"pointer"}} onClick={()=>setExpandedCat(isExpanded?null:cat)}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{fontSize:16}}>{catIcon(cat)}</div>
+                  <div style={{width:12,height:12,borderRadius:3,background:COLORS[i%COLORS.length]}}/>
+                  <span style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{cat}</span>
+                  <Ic d={isExpanded?IC.left:IC.right} s={12}/>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:14,color:"#94a3b8",fontWeight:500}}>{pct}%</span>
+                  <span style={{fontSize:16,fontWeight:700,color:"#e2e8f0",...mo}}>{f$(total)}</span>
+                </div>
               </div>
               <div style={{height:6,background:"#0f1a2a",borderRadius:3}}><div style={{width:`${pct}%`,height:"100%",background:COLORS[i%COLORS.length],borderRadius:3}}/></div>
+              {isExpanded&&<div style={{marginTop:10,marginLeft:38,borderLeft:`2px solid ${COLORS[i%COLORS.length]}33`,paddingLeft:14}}>
+                {subSorted.map(([sub,subTotal])=>{
+                  const subPct=total>0?((subTotal/total)*100).toFixed(0):0
+                  return(
+                    <div key={sub} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:13,color:"#94a3b8"}}>{sub}</span>
+                        <span style={{fontSize:11,color:"#475569"}}>{subPct}%</span>
+                      </div>
+                      <span style={{fontSize:14,fontWeight:600,color:"#cbd5e1",...mo}}>{f$(subTotal)}</span>
+                    </div>
+                  )
+                })}
+              </div>}
             </div>
           )})}
         </>}
@@ -398,6 +438,7 @@ function DebtPage({deuda}){
 // ══════════════ MOVIMIENTOS ══════════════
 function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[selMonth,setSelMonth]=useState(monthOf(today()))
+  const[filterTipo,setFilterTipo]=useState("")
   const[filterCat,setFilterCat]=useState("")
   const[filterFrom,setFilterFrom]=useState("")
   const[filterTo,setFilterTo]=useState("")
@@ -409,21 +450,20 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
   const fmtMonthFull=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
 
-  // Previous month key
   const prevMonth=(k)=>{const[y,m]=k.split("-").map(Number);const pm=m===1?12:m-1;const py=m===1?y-1:y;return`${py}-${String(pm).padStart(2,"0")}`}
 
   let filtered=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
   if(searched){
+    if(filterTipo) filtered=filtered.filter(m=>m.tipo===filterTipo)
     if(filterCat) filtered=filtered.filter(m=>m.categoria===filterCat)
     if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
     if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
   }
   filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha))
 
-  const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth).map(m=>m.categoria))].sort()
+  const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth&&(!filterTipo||m.tipo===filterTipo)).map(m=>m.categoria))].sort()
   const totalEgresos=filtered.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
 
-  // Ingresos: sueldo del mes anterior + ingresos del mes actual (sin sueldo del mes actual)
   const prevMk=prevMonth(selMonth)
   const sueldoPrevMonth=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").reduce((s,m)=>s+m.monto,0)
   const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
@@ -441,7 +481,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   }
 
   const doSearch=()=>setSearched(true)
-  const clearFilters=()=>{setFilterCat("");setFilterFrom("");setFilterTo("");setSearched(false)}
+  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterFrom("");setFilterTo("");setSearched(false)}
 
   return(
     <div className="page-inner">
@@ -466,6 +506,13 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 
       <div style={{...S.crdP,marginBottom:20}}>
         <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Filtros</div>
+        <div style={{display:"flex",gap:6,marginBottom:12}}>
+          {[{v:"",l:"Todos"},{v:"egreso",l:"Egresos"},{v:"ingreso",l:"Ingresos"},{v:"traspaso",l:"Traspasos"},{v:"inversion",l:"Inversiones"}].map(t=>(
+            <button key={t.v} onClick={()=>setFilterTipo(t.v)} style={{flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
+              background:filterTipo===t.v?(t.v==="egreso"?"#dc2626":t.v==="ingreso"?"#16a34a":t.v==="traspaso"?"#3b82f6":t.v==="inversion"?"#f59e0b":"#3b82f6"):"rgba(255,255,255,.04)",
+              color:filterTipo===t.v?"#fff":"#64748b"}}>{t.l}</button>
+          ))}
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
           <div>
             <label style={S.lbl}>Categoría</label>
@@ -511,9 +558,14 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             </div>
           </div>
           :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:10}}>
-            <div style={{flex:"0 0 65px",fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""}</div>
-            <div style={{flex:"0 0 95px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{e.categoria}</div>
-            <div style={{flex:1,fontSize:14,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||"—"}</div>
+            <div style={{width:36,height:36,borderRadius:10,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{catIcon(e.categoria)}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                <span style={{fontSize:14,color:"#e2e8f0",fontWeight:600}}>{e.subcategoria||e.categoria}</span>
+                <Badge text={e.categoria}/>
+              </div>
+              <div style={{fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
+            </div>
             <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
               {e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}
             </div>
@@ -906,7 +958,7 @@ export default function App(){
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
-    <div style={{minHeight:"100vh",background:"#0b1120",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#070b14 0%,#0b1120 30%,#0d1525 60%,#091018 100%)",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
       {/* Desktop sidebar */}
       <div className="sidebar">
         <div style={{padding:"28px 20px 24px"}}>
