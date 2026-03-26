@@ -13,7 +13,7 @@ const fS=n=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n
 const today=()=>new Date().toISOString().split("T")[0]
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
-const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"}
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"}
 const mo={fontFamily:"'SF Mono',Consolas,monospace"}
 const S={
   sec:{fontSize:13,textTransform:"uppercase",letterSpacing:2,color:"#8b9dc3",marginBottom:12},
@@ -64,7 +64,8 @@ function HomePage({cuentas,movimientos}){
   cuentas.forEach(c=>{cuentasByNombre[c.nombre]=c})
   const tP=(cuentasByNombre["Efectivo $"]?.saldo||0)+(cuentasByNombre["BAPRO $"]?.saldo||0)+(cuentasByNombre["Mercado Pago $"]?.saldo||0)
   const tU=(cuentasByNombre["Efectivo USD"]?.saldo||0)+(cuentasByNombre["BAPRO USD"]?.saldo||0)
-  const recent=movimientos.slice(0,10)
+  const curMonth=monthOf(today())
+  const recent=movimientos.filter(m=>monthOf(m.fecha)<=curMonth).slice(0,12)
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
 
   return(
@@ -250,12 +251,12 @@ function DashboardPage({movimientos,onViewMonth}){
             <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:150}}>
-          {vis.map((k,i)=>{const h=Math.max(4,(monthly[k].pesos/maxP)*125);const last=si+i===months.length-1;return(
+        <div style={{display:"flex",alignItems:"flex-end",gap:6,height:200}}>
+          {vis.map((k,i)=>{const h=Math.max(4,(monthly[k].pesos/maxP)*160);const last=si+i===months.length-1;return(
             <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonth(k)}>
-              <div style={{fontSize:8,color:"#64748b",...mo}}>{fS(monthly[k].pesos)}</div>
+              <div style={{fontSize:11,color:"#94a3b8",fontWeight:500,...mo}}>{fS(monthly[k].pesos)}</div>
               <div style={{width:"100%",height:h,borderRadius:"6px 6px 2px 2px",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
-              <div style={{fontSize:9,color:last?"#60a5fa":"#475569",fontWeight:last?700:400}}>{fmtMonth(k)}</div>
+              <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
             </div>
           )})}
         </div>
@@ -268,9 +269,9 @@ function DashboardPage({movimientos,onViewMonth}){
         <div style={{display:"flex",alignItems:"flex-end",gap:4,height:100}}>
           {months.slice(-12).map(k=>(
             <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              {monthly[k].inv>0&&<div style={{fontSize:8,color:"#f59e0b",...mo}}>{fS(monthly[k].inv)}</div>}
+              {monthly[k].inv>0&&<div style={{fontSize:11,color:"#f59e0b",...mo}}>{fS(monthly[k].inv)}</div>}
               <div style={{width:"100%",height:monthly[k].inv>0?(monthly[k].inv/maxI)*80:4,borderRadius:"4px 4px 1px 1px",background:monthly[k].inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
-              <div style={{fontSize:8,color:"#475569"}}>{fmtMonth(k).slice(0,3)}</div>
+              <div style={{fontSize:10,color:"#94a3b8"}}>{fmtMonth(k).slice(0,3)}</div>
             </div>
           ))}
         </div>
@@ -287,21 +288,21 @@ function DashboardPage({movimientos,onViewMonth}){
           </div>
         </div>
         {ps.length===0?<div style={{textAlign:"center",color:"#475569",padding:30,fontSize:13}}>Sin datos</div>:<>
-          <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
-            <svg width="180" height="180" viewBox="-85 -85 170 170">
+          <div style={{display:"flex",justifyContent:"center",marginBottom:24}}>
+            <svg width="260" height="260" viewBox="-95 -95 190 190">
               {arcs.map((a,i)=><path key={i} d={a.d} fill={a.c} stroke="#0b1120" strokeWidth="1"/>)}
-              <circle cx="0" cy="0" r="35" fill="#141c28"/>
-              <text x="0" y="-4" textAnchor="middle" fill="#e2e8f0" fontSize="11" fontWeight="700" style={mo}>{f$(pt)}</text>
-              <text x="0" y="10" textAnchor="middle" fill="#64748b" fontSize="8">TOTAL</text>
+              <circle cx="0" cy="0" r="40" fill="#141c28"/>
+              <text x="0" y="-6" textAnchor="middle" fill="#e2e8f0" fontSize="15" fontWeight="700" style={mo}>{f$(pt)}</text>
+              <text x="0" y="12" textAnchor="middle" fill="#64748b" fontSize="10">TOTAL</text>
             </svg>
           </div>
           {ps.map(([cat,total],i)=>{const pct=pt>0?((total/pt)*100).toFixed(1):0;return(
-            <div key={cat} style={{marginBottom:10}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:COLORS[i%COLORS.length]}}/><span style={{fontSize:12,color:"#cbd5e1"}}>{cat}</span></div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:"#64748b"}}>{pct}%</span><span style={{fontSize:12,fontWeight:600,color:"#e2e8f0",...mo}}>{f$(total)}</span></div>
+            <div key={cat} style={{marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:12,height:12,borderRadius:3,background:COLORS[i%COLORS.length]}}/><span style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{cat}</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:14,color:"#94a3b8",fontWeight:500}}>{pct}%</span><span style={{fontSize:16,fontWeight:700,color:"#e2e8f0",...mo}}>{f$(total)}</span></div>
               </div>
-              <div style={{height:4,background:"#0f1a2a",borderRadius:2}}><div style={{width:`${pct}%`,height:"100%",background:COLORS[i%COLORS.length],borderRadius:2}}/></div>
+              <div style={{height:6,background:"#0f1a2a",borderRadius:3}}><div style={{width:`${pct}%`,height:"100%",background:COLORS[i%COLORS.length],borderRadius:3}}/></div>
             </div>
           )})}
         </>}
@@ -344,32 +345,118 @@ function DebtPage({deuda}){
   const cb=hist[hist.length-1]?.saldo||0
   const tp=Math.abs(hist.filter(e=>e.monto<0).reduce((s,p)=>s+p.monto,0))
   const tb=hist.filter(e=>e.monto>0).reduce((s,p)=>s+p.monto,0)
-  const pp=tb>0?((tp/tb)*100).toFixed(0):0
 
   return(
-    <div style={{className:"page-inner"}}>
+    <div className="page-inner">
       <div style={S.sec}>Deuda Edgardo</div>
-      <div style={{background:"linear-gradient(135deg,#2a1a1a,#4a1a1a)",borderRadius:16,padding:24,marginBottom:20,border:"1px solid rgba(239,68,68,.15)",textAlign:"center"}}>
-        <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Saldo Actual</div>
-        <div style={{fontSize:32,fontWeight:800,color:"#fca5a5",...mo}}>{f$(cb)}</div>
-        <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:16}}>
-          <div><div style={{fontSize:10,color:"#7f1d1d",textTransform:"uppercase"}}>Prestado</div><div style={{fontSize:14,fontWeight:600,color:"#ef4444"}}>{f$(tb)}</div></div>
-          <div><div style={{fontSize:10,color:"#14532d",textTransform:"uppercase"}}>Pagado</div><div style={{fontSize:14,fontWeight:600,color:"#4ade80"}}>{f$(tp)}</div></div>
-          <div><div style={{fontSize:10,color:"#475569",textTransform:"uppercase"}}>Progreso</div><div style={{fontSize:14,fontWeight:600,color:"#f59e0b"}}>{pp}%</div></div>
+      <div style={{background:"linear-gradient(135deg,#2a1a1a,#4a1a1a)",borderRadius:16,padding:28,marginBottom:20,border:"1px solid rgba(239,68,68,.15)",textAlign:"center"}}>
+        <div style={{fontSize:13,color:"#f87171",textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Saldo Actual</div>
+        <div style={{fontSize:42,fontWeight:800,color:"#fca5a5",...mo}}>{f$(cb)}</div>
+        <div style={{display:"flex",justifyContent:"center",gap:40,marginTop:20}}>
+          <div><div style={{fontSize:12,color:"#7f1d1d",textTransform:"uppercase",marginBottom:4}}>Prestado</div><div style={{fontSize:20,fontWeight:700,color:"#ef4444",...mo}}>{f$(tb)}</div></div>
+          <div><div style={{fontSize:12,color:"#14532d",textTransform:"uppercase",marginBottom:4}}>Pagado</div><div style={{fontSize:20,fontWeight:700,color:"#4ade80",...mo}}>{f$(tp)}</div></div>
         </div>
-        <div style={{marginTop:16,height:6,background:"rgba(255,255,255,.08)",borderRadius:3,overflow:"hidden"}}><div style={{width:`${pp}%`,height:"100%",background:"linear-gradient(90deg,#4ade80,#16a34a)",borderRadius:3}}/></div>
       </div>
-      <div style={{...S.crdP,marginBottom:16,background:"#0f1724",border:"1px solid rgba(255,255,255,.03)"}}><div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Los pagos se cargan desde <span style={{color:"#60a5fa"}}>Cargar → Egreso → Pago deuda → Edgardo</span></div></div>
+      <div style={{...S.crdP,marginBottom:16,background:"#0f1724",border:"1px solid rgba(255,255,255,.03)"}}><div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>Los pagos se cargan desde <span style={{color:"#60a5fa"}}>Cargar → Egreso → Pago deuda → Edgardo</span></div></div>
       <div style={S.crd}>
-        <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Historial</div>
-        <div style={{maxHeight:450,overflowY:"auto"}}>
+        <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:13,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1}}>Historial</div>
+        <div style={{maxHeight:500,overflowY:"auto"}}>
           {[...hist].reverse().map((e,i)=>(
-            <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(255,255,255,.02)"}}>
-              <div><div style={{fontSize:12,color:"#cbd5e1"}}>{e.descripcion}</div><div style={{fontSize:10,color:"#475569"}}>{e.fecha}</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:600,color:e.monto>0?"#f87171":"#4ade80",...mo}}>{e.monto>0?"+":""}{f$(e.monto)}</div><div style={{fontSize:10,color:"#475569"}}>Saldo: {f$(e.saldo)}</div></div>
+            <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.02)"}}>
+              <div><div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{e.descripcion}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{e.fecha}</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:700,color:e.monto>0?"#f87171":"#4ade80",...mo}}>{e.monto>0?"+":""}{f$(e.monto)}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>Saldo: {f$(e.saldo)}</div></div>
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ══════════════ MOVIMIENTOS ══════════════
+function MovimientosPage({movimientos,cuentas}){
+  const[selMonth,setSelMonth]=useState(monthOf(today()))
+  const[filterCat,setFilterCat]=useState("")
+  const[filterFrom,setFilterFrom]=useState("")
+  const[filterTo,setFilterTo]=useState("")
+  const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
+
+  const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
+  const fmtMonthFull=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
+
+  let filtered=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
+  if(filterCat) filtered=filtered.filter(m=>m.categoria===filterCat)
+  if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
+  if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
+  filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha))
+
+  const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth).map(m=>m.categoria))].sort()
+  const totalEgresos=filtered.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
+  const totalIngresos=filtered.filter(m=>m.tipo==="ingreso").reduce((s,m)=>s+m.monto,0)
+
+  return(
+    <div className="page-inner">
+      <div style={S.sec}>Movimientos</div>
+
+      {/* Month selector */}
+      <div style={{marginBottom:16}}>
+        <select value={selMonth} onChange={e=>setSelMonth(e.target.value)} style={{...S.inp,fontSize:16,fontWeight:600}}>
+          {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
+        </select>
+      </div>
+
+      {/* Totals */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+        <div style={{...S.crdP,textAlign:"center"}}>
+          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos</div>
+          <div style={{fontSize:20,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
+        </div>
+        <div style={{...S.crdP,textAlign:"center"}}>
+          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos</div>
+          <div style={{fontSize:20,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{...S.crdP,marginBottom:20}}>
+        <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Filtros</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+          <div>
+            <label style={S.lbl}>Categoría</label>
+            <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{...S.inp,fontSize:12}}>
+              <option value="">Todas</option>
+              {cats.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={S.lbl}>Desde</label>
+            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:12}}/>
+          </div>
+          <div>
+            <label style={S.lbl}>Hasta</label>
+            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:12}}/>
+          </div>
+        </div>
+        {(filterCat||filterFrom||filterTo)&&<button onClick={()=>{setFilterCat("");setFilterFrom("");setFilterTo("")}} style={{marginTop:10,padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Limpiar filtros</button>}
+      </div>
+
+      {/* Count */}
+      <div style={{fontSize:13,color:"#64748b",marginBottom:12}}>{filtered.length} movimientos</div>
+
+      {/* List */}
+      <div style={S.crd}>
+        {filtered.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:14}}>Sin movimientos</div>}
+        {filtered.map((e,i)=>(
+          <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+            <div>
+              <div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{e.subcategoria||e.categoria}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{e.fecha} · {e.categoria} · {cuentaNombre(e.cuenta_id)}{e.tc?` · TC ${e.tc}`:""}</div>
+            </div>
+            <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap",marginLeft:12}}>
+              {e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -459,13 +546,14 @@ export default function App(){
   if(loading)return<div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b"}}>Cargando...</div>
   if(!user)return<LoginPage/>
 
-  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"}]
+  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"}]
   const viewMonth=k=>{setDetailMonth(k);setPg("md")}
   const onSaved=()=>loadData()
 
   let C
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
   else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
+  else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas}/>
   else if(pg==="dash")C=<DashboardPage movimientos={movimientos} onViewMonth={viewMonth}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
@@ -512,7 +600,7 @@ export default function App(){
         {/* Desktop header */}
         <div className="desktop-header">
           <h2 style={{fontSize:18,fontWeight:700,color:"#f1f5f9",margin:0}}>
-            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":""}
+            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":""}
           </h2>
         </div>
 
