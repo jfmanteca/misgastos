@@ -565,6 +565,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[editId,setEditId]=useState(null)
   const[editForm,setEditForm]=useState({})
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
+  const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
 
   const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
   const fmtMonthFull=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
@@ -581,7 +582,9 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
 
   const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth&&(!filterTipo||m.tipo===filterTipo)).map(m=>m.categoria))].sort()
-  const totalEgresos=filtered.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
+  const egresosFiltrados=filtered.filter(m=>m.tipo==="egreso")
+  const totalEgresos=egresosFiltrados.filter(m=>!isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
+  const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
 
   const prevMk=prevMonth(selMonth)
   const sueldoPrevMonth=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").reduce((s,m)=>s+m.monto,0)
@@ -640,11 +643,15 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
         </select>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+      <div style={{display:"grid",gridTemplateColumns:totalEgresosUSD>0?"1fr 1fr 1fr":"1fr 1fr",gap:12,marginBottom:20}}>
         <div style={{...S.crdP,textAlign:"center"}}>
-          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos</div>
+          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
           <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
         </div>
+        {totalEgresosUSD>0&&<div style={{...S.crdP,textAlign:"center",border:"1px solid rgba(52,211,153,.15)"}}>
+          <div style={{fontSize:11,color:"#34d399",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#34d399",...mo}}>{f$(totalEgresosUSD,true)}</div>
+        </div>}
         <div style={{...S.crdP,textAlign:"center"}}>
           <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos</div>
           <div style={{fontSize:22,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
@@ -716,14 +723,16 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                 <span style={{fontSize:14,color:"#e2e8f0",fontWeight:600}}>{e.subcategoria||e.categoria}</span>
                 <Badge text={e.categoria}/>
+                {isUSDCuenta(e.cuenta_id)&&<span style={{fontSize:9,fontWeight:700,color:"#34d399",background:"rgba(52,211,153,.12)",padding:"2px 5px",borderRadius:4}}>USD</span>}
               </div>
               <div style={{fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
             </div>
             {(()=>{
+              const enUSD=isUSDCuenta(e.cuenta_id)
               const devolucion=e.tipo==="egreso"&&e.monto<0
               const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
               const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
-              return<div style={{fontSize:16,fontWeight:700,color:col,...mo,whiteSpace:"nowrap"}}>{sign}{f$(Math.abs(e.monto))}</div>
+              return<div style={{fontSize:16,fontWeight:700,color:col,...mo,whiteSpace:"nowrap"}}>{sign}{f$(Math.abs(e.monto),enUSD)}</div>
             })()}
             <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:4,flexShrink:0}}><Ic d={IC.edit} s={14}/></button>
           </div>
