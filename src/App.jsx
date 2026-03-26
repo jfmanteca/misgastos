@@ -14,14 +14,18 @@ const today=()=>new Date().toISOString().split("T")[0]
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
 const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"}
-const mo={fontFamily:"'SF Mono',Consolas,monospace"}
+const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace"}
+// Category color map for badges
+const CAT_COLORS={"Salidas":"#f97316","Compras":"#3b82f6","Departamento":"#8b5cf6","Auto":"#ef4444","Apps":"#06b6d4","Entrenamiento":"#10b981","Transporte":"#f59e0b","Préstamo":"#64748b","Boca Juniors":"#facc15","Módulo":"#14b8a6","Cuidado Personal":"#ec4899","Regalos":"#a78bfa","Comida laboral":"#fb923c","Estudios":"#6366f1","Pago deuda":"#7f1d1d","Gastos Tarjeta":"#475569","Otros":"#334155","Sueldo":"#22c55e","Inversiones":"#eab308","Traspaso":"#60a5fa"}
+const catColor=c=>CAT_COLORS[c]||"#475569"
+const Badge=({text,color})=><span style={{display:"inline-block",padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,background:`${color||catColor(text)}22`,color:color||catColor(text),whiteSpace:"nowrap"}}>{text}</span>
 const S={
-  sec:{fontSize:13,textTransform:"uppercase",letterSpacing:2,color:"#8b9dc3",marginBottom:12},
-  crd:{background:"#141c28",borderRadius:16,border:"1px solid rgba(255,255,255,.04)",overflow:"hidden"},
-  crdP:{background:"#141c28",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,.04)"},
-  lbl:{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6},
-  inp:{width:"100%",padding:"12px 16px",background:"#141c28",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,color:"#e2e8f0",fontSize:14,outline:"none",boxSizing:"border-box"},
-  btn:(active,color)=>({padding:"8px 14px",borderRadius:20,border:"none",fontSize:12,cursor:"pointer",background:active?color:"#141c28",color:active?"#fff":"#94a3b8",transition:"all .12s"}),
+  sec:{fontSize:14,fontWeight:700,letterSpacing:1,color:"#94a3b8",marginBottom:14},
+  crd:{background:"linear-gradient(145deg,#131a2b,#0f1623)",borderRadius:20,border:"1px solid rgba(255,255,255,.06)",overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,.2)"},
+  crdP:{background:"linear-gradient(145deg,#131a2b,#0f1623)",borderRadius:20,padding:20,border:"1px solid rgba(255,255,255,.06)",boxShadow:"0 4px 24px rgba(0,0,0,.2)"},
+  lbl:{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8,fontWeight:600},
+  inp:{width:"100%",padding:"14px 18px",background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,color:"#e2e8f0",fontSize:14,outline:"none",boxSizing:"border-box",transition:"border .2s"},
+  btn:(active,color)=>({padding:"9px 16px",borderRadius:24,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:active?color:"rgba(255,255,255,.04)",color:active?"#fff":"#94a3b8",transition:"all .15s",boxShadow:active?`0 2px 12px ${color}44`:"none"}),
 }
 
 // ══════════════ AUTH ══════════════
@@ -39,7 +43,7 @@ function LoginPage({onLogin}){
   return(
     <div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{width:"100%",maxWidth:360}}>
-        <h1 style={{fontSize:28,fontWeight:800,color:"#f1f5f9",textAlign:"center",marginBottom:8}}>MisGastos</h1>
+        <h1 style={{fontSize:32,fontWeight:800,textAlign:"center",marginBottom:8,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
         <p style={{color:"#475569",textAlign:"center",fontSize:14,marginBottom:32}}>Iniciá sesión para continuar</p>
         {err&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:12,padding:"10px 14px",marginBottom:16,color:"#f87171",fontSize:13}}>{err}</div>}
         <div style={{marginBottom:16}}>
@@ -50,7 +54,7 @@ function LoginPage({onLogin}){
           <label style={S.lbl}>Contraseña</label>
           <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&go()}/>
         </div>
-        <button onClick={go} disabled={loading} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:loading?.6:1}}>
+        <button onClick={go} disabled={loading} style={{width:"100%",padding:16,borderRadius:16,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",color:"#fff",opacity:loading?.6:1,boxShadow:"0 6px 20px rgba(59,130,246,.3)"}}>
           {loading?"Ingresando...":"Ingresar"}
         </button>
       </div>
@@ -78,14 +82,14 @@ function HomePage({cuentas,movimientos}){
           <Ic d={hide?IC.eyeOff:IC.eye} s={18}/>
         </button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
-        <div style={{background:"linear-gradient(135deg,#1a2332,#2a3f5f)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{fontSize:11,color:"#6b8bb5",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Pesos</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#e8f0fe",...mo}}>{h(f$(tP))}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:28}}>
+        <div style={{background:"linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(96,165,250,.15)",boxShadow:"0 8px 32px rgba(37,99,235,.15)"}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>PESOS</div>
+          <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tP))}</div>
         </div>
-        <div style={{background:"linear-gradient(135deg,#1a2a1a,#2a4f2a)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{fontSize:11,color:"#6bb56b",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Dólares</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#c8f0c8",...mo}}>{h(f$(tU,true))}</div>
+        <div style={{background:"linear-gradient(135deg,#14532d 0%,#16a34a 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(74,222,128,.15)",boxShadow:"0 8px 32px rgba(22,163,74,.15)"}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>DÓLARES</div>
+          <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tU,true))}</div>
         </div>
       </div>
 
@@ -112,11 +116,18 @@ function HomePage({cuentas,movimientos}){
       <div style={S.crd}>
         {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
         {recent.map((e,i)=>(
-          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:12}}>
-            <div style={{flex:"0 0 70px",fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""}</div>
-            <div style={{flex:"0 0 100px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{e.categoria}</div>
-            <div style={{flex:1,fontSize:13,color:"#e2e8f0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||"—"}</div>
-            <div style={{fontSize:16,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
+          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"16px 18px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:14}}>
+            <div style={{width:40,height:40,borderRadius:12,background:`${catColor(e.categoria)}18`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:catColor(e.categoria)}}/>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,color:"#f1f5f9",fontWeight:600,marginBottom:3}}>{e.subcategoria||e.categoria}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:12,color:"#475569"}}>{e.fecha?.slice(5)||""}</span>
+                <Badge text={e.categoria}/>
+              </div>
+            </div>
+            <div style={{fontSize:18,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
               {hide?"••••":<>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</>}
             </div>
           </div>
@@ -360,12 +371,12 @@ function DebtPage({deuda}){
   return(
     <div className="page-inner">
       <div style={S.sec}>Deuda Edgardo</div>
-      <div style={{background:"linear-gradient(135deg,#2a1a1a,#4a1a1a)",borderRadius:16,padding:28,marginBottom:20,border:"1px solid rgba(239,68,68,.15)",textAlign:"center"}}>
-        <div style={{fontSize:13,color:"#f87171",textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>Saldo Actual</div>
-        <div style={{fontSize:42,fontWeight:800,color:"#fca5a5",...mo}}>{f$(cb)}</div>
-        <div style={{display:"flex",justifyContent:"center",gap:40,marginTop:20}}>
-          <div><div style={{fontSize:12,color:"#7f1d1d",textTransform:"uppercase",marginBottom:4}}>Prestado</div><div style={{fontSize:20,fontWeight:700,color:"#ef4444",...mo}}>{f$(tb)}</div></div>
-          <div><div style={{fontSize:12,color:"#14532d",textTransform:"uppercase",marginBottom:4}}>Pagado</div><div style={{fontSize:20,fontWeight:700,color:"#4ade80",...mo}}>{f$(tp)}</div></div>
+      <div style={{background:"linear-gradient(135deg,#450a0a 0%,#991b1b 100%)",borderRadius:24,padding:32,marginBottom:24,border:"1px solid rgba(239,68,68,.2)",textAlign:"center",boxShadow:"0 8px 40px rgba(153,27,27,.2)"}}>
+        <div style={{fontSize:14,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:3,marginBottom:12,fontWeight:600}}>Saldo Actual</div>
+        <div style={{fontSize:48,fontWeight:800,color:"#fca5a5",...mo,letterSpacing:-1}}>{f$(cb)}</div>
+        <div style={{display:"flex",justifyContent:"center",gap:48,marginTop:24}}>
+          <div><div style={{fontSize:13,color:"rgba(255,255,255,.4)",textTransform:"uppercase",marginBottom:6,fontWeight:600}}>Prestado</div><div style={{fontSize:24,fontWeight:700,color:"#ef4444",...mo}}>{f$(tb)}</div></div>
+          <div><div style={{fontSize:13,color:"rgba(255,255,255,.4)",textTransform:"uppercase",marginBottom:6,fontWeight:600}}>Pagado</div><div style={{fontSize:24,fontWeight:700,color:"#4ade80",...mo}}>{f$(tp)}</div></div>
         </div>
       </div>
       <div style={{...S.crdP,marginBottom:16,background:"#0f1724",border:"1px solid rgba(255,255,255,.03)"}}><div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>Los pagos se cargan desde <span style={{color:"#60a5fa"}}>Cargar → Egreso → Pago deuda → Edgardo</span></div></div>
@@ -898,17 +909,18 @@ export default function App(){
     <div style={{minHeight:"100vh",background:"#0b1120",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
       {/* Desktop sidebar */}
       <div className="sidebar">
-        <div style={{padding:"24px 20px 20px"}}>
-          <h1 style={{fontSize:22,fontWeight:800,color:"#f1f5f9",margin:0,letterSpacing:-.5}}>MisGastos</h1>
-          <div style={{fontSize:11,color:"#475569",marginTop:4}}>{user.email}</div>
+        <div style={{padding:"28px 20px 24px"}}>
+          <h1 style={{fontSize:24,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
+          <div style={{fontSize:11,color:"#475569",marginTop:6}}>{user.email}</div>
         </div>
         <nav style={{flex:1,padding:"8px 12px"}}>
           {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
             <button key={n.id} onClick={()=>setPg(n.id)} style={{
               display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",marginBottom:4,
-              borderRadius:12,border:"none",cursor:"pointer",transition:"all .15s",
-              background:a?"rgba(59,130,246,.12)":"transparent",
-              color:a?"#60a5fa":"#64748b"
+              borderRadius:14,border:"none",cursor:"pointer",transition:"all .15s",
+              background:a?"linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))":"transparent",
+              color:a?"#60a5fa":"#64748b",
+              boxShadow:a?"0 2px 12px rgba(59,130,246,.08)":"none"
             }}>
               <Ic d={n.ic} s={20}/>
               <span style={{fontSize:14,fontWeight:a?600:400}}>{n.l}</span>
@@ -927,7 +939,7 @@ export default function App(){
         {/* Mobile header */}
         <div className="mobile-header">
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div><h1 style={{fontSize:20,fontWeight:800,color:"#f1f5f9",margin:0,letterSpacing:-.5}}>MisGastos</h1><div style={{fontSize:11,color:"#475569",marginTop:2}}>{user.email}</div></div>
+            <div><h1 style={{fontSize:22,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1><div style={{fontSize:11,color:"#475569",marginTop:2}}>{user.email}</div></div>
             <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8}}><Ic d={IC.logout} s={18}/></button>
           </div>
         </div>
@@ -946,7 +958,7 @@ export default function App(){
           <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",padding:"0 8px"}}>
             {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
               <button key={n.id} onClick={()=>setPg(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"8px 12px",color:a?"#3b82f6":"#475569"}}>
-                {n.id==="add"?<div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 12px rgba(59,130,246,.3)",color:"#fff"}}><Ic d={n.ic} s={22}/></div>:<Ic d={n.ic} s={20}/>}
+                {n.id==="add"?<div style={{width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 20px rgba(59,130,246,.35)",color:"#fff"}}><Ic d={n.ic} s={24}/></div>:<Ic d={n.ic} s={20}/>}
                 <span style={{fontSize:10,fontWeight:a?600:400}}>{n.l}</span>
               </button>
             )})}
@@ -958,9 +970,11 @@ export default function App(){
         *{box-sizing:border-box}
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
         select{appearance:auto}
-        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar{width:5px}
         ::-webkit-scrollbar-track{background:transparent}
-        ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}
+        ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:5px}
+        input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.4)!important;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+        button:active{transform:scale(.97)}
 
         .page-inner{padding:0 16px 100px}
 
@@ -969,23 +983,23 @@ export default function App(){
         .desktop-header{display:none}
         .main-content{max-width:480px;margin:0 auto;position:relative}
         .page-content{padding-top:16px}
-        .mobile-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(180deg,rgba(11,17,32,0) 0%,rgba(11,17,32,.95) 20%,#0b1120 40%);padding-top:20px;padding-bottom:12px}
+        .mobile-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(180deg,rgba(11,17,32,0) 0%,rgba(11,17,32,.97) 25%,#0b1120 45%);padding-top:24px;padding-bottom:14px;backdrop-filter:blur(12px)}
 
         @media(min-width:768px){
           .sidebar{
             display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
-            background:#0a0f1a;border-right:1px solid rgba(255,255,255,.06);z-index:10;
+            background:linear-gradient(180deg,#080d18,#0a1020);border-right:1px solid rgba(255,255,255,.06);z-index:10;
           }
           .mobile-header{display:none}
           .mobile-nav{display:none}
           .desktop-header{
-            display:block;padding:24px 32px 16px;border-bottom:1px solid rgba(255,255,255,.04);
+            display:block;padding:28px 36px 20px;border-bottom:1px solid rgba(255,255,255,.04);
           }
           .main-content{
             margin-left:240px;max-width:none;padding-bottom:32px;
           }
           .page-content{
-            padding:16px 32px 32px;max-width:900px;
+            padding:20px 36px 36px;max-width:920px;
           }
           .page-inner{padding:0!important}
         }
@@ -993,7 +1007,7 @@ export default function App(){
         @media(min-width:1200px){
           .sidebar{width:280px}
           .main-content{margin-left:280px}
-          .page-content{max-width:1000px;padding:24px 48px 48px}
+          .page-content{max-width:1000px;padding:28px 48px 48px}
         }
       `}</style>
     </div>
