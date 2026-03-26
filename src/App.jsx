@@ -102,21 +102,21 @@ function HomePage({cuentas,movimientos}){
       <div style={S.sec}>Cuentas</div>
       <div style={{...S.crd,marginBottom:28}}>
         <div style={{display:"flex",padding:"10px 18px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{flex:"0 0 130px"}}/><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>Pesos</div><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
+          <div style={{flex:"0 0 130px"}}/><div style={{flex:1,textAlign:"center",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>Pesos</div><div style={{flex:1,textAlign:"center",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
         </div>
         {[["Efectivo","Efectivo $","Efectivo USD","#f59e0b","💵"],["BAPRO","BAPRO $","BAPRO USD","#60a5fa","🏛️"]].map(([n,pk,uk,c,icon])=>(
           <div key={n} style={{display:"flex",alignItems:"center",padding:"16px 18px",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
             <div style={{width:36,height:36,borderRadius:10,background:`${c}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{icon}</div>
             <div style={{flex:"0 0 82px",fontSize:14,color:"#e2e8f0",fontWeight:600}}>{n}</div>
-            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre[pk]?.saldo||0))}</div></div>
-            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{h(f$(cuentasByNombre[uk]?.saldo||0,true))}</div></div>
+            <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre[pk]?.saldo||0))}</div></div>
+            <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{h(f$(cuentasByNombre[uk]?.saldo||0,true))}</div></div>
           </div>
         ))}
         <div style={{display:"flex",alignItems:"center",padding:"16px 18px",gap:12}}>
           <div style={{width:36,height:36,borderRadius:10,background:"rgba(167,139,250,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>💜</div>
           <div style={{flex:"0 0 82px",fontSize:14,color:"#e2e8f0",fontWeight:600}}>Mercado Pago</div>
-          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre["Mercado Pago $"]?.saldo||0))}</div></div>
-          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,color:"#334155"}}>—</div></div>
+          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre["Mercado Pago $"]?.saldo||0))}</div></div>
+          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,color:"#334155"}}>—</div></div>
         </div>
       </div>
 
@@ -238,12 +238,12 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 }
 
 // ══════════════ DASHBOARD ══════════════
-function DashboardPage({movimientos,onViewMonth}){
+function DashboardPage({movimientos,onViewMonth,onViewMonthInv}){
   const[pi,setPi]=useState(0)
   const[expandedCat,setExpandedCat]=useState(null)
   // Group by month
   const monthly={}
-  movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0};if(m.tipo==="egreso")monthly[k].pesos+=m.monto;if(m.tipo==="inversion")monthly[k].inv+=m.monto})
+  movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0};if(m.tipo==="egreso"&&m.categoria!=="Inversiones")monthly[k].pesos+=m.monto;if(m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))monthly[k].inv+=m.monto})
   const months=Object.keys(monthly).sort()
   const[bo,setBo]=useState(0)
   const vb=8,si=Math.max(0,months.length-vb-bo),ei=si+vb
@@ -255,7 +255,7 @@ function DashboardPage({movimientos,onViewMonth}){
   const allMonths=months.length>0?months:[monthOf(today())]
   const pieIdx=Math.max(0,Math.min(pi,allMonths.length-1))
   const pk=allMonths[pieIdx]||monthOf(today())
-  const pe=movimientos.filter(m=>m.tipo==="egreso"&&monthOf(m.fecha)===pk)
+  const pe=movimientos.filter(m=>m.tipo==="egreso"&&m.categoria!=="Inversiones"&&monthOf(m.fecha)===pk)
   const pc={};pe.forEach(e=>{pc[e.categoria]=(pc[e.categoria]||0)+e.monto})
   const ps=Object.entries(pc).sort((a,b)=>b[1]-a[1])
   const pt=ps.reduce((s,[,v])=>s+v,0)
@@ -305,7 +305,7 @@ function DashboardPage({movimientos,onViewMonth}){
           {vis.map(k=>{
             const invH=monthly[k]?.inv>0?(monthly[k].inv/maxI)*110:4
             return(
-            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonth(k)}>
+            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonthInv(k)}>
               {monthly[k]?.inv>0&&<div style={{fontSize:13,color:"#f59e0b",fontWeight:600,...mo}}>{fS(monthly[k].inv)}</div>}
               <div style={{width:"100%",height:invH,borderRadius:"6px 6px 2px 2px",background:monthly[k]?.inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
               <div style={{fontSize:12,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
@@ -377,26 +377,30 @@ function DashboardPage({movimientos,onViewMonth}){
 }
 
 // ══════════════ MONTH DETAIL ══════════════
-function MonthDetail({monthKey:mk2,movimientos,cuentas,onBack}){
-  const me=movimientos.filter(m=>monthOf(m.fecha)===mk2).sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
-  const total=me.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
+function MonthDetail({monthKey:mk2,filterTipo,movimientos,cuentas,onBack}){
+  const isInv=filterTipo==="inversion"
+  const allMonth=movimientos.filter(m=>monthOf(m.fecha)===mk2).sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
+  const me=isInv
+    ?allMonth.filter(m=>m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))
+    :allMonth.filter(m=>m.tipo!=="inversion"&&!(m.tipo==="egreso"&&m.categoria==="Inversiones"))
+  const total=me.reduce((s,m)=>s+m.monto,0)
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
   const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
 
   return(
     <div style={{className:"page-inner"}}>
       <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#60a5fa",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}><Ic d={IC.left} s={16}/> Dashboard</button>
-      <div style={S.sec}>Movimientos — {fmtMonth(mk2)}</div>
+      <div style={S.sec}>{isInv?"Inversiones":"Movimientos"} — {fmtMonth(mk2)}</div>
       <div style={{...S.crdP,marginBottom:20,textAlign:"center"}}>
-        <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Total egresos</div>
-        <div style={{fontSize:22,fontWeight:700,color:"#e2e8f0",...mo,marginTop:4}}>{f$(total)}</div>
+        <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>{isInv?"Total inversiones":"Total egresos"}</div>
+        <div style={{fontSize:22,fontWeight:700,color:isInv?"#f59e0b":"#e2e8f0",...mo,marginTop:4}}>{f$(total)}</div>
       </div>
       <div style={S.crd}>
-        {me.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos</div>}
+        {me.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin {isInv?"inversiones":"movimientos"}</div>}
         {me.map((e,i)=>(
           <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderBottom:i<me.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
             <div><div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{e.subcategoria||e.categoria}</div><div style={{fontSize:11,color:"#475569"}}>{e.fecha} · {e.categoria} · {cuentaNombre(e.cuenta_id)}</div></div>
-            <div style={{fontSize:14,fontWeight:600,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo}}>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</div>
+            <div style={{fontSize:14,fontWeight:600,color:isInv?"#f59e0b":e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo}}>{isInv?"📈":e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</div>
           </div>
         ))}
       </div>
@@ -908,6 +912,7 @@ export default function App(){
   const[movimientos,setMovimientos]=useState([])
   const[deuda,setDeuda]=useState([])
   const[detailMonth,setDetailMonth]=useState(null)
+  const[detailTipo,setDetailTipo]=useState(null)
   const[catEgreso,setCatEgreso]=useState([])
   const[subEgreso,setSubEgreso]=useState([])
   const[catIngreso,setCatIngreso]=useState([])
@@ -950,15 +955,16 @@ export default function App(){
   const dynInvTypes=tiposInv.length>0?tiposInv.map(t=>t.nombre):INV_TYPES
 
   const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
-  const viewMonth=k=>{setDetailMonth(k);setPg("md")}
+  const viewMonth=k=>{setDetailMonth(k);setDetailTipo(null);setPg("md")}
+  const viewMonthInv=k=>{setDetailMonth(k);setDetailTipo("inversion");setPg("md")}
   const onSaved=()=>loadData()
 
   let C
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
   else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats} invTypes={dynInvTypes}/>
   else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
-  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} onViewMonth={viewMonth}/>
-  else if(pg==="md")C=<MonthDetail monthKey={detailMonth} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
+  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv}/>
+  else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
