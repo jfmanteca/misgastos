@@ -151,12 +151,16 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
   const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:""})
   const[ok,setOk]=useState(false)
   const[saving,setSaving]=useState(false)
+  const[usdCalc,setUsdCalc]=useState(null)
+  const[showConfirm,setShowConfirm]=useState(false)
   const subs=egresoSubs[fm.cat]||[]
+  const isUSD=mt==="inversion"&&fm.it.toLowerCase().includes("usd")
 
   useEffect(()=>{
     if(cuentas.length>0&&!fm.cuenta){
       const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
-      setFm(f=>({...f,cuenta:bapro?.id||cuentas[0].id,from:bapro?.id||cuentas[0].id,to:cuentas.find(c=>c.nombre==="Mercado Pago $")?.id||cuentas[1]?.id||""}))
+      const usdAcc=cuentas.find(c=>c.nombre==="Efectivo USD")||cuentas.find(c=>c.moneda==="USD")||cuentas[0]
+      setFm(f=>({...f,cuenta:bapro?.id||cuentas[0].id,from:bapro?.id||cuentas[0].id,to:usdAcc?.id||cuentas[1]?.id||""}))
     }
   },[cuentas])
 
@@ -167,7 +171,6 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         if(!fm.amt||fm.from===fm.to){setSaving(false);return}
         const amt=parseFloat(fm.amt)
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"traspaso",categoria:"Traspaso",subcategoria:`${cuentas.find(c=>c.id===fm.from)?.nombre} → ${cuentas.find(c=>c.id===fm.to)?.nombre}`,monto:amt,cuenta_id:fm.from,cuenta_destino_id:fm.to})
-        // Read fresh balances from DB
         const{data:fromFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.from).single()
         const{data:toFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.to).single()
         if(fromFresh)await supabase.from("cuentas").update({saldo:fromFresh.saldo-amt}).eq("id",fm.from)
@@ -179,13 +182,11 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         if(!fm.amt||!fm.cat){setSaving(false);return}
         const amt=parseFloat(fm.amt)
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null})
-        // Read fresh balance from DB, then update
         const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.cuenta).single()
         if(fresh){
-          const delta=mt==="egreso"?-amt:amt  // if amt is -10000 (refund), delta = +10000
+          const delta=mt==="egreso"?-amt:amt
           await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",fm.cuenta)
         }
-        // If pago deuda edgardo, add to deuda table
         if(mt==="egreso"&&fm.cat==="Pago deuda"&&fm.sub==="Edgardo"){
           const{data:lastDeuda}=await supabase.from("deuda_edgardo").select("saldo").order("fecha",{ascending:false}).limit(1)
           const lastSaldo=lastDeuda?.[0]?.saldo||0
@@ -198,18 +199,71 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
     setSaving(false)
   }
 
-  const cuentaName=id=>cuentas.find(c=>c.id===id)?.nombre||""
-  const tc={egreso:"#dc2626",ingreso:"#16a34a",traspaso:"#3b82f6",inversion:"#f59e0b"}
-  const tl={egreso:"Egreso",ingreso:"Ingreso",traspaso:"Traspaso",inversion:"Inversiones"}
+  const calcularUSD=()=>{
+    if(!fm.amt||!fm.tc||parseFloat(fm.tc)<=0)return
+    setUsdCalc(parseFloat(fm.amt)/parseFloat(fm.tc))
+    setShowConfirm(true)
+  }
+
+  const confirmarUSD=async()=>{
+    if(saving)return;setSaving(true);setShowConfirm(false)
+    try{
+      const importePesos=parseFloat(fm.amt)
+      const importeUSD=usdCalc
+      await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:importePesos,cuenta_id:fm.from,cuenta_destino_id:fm.to,detalle:`TC:${fm.tc}`})
+      const{data:fromFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.from).single()
+      if(fromFresh)await supabase.from("cuentas").update({saldo:fromFresh.saldo-importePesos}).eq("id",fm.from)
+      const{data:toFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.to).single()
+      if(toFresh)await supabase.from("cuentas").update({saldo:toFresh.saldo+importeUSD}).eq("id",fm.to)
+      setOk(true);setUsdCalc(null);await onSaved()
+      setTimeout(()=>{setOk(false);setFm(f=>({...f,amt:"",tc:"",it:""}))},1200)
+    }catch(e){console.error(e)}
+    setSaving(false)
+  }
+
+  const cn=id=>cuentas.find(c=>c.id===id)?.nombre||""
+  const tabC={egreso:"#dc2626",ingreso:"#16a34a",traspaso:"#3b82f6",inversion:"#f59e0b"}
+  const tabL={egreso:"Egreso",ingreso:"Ingreso",traspaso:"Traspaso",inversion:"Inversiones"}
 
   return(
     <div style={{className:"page-inner"}}>
+      {/* Confirm modal for Compra USD */}
+      {showConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{background:"#141c28",borderRadius:20,padding:28,width:"100%",maxWidth:360,border:"1px solid rgba(245,158,11,.2)"}}>
+          <div style={{fontSize:16,fontWeight:700,color:"#f59e0b",marginBottom:20,textAlign:"center"}}>Confirmar Compra USD</div>
+          <div style={{background:"#0b1120",borderRadius:12,padding:16,marginBottom:16,display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:13,color:"#64748b"}}>Debitás</span>
+              <span style={{fontSize:15,fontWeight:700,color:"#f87171",...mo}}>- {f$(parseFloat(fm.amt))}</span>
+            </div>
+            <div style={{fontSize:11,color:"#475569",textAlign:"right"}}>{cn(fm.from)}</div>
+            <div style={{borderTop:"1px solid rgba(255,255,255,.05)",paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:13,color:"#64748b"}}>Acreditás</span>
+              <span style={{fontSize:15,fontWeight:700,color:"#4ade80",...mo}}>+ {f$(usdCalc,true)}</span>
+            </div>
+            <div style={{fontSize:11,color:"#475569",textAlign:"right"}}>{cn(fm.to)}</div>
+            <div style={{borderTop:"1px solid rgba(255,255,255,.05)",paddingTop:10,display:"flex",justifyContent:"space-between"}}>
+              <span style={{fontSize:13,color:"#64748b"}}>TC</span>
+              <span style={{fontSize:13,color:"#94a3b8",...mo}}>{f$(parseFloat(fm.tc))}</span>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+            <button onClick={()=>setShowConfirm(false)} style={{padding:14,borderRadius:12,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"#94a3b8",fontSize:14,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={confirmarUSD} disabled={saving} style={{padding:14,borderRadius:12,border:"none",background:"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",fontSize:14,fontWeight:700,cursor:"pointer"}}>{saving?"Guardando...":"Confirmar"}</button>
+          </div>
+        </div>
+      </div>}
+
       <div style={S.sec}>Nuevo Movimiento</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
-        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}))}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tc[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tl[t]}</button>)}
+        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null)}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tabL[t]}</button>)}
       </div>
-      <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-      <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+
+      {/* Generic fields for non-inversion tabs */}
+      {mt!=="inversion"&&<>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+      </>}
 
       {mt==="egreso"&&<>
         <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{egresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div></div>
@@ -228,11 +282,40 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         <div style={{textAlign:"center",padding:"10px 0",color:"#3b82f6",fontSize:20}}>↓</div>
         <label style={S.lbl}>Cuenta Destino</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
       </div>}
+
       {mt==="inversion"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Inversión</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{invTypes.map(t=><button key={t} onClick={()=>setFm(f=>({...f,it:t}))} style={S.btn(fm.it===t,"#f59e0b")}>{t}</button>)}</div></div>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+        {/* Step 1: Type selector */}
+        <div style={{marginBottom:20}}>
+          <label style={S.lbl}>Tipo de Inversión</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {invTypes.map(t=><button key={t} onClick={()=>{setFm(f=>({...f,it:t,amt:"",tc:""}));setUsdCalc(null)}} style={{...S.btn(fm.it===t,"#f59e0b"),padding:"12px 16px",fontSize:13}}>{t}</button>)}
+          </div>
+        </div>
+
+        {/* Step 2a: Standard inversion form */}
+        {fm.it&&!isUSD&&<>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+        </>}
+
+        {/* Step 2b: Compra USD form */}
+        {fm.it&&isUSD&&<>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="number" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div style={{marginBottom:20}}><label style={S.lbl}>Cuenta a Acreditar</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          {usdCalc!==null&&<div style={{...S.crdP,marginBottom:16,textAlign:"center",border:"1px solid rgba(245,158,11,.25)"}}>
+            <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:4}}>Resultado</div>
+            <div style={{fontSize:26,fontWeight:800,color:"#f59e0b",...mo}}>{f$(usdCalc,true)}</div>
+          </div>}
+          <button onClick={calcularUSD} disabled={!fm.amt||!fm.tc||!fm.from||fm.from===fm.to} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",opacity:fm.amt&&fm.tc?1:.4,marginBottom:8}}>Calcular</button>
+        </>}
       </>}
-      <button onClick={go} disabled={saving} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:ok?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:ok||fm.amt?1:.4}}>{ok?"✓ Guardado":saving?"Guardando...":"Guardar"}</button>
+
+      {/* Save button (hidden for Compra USD — uses modal confirm instead) */}
+      {!isUSD&&<button onClick={go} disabled={saving} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:ok?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:ok||fm.amt?1:.4}}>{ok?"✓ Guardado":saving?"Guardando...":"Guardar"}</button>}
     </div>
   )
 }
