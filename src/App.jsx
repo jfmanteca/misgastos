@@ -514,51 +514,333 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   )
 }
 
-// ══════════════ EXTRACTO ══════════════
+// ══════════════ EXTRACTO (PDF PARSER REAL) ══════════════
 function ExtractPage({cuentas,userId,onSaved}){
-  const[text,setText]=useState("")
   const[parsed,setParsed]=useState([])
   const[done,setDone]=useState(false)
   const[saving,setSaving]=useState(false)
+  const[cardInfo,setCardInfo]=useState("")
+  const[vtoDate,setVtoDate]=useState("")
+  const fileRef=useRef(null)
 
-  const parseT=()=>{const r=[];text.split("\n").filter(l=>l.trim()).forEach(l=>{const p=l.split(/[\t;,|]+/).map(x=>x.trim()).filter(Boolean);if(p.length>=2){const dm=p[0].match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);const as=p[p.length-1].replace(/[$.]/g,"").replace(",",".").trim();const a=parseFloat(as);if(!isNaN(a)&&a!==0)r.push({date:dm?`${dm[3].length===2?"20"+dm[3]:dm[3]}-${dm[2].padStart(2,"0")}-${dm[1].padStart(2,"0")}`:today(),desc:p.slice(dm?1:0,p.length-1).join(" "),amt:Math.abs(a),type:a<0?"egreso":"ingreso",cat:"",sel:true})}});setParsed(r)}
+  const MM={"Ene":"01","Feb":"02","Mar":"03","Abr":"04","May":"05","Jun":"06","Jul":"07","Ago":"08","Sep":"09","Oct":"10","Nov":"11","Dic":"12","Enero":"01","Febrero":"02","Marzo":"03","Abril":"04","Mayo":"05","Junio":"06","Julio":"07","Agosto":"08","Septiembre":"09","Octubre":"10","Noviembre":"11","Diciembre":"12","Noviem":"11","Diciem":"12","Setiem":"09"}
 
-  const doImp=async()=>{
-    setSaving(true)
-    const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
-    const rows=parsed.filter(p=>p.sel).map(p=>({user_id:userId,fecha:p.date,tipo:p.type,categoria:p.cat||"Otros",subcategoria:p.desc,monto:p.amt,cuenta_id:bapro?.id,tc:null}))
-    await supabase.from("movimientos").insert(rows)
-    // Update saldo
-    if(bapro){
-      const totalDelta=rows.reduce((s,r)=>s+(r.tipo==="egreso"?-r.monto:r.monto),0)
-      await supabase.from("cuentas").update({saldo:bapro.saldo+totalDelta}).eq("id",bapro.id)
+  const parseMC=(text)=>{
+    // Extract vencimiento
+    const vtoMatch=text.match(/Vencimiento actual:\s+(\d{2})-(\w+)-(\d{2})/)
+    if(vtoMatch){const[,d,m,y]=vtoMatch;setVtoDate(`20${y}-${MM[m]||"01"}-${d}`)}
+    setCardInfo("Mastercard BAPRO")
+
+    const results=[]
+    const lines=text.split("\n")
+    let inSection=false
+    for(const line of lines){
+      if(line.includes("COMPRAS DEL MES")||line.includes("DEBITOS AUTOMATICOS")||line.includes("CUOTAS DEL MES"))inSection=true
+      if(line.includes("TOTAL TITULAR"))break
+      if(!inSection)continue
+
+      // Match MC line: DD-Mmm-YY DESCRIPTION CUPON_NRO [PESOS] [DOLARES]
+      const m=line.match(/^(\d{2})-(\w{3})-(\d{2})\s+(.+?)\s+(\d{5})\s+([\d.,-]+)?\s*([\d.,-]+)?$/)
+      if(m){
+        const[,d,mon,y,desc,cupon,pesos,usd]=m
+        const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
+        const amtP=parseN(pesos),amtU=parseN(usd)
+        if(amtP!==0||amtU!==0){
+          results.push({desc:desc.trim(),pesos:amtP,usd:amtU,status:"pending",cat:"",editCat:false})
+        }
+      }
     }
-    onSaved();setDone(true);setSaving(false)
-    setTimeout(()=>{setDone(false);setText("");setParsed([])},2000)
+    return results
   }
 
+  const parseVisa=(text)=>{
+    // Extract vencimiento  
+    const vtoMatch=text.match(/VENCIMIENTO\s+(\d{2})\s+(\w+)\s+(\d{2})/)
+    if(vtoMatch){const[,d,m,y]=vtoMatch;setVtoDate(`20${y}-${MM[m]||"01"}-${d}`)}
+    setCardInfo("Visa BAPRO")
+
+    const results=[]
+    const lines=text.split("\n")
+    for(const line of lines){
+      if(line.includes("Total Consumos de"))break
+      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV")||line.includes("CANCEL"))continue
+
+      // Match Visa line: YY Month DD COMPROBANTE [TYPE] DESCRIPTION [C.MM/NN] AMOUNT [USD]
+      const m=line.match(/^\s*(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
+      if(m){
+        const[,y,mon,d,comp,tipo,desc,pesos,usd]=m
+        const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
+        const amtP=parseN(pesos),amtU=parseN(usd)
+        if(amtP!==0||amtU!==0){
+          results.push({desc:desc.trim().replace(/\s+C\.\d+\/\d+$/,""),pesos:amtP,usd:amtU,status:"pending",cat:""})
+        }
+      }
+    }
+    return results
+  }
+
+  const handleFile=async(e)=>{
+    const file=e.target.files[0]
+    if(!file)return
+    // Read PDF as text using pdf.js or fallback
+    const reader=new FileReader()
+    reader.onload=async(ev)=>{
+      const text=ev.target.result
+      // Detect card type
+      let results=[]
+      if(text.includes("MASTERCARD")||text.includes("Mastercard")){
+        results=parseMC(text)
+      }else if(text.includes("VISA")||text.includes("Visa")){
+        results=parseVisa(text)
+      }else{
+        // Try both
+        results=parseMC(text)
+        if(results.length===0)results=parseVisa(text)
+      }
+      // Auto-categorize based on description keywords
+      const catMap={"SPOTIFY":"Apps","NETFLIX":"Apps","YOUTUBE":"Apps","GOOGLE":"Apps","APPLE":"Apps","LINKEDIN":"Apps","ADOBE":"Apps","OPENAI":"Apps","CLAUDE":"Apps","EMOVA":"Transporte","SUBTE":"Transporte","AUTOPISTA":"Auto","MAPFRE":"Auto","UBER":"Transporte","DIDI":"Transporte","RAPPI":"Compras","COTO":"Compras","DISCO":"Compras","SUPERMERCADO":"Compras","FARMACITY":"Compras","FARMACIA":"Compras","ZARA":"Compras","GRIMOLDI":"Compras","DEXTER":"Compras","NIKE":"Compras","ADIDAS":"Compras","MC DONALD":"Salidas","BURGER":"Salidas","RESTAURANT":"Salidas","GRILL":"Salidas","SUSHI":"Salidas","BIRRA":"Salidas","ALMIRO":"Salidas","COSTA GASTRO":"Salidas","ESTACIONAMIENTO":"Transporte","PARKING":"Transporte","CLUB ATLETICO BO":"Boca Juniors","SPORT CLUB":"Entrenamiento","TELEPEAJ":"Auto","VIALES":"Auto","AUBASA":"Auto","CODERHOUSE":"Estudios","PERSFLOW":"Departamento","URBA":"Auto","FUNDACIO":"Regalos","BOLETOMOVIL":"Viajes","VIVARIUM":"Salidas"}
+      results=results.map(r=>{
+        let cat=""
+        const upper=r.desc.toUpperCase()
+        for(const[key,val] of Object.entries(catMap)){
+          if(upper.includes(key)){cat=val;break}
+        }
+        return{...r,cat}
+      })
+      setParsed(results)
+    }
+    reader.readAsText(file)
+  }
+
+  const setStatus=(i,s)=>{const n=[...parsed];n[i]={...n[i],status:s};setParsed(n)}
+  const setCat=(i,c)=>{const n=[...parsed];n[i]={...n[i],cat:c};setParsed(n)}
+  const editDesc=(i,d)=>{const n=[...parsed];n[i]={...n[i],desc:d};setParsed(n)}
+  const editAmt=(i,a)=>{const n=[...parsed];n[i]={...n[i],pesos:parseFloat(a)||0};setParsed(n)}
+
+  const doImport=async()=>{
+    setSaving(true)
+    const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
+    const accepted=parsed.filter(p=>p.status==="accepted"&&p.pesos!==0)
+    const rows=accepted.map(p=>({user_id:userId,fecha:vtoDate||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.desc,monto:Math.abs(p.pesos),cuenta_id:bapro?.id,tc:cardInfo.includes("Visa")?"V":"M"}))
+    if(rows.length>0){
+      await supabase.from("movimientos").insert(rows)
+      if(bapro){
+        const totalDelta=rows.reduce((s,r)=>s-r.monto,0)
+        await supabase.from("cuentas").update({saldo:bapro.saldo+totalDelta}).eq("id",bapro.id)
+      }
+    }
+    onSaved();setDone(true);setSaving(false)
+    setTimeout(()=>{setDone(false);setParsed([])},2000)
+  }
+
+  const pending=parsed.filter(p=>p.status==="pending").length
+  const accepted=parsed.filter(p=>p.status==="accepted").length
+
   return(
-    <div style={{className:"page-inner"}}>
-      <div style={S.sec}>Importar Extracto</div>
+    <div className="page-inner">
+      <div style={S.sec}>Importar Extracto de Tarjeta</div>
+
       <div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>Pegá el extracto bancario (tabs, comas o punto y coma)</div>
-        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={"02/03/2026\tSupermercado DIA\t-45000\n03/03/2026\tUBER\t-8500"} style={{...S.inp,minHeight:140,resize:"vertical",fontSize:12,...mo}}/>
-        <button onClick={parseT} style={{marginTop:12,width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",background:text?"linear-gradient(135deg,#8b5cf6,#7c3aed)":"#1e293b",color:text?"#fff":"#475569"}}>Analizar</button>
+        <div style={{fontSize:13,color:"#94a3b8",marginBottom:16}}>Subí el PDF del resumen de Visa o Mastercard de BAPRO. Se detecta automáticamente el tipo de tarjeta.</div>
+        {vtoDate&&<div style={{marginBottom:12}}>
+          <label style={S.lbl}>Fecha de vencimiento (cuando se debita)</label>
+          <input type="date" value={vtoDate} onChange={e=>setVtoDate(e.target.value)} style={S.inp}/>
+        </div>}
+        <input ref={fileRef} type="file" accept=".pdf,.txt" onChange={handleFile} style={{display:"none"}}/>
+        <button onClick={()=>fileRef.current?.click()} style={{width:"100%",padding:24,borderRadius:14,border:"2px dashed rgba(139,92,246,.3)",background:"rgba(139,92,246,.05)",color:"#a78bfa",fontSize:15,fontWeight:600,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+          <Ic d={IC.upload} s={28}/>
+          Seleccionar PDF de tarjeta
+        </button>
+        {cardInfo&&<div style={{marginTop:12,fontSize:13,color:"#60a5fa",textAlign:"center"}}>{cardInfo} · Vto: {vtoDate}</div>}
       </div>
-      {parsed.length>0&&<div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:12,color:"#64748b",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>{parsed.length} movimientos</div>
-        {parsed.map((p,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
-            <input type="checkbox" checked={p.sel} onChange={()=>{const n=[...parsed];n[i]={...n[i],sel:!n[i].sel};setParsed(n)}} style={{accentColor:"#3b82f6"}}/>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.desc}</div><div style={{fontSize:10,color:"#475569"}}>{p.date}</div></div>
-            <select value={p.cat} onChange={e=>{const n=[...parsed];n[i]={...n[i],cat:e.target.value};setParsed(n)}} style={{padding:"5px 6px",background:"#0f1a2a",border:"1px solid rgba(255,255,255,.06)",borderRadius:8,color:"#94a3b8",fontSize:10,maxWidth:90}}>
-              <option value="">Cat.</option>{EGRESO_CATS.map(c=><option key={c}>{c}</option>)}
-            </select>
-            <span style={{fontSize:12,fontWeight:600,color:p.type==="ingreso"?"#4ade80":"#f87171",...mo,minWidth:65,textAlign:"right"}}>{p.type==="ingreso"?"+":"-"}{f$(p.amt)}</span>
+
+      {parsed.length>0&&<>
+        <div style={{display:"flex",gap:12,marginBottom:16}}>
+          <div style={{...S.crdP,flex:1,textAlign:"center",padding:12}}>
+            <div style={{fontSize:20,fontWeight:700,color:"#f59e0b",...mo}}>{pending}</div>
+            <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Pendientes</div>
           </div>
-        ))}
-        <button onClick={doImp} disabled={saving} style={{marginTop:16,width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:600,background:done?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",cursor:"pointer"}}>{done?"✓ Importado":saving?"Importando...":`Importar ${parsed.filter(p=>p.sel).length}`}</button>
-      </div>}
+          <div style={{...S.crdP,flex:1,textAlign:"center",padding:12}}>
+            <div style={{fontSize:20,fontWeight:700,color:"#4ade80",...mo}}>{accepted}</div>
+            <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Aceptados</div>
+          </div>
+          <div style={{...S.crdP,flex:1,textAlign:"center",padding:12}}>
+            <div style={{fontSize:20,fontWeight:700,color:"#64748b",...mo}}>{parsed.filter(p=>p.status==="rejected").length}</div>
+            <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Rechazados</div>
+          </div>
+        </div>
+
+        <div style={S.crd}>
+          {parsed.map((p,i)=>p.status==="rejected"?null:(
+            <div key={i} style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.04)",background:p.status==="accepted"?"rgba(74,222,128,.03)":"transparent"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <div style={{flex:1}}>
+                  <input value={p.desc} onChange={e=>editDesc(i,e.target.value)} style={{...S.inp,fontSize:13,padding:"8px 12px",background:"transparent",border:"1px solid rgba(255,255,255,.06)"}}/>
+                </div>
+                <div style={{fontSize:16,fontWeight:700,color:p.pesos<0?"#4ade80":"#f87171",...mo,whiteSpace:"nowrap"}}>
+                  {p.pesos<0?"+":"-"}{f$(Math.abs(p.pesos))}
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <select value={p.cat} onChange={e=>setCat(i,e.target.value)} style={{...S.inp,fontSize:12,padding:"6px 10px",flex:1}}>
+                  <option value="">Categoría...</option>
+                  {EGRESO_CATS.map(c=><option key={c}>{c}</option>)}
+                </select>
+                {p.status==="pending"?<>
+                  <button onClick={()=>setStatus(i,"accepted")} style={{padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Aceptar</button>
+                  <button onClick={()=>setStatus(i,"rejected")} style={{padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>Rechazar</button>
+                </>:<button onClick={()=>setStatus(i,"pending")} style={{padding:"6px 14px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Deshacer</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {accepted>0&&<button onClick={doImport} disabled={saving} style={{marginTop:20,width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:done?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff"}}>
+          {done?"✓ Importados":saving?"Importando...":`Importar ${accepted} movimientos aceptados`}
+        </button>}
+      </>}
+    </div>
+  )
+}
+
+// ══════════════ ABM CONFIGURACIÓN ══════════════
+function ABMPage({cuentas,userId,onSaved}){
+  const[tab,setTab]=useState("cuentas")
+  const[catEgreso,setCatEgreso]=useState([])
+  const[subEgreso,setSubEgreso]=useState([])
+  const[catIngreso,setCatIngreso]=useState([])
+  const[tiposInv,setTiposInv]=useState([])
+  const[newVal,setNewVal]=useState("")
+  const[newSub,setNewSub]=useState("")
+  const[selCatId,setSelCatId]=useState("")
+  const[newCuenta,setNewCuenta]=useState({nombre:"",moneda:"ARS",saldo:""})
+
+  const loadABM=useCallback(async()=>{
+    const[{data:ce},{data:se},{data:ci},{data:ti}]=await Promise.all([
+      supabase.from("categorias_egreso").select("*").order("nombre"),
+      supabase.from("subcategorias_egreso").select("*").order("nombre"),
+      supabase.from("categorias_ingreso").select("*").order("nombre"),
+      supabase.from("tipos_inversion").select("*").order("nombre"),
+    ])
+    setCatEgreso(ce||[]);setSubEgreso(se||[]);setCatIngreso(ci||[]);setTiposInv(ti||[])
+  },[])
+
+  useEffect(()=>{loadABM()},[loadABM])
+
+  const addCatEgreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_egreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM()}
+  const delCatEgreso=async(id)=>{await supabase.from("categorias_egreso").delete().eq("id",id);loadABM()}
+  const addSubEgreso=async()=>{if(!newSub.trim()||!selCatId)return;await supabase.from("subcategorias_egreso").insert({user_id:userId,categoria_id:selCatId,nombre:newSub.trim()});setNewSub("");loadABM()}
+  const delSubEgreso=async(id)=>{await supabase.from("subcategorias_egreso").delete().eq("id",id);loadABM()}
+  const addCatIngreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_ingreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM()}
+  const delCatIngreso=async(id)=>{await supabase.from("categorias_ingreso").delete().eq("id",id);loadABM()}
+  const addTipoInv=async()=>{if(!newVal.trim())return;await supabase.from("tipos_inversion").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM()}
+  const delTipoInv=async(id)=>{await supabase.from("tipos_inversion").delete().eq("id",id);loadABM()}
+  const addCuenta=async()=>{if(!newCuenta.nombre.trim())return;await supabase.from("cuentas").insert({user_id:userId,nombre:newCuenta.nombre.trim(),moneda:newCuenta.moneda,saldo:parseFloat(newCuenta.saldo)||0});setNewCuenta({nombre:"",moneda:"ARS",saldo:""});onSaved()}
+  const delCuenta=async(id)=>{if(!confirm("¿Eliminar esta cuenta?"))return;await supabase.from("cuentas").delete().eq("id",id);onSaved()}
+
+  const tabs=[{id:"cuentas",l:"Cuentas"},{id:"egresos",l:"Egresos"},{id:"ingresos",l:"Ingresos"},{id:"inversiones",l:"Inversiones"}]
+  const DelBtn=({fn})=><button onClick={fn} style={{background:"none",border:"none",color:"#7f1d1d",cursor:"pointer",padding:4,fontSize:16}}>×</button>
+
+  return(
+    <div className="page-inner">
+      <div style={S.sec}>Configuración</div>
+
+      <div style={{display:"flex",gap:6,marginBottom:20}}>
+        {tabs.map(t=><button key={t.id} onClick={()=>{setTab(t.id);setNewVal("")}} style={{flex:1,padding:"10px 0",borderRadius:10,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:tab===t.id?"#3b82f6":"#141c28",color:tab===t.id?"#fff":"#64748b"}}>{t.l}</button>)}
+      </div>
+
+      {tab==="cuentas"&&<>
+        <div style={S.crd}>
+          {cuentas.map((c,i)=>(
+            <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<cuentas.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+              <div><div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{c.nombre}</div><div style={{fontSize:12,color:"#64748b"}}>{c.moneda} · Saldo: {f$(c.saldo,c.moneda==="USD")}</div></div>
+              <DelBtn fn={()=>delCuenta(c.id)}/>
+            </div>
+          ))}
+        </div>
+        <div style={{...S.crdP,marginTop:16}}>
+          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Nueva Cuenta</div>
+          <input value={newCuenta.nombre} onChange={e=>setNewCuenta(p=>({...p,nombre:e.target.value}))} placeholder="Nombre" style={{...S.inp,marginBottom:8}}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+            <select value={newCuenta.moneda} onChange={e=>setNewCuenta(p=>({...p,moneda:e.target.value}))} style={S.inp}><option value="ARS">ARS</option><option value="USD">USD</option></select>
+            <input type="number" value={newCuenta.saldo} onChange={e=>setNewCuenta(p=>({...p,saldo:e.target.value}))} placeholder="Saldo inicial" style={{...S.inp,...mo}}/>
+          </div>
+          <button onClick={addCuenta} style={{width:"100%",padding:12,borderRadius:10,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",background:"#3b82f6",color:"#fff"}}>Agregar Cuenta</button>
+        </div>
+      </>}
+
+      {tab==="egresos"&&<>
+        <div style={S.crd}>
+          {catEgreso.map((c,i)=>{
+            const subs=subEgreso.filter(s=>s.categoria_id===c.id)
+            return(
+              <div key={c.id} style={{borderBottom:i<catEgreso.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px"}}>
+                  <div style={{fontSize:15,color:"#e2e8f0",fontWeight:600}}>{c.nombre}</div>
+                  <DelBtn fn={()=>delCatEgreso(c.id)}/>
+                </div>
+                {subs.length>0&&<div style={{padding:"0 16px 8px",display:"flex",flexWrap:"wrap",gap:6}}>
+                  {subs.map(s=>(
+                    <span key={s.id} style={{display:"flex",alignItems:"center",gap:2,padding:"4px 10px",borderRadius:12,background:"#1e293b",fontSize:11,color:"#94a3b8"}}>{s.nombre}<button onClick={()=>delSubEgreso(s.id)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:12,padding:0,marginLeft:4}}>×</button></span>
+                  ))}
+                </div>}
+              </div>
+            )
+          })}
+        </div>
+        <div style={{...S.crdP,marginTop:16}}>
+          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Nueva Categoría</div>
+          <div style={{display:"flex",gap:8}}>
+            <input value={newVal} onChange={e=>setNewVal(e.target.value)} placeholder="Nombre categoría" style={{...S.inp,flex:1}}/>
+            <button onClick={addCatEgreso} style={{padding:"0 20px",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#3b82f6",color:"#fff"}}>+</button>
+          </div>
+        </div>
+        <div style={{...S.crdP,marginTop:12}}>
+          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Nueva Subcategoría</div>
+          <select value={selCatId} onChange={e=>setSelCatId(e.target.value)} style={{...S.inp,marginBottom:8}}>
+            <option value="">Elegir categoría padre...</option>
+            {catEgreso.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+          <div style={{display:"flex",gap:8}}>
+            <input value={newSub} onChange={e=>setNewSub(e.target.value)} placeholder="Nombre subcategoría" style={{...S.inp,flex:1}}/>
+            <button onClick={addSubEgreso} style={{padding:"0 20px",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#8b5cf6",color:"#fff"}}>+</button>
+          </div>
+        </div>
+      </>}
+
+      {tab==="ingresos"&&<>
+        <div style={S.crd}>
+          {catIngreso.map((c,i)=>(
+            <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<catIngreso.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+              <div style={{fontSize:15,color:"#e2e8f0"}}>{c.nombre}</div>
+              <DelBtn fn={()=>delCatIngreso(c.id)}/>
+            </div>
+          ))}
+        </div>
+        <div style={{...S.crdP,marginTop:16}}>
+          <div style={{display:"flex",gap:8}}>
+            <input value={newVal} onChange={e=>setNewVal(e.target.value)} placeholder="Nueva categoría de ingreso" style={{...S.inp,flex:1}}/>
+            <button onClick={addCatIngreso} style={{padding:"0 20px",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>+</button>
+          </div>
+        </div>
+      </>}
+
+      {tab==="inversiones"&&<>
+        <div style={S.crd}>
+          {tiposInv.map((t,i)=>(
+            <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<tiposInv.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+              <div style={{fontSize:15,color:"#e2e8f0"}}>{t.nombre}</div>
+              <DelBtn fn={()=>delTipoInv(t.id)}/>
+            </div>
+          ))}
+        </div>
+        <div style={{...S.crdP,marginTop:16}}>
+          <div style={{display:"flex",gap:8}}>
+            <input value={newVal} onChange={e=>setNewVal(e.target.value)} placeholder="Nuevo tipo de inversión" style={{...S.inp,flex:1}}/>
+            <button onClick={addTipoInv} style={{padding:"0 20px",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#f59e0b",color:"#000"}}>+</button>
+          </div>
+        </div>
+      </>}
     </div>
   )
 }
@@ -598,7 +880,7 @@ export default function App(){
   if(loading)return<div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b"}}>Cargando...</div>
   if(!user)return<LoginPage/>
 
-  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"}]
+  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
   const viewMonth=k=>{setDetailMonth(k);setPg("md")}
   const onSaved=()=>loadData()
 
@@ -610,6 +892,7 @@ export default function App(){
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
+  else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
     <div style={{minHeight:"100vh",background:"#0b1120",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
@@ -652,7 +935,7 @@ export default function App(){
         {/* Desktop header */}
         <div className="desktop-header">
           <h2 style={{fontSize:18,fontWeight:700,color:"#f1f5f9",margin:0}}>
-            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":""}
+            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":pg==="abm"?"Configuración":""}
           </h2>
         </div>
 
