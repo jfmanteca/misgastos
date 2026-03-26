@@ -1,0 +1,496 @@
+import { useState, useEffect, useRef, useCallback } from "react"
+import { supabase } from "./supabase.js"
+
+// ── CONSTANTS ──
+const EGRESO_CATS=["Salidas","Compras","Departamento","Auto","Apps","Entrenamiento","Transporte","Préstamo","Boca Juniors","Módulo","Cuidado Personal","Regalos","Comida laboral","Estudios","Pago deuda","Gastos Tarjeta","Otros"]
+const EGRESO_SUBS={"Salidas":["Comidas / Bares","Boliches / Fiestas","Recitales","Otras"],"Compras":["Supermercado","Delivery","Ropa","Farmacia","Verdulería","Carnicería","Dietética","Departamento","Otros"],"Departamento":["Cuota Hipotecario","Metrogas","Edesur","Internet","Expensas","Seguro"],"Auto":["Nafta","Seguro","Peajes","Cochera","Lavadero","Multa","Cuota Préstamo"],"Apps":["Spotify","YouTube","Netflix","LinkedIn","Adobe"],"Entrenamiento":["Gimnasio"],"Transporte":["UBER","SUBE","Estacionamiento"],"Préstamo":["Préstamo","Fapa","Chino","Andi","Coco","Marcos","Gabriela","Andino"],"Boca Juniors":["Cuota Socio","Cancha"],"Módulo":["Módulo Sanitario"],"Cuidado Personal":["Proteína","Peluquería","Terapia","Creatina"],"Regalos":["Edgardo","Nancy","Otros"],"Comida laboral":["Almuerzo"],"Estudios":["Inglés","Coderhouse"],"Pago deuda":["Edgardo"],"Gastos Tarjeta":["Impuestos e intereses"],"Otros":["Apuestas","Otros"]}
+const INGRESO_CATS=["Sueldo","Incentivado / SAC","Inversiones - Intereses Ganados","Otros Ingresos"]
+const INV_TYPES=["Compra/venta USD","CEDEARs / Acciones","Caución / Plazo fijo","Crypto / Otros"]
+const COLORS=["#3b82f6","#8b5cf6","#f59e0b","#ef4444","#10b981","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#06b6d4","#e11d48","#a3e635","#7c3aed","#fb923c","#2dd4bf","#c084fc","#facc15","#f43f5e","#34d399"]
+
+const f$=(n,u)=>{const a=Math.abs(n||0);return u?`USD ${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`:`$${a.toLocaleString("es-AR",{maximumFractionDigits:0})}`}
+const fS=n=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`
+const today=()=>new Date().toISOString().split("T")[0]
+const monthOf=d=>d?.slice(0,7)||""
+const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"}
+const mo={fontFamily:"'SF Mono',Consolas,monospace"}
+const S={
+  sec:{fontSize:13,textTransform:"uppercase",letterSpacing:2,color:"#8b9dc3",marginBottom:12},
+  crd:{background:"#141c28",borderRadius:16,border:"1px solid rgba(255,255,255,.04)",overflow:"hidden"},
+  crdP:{background:"#141c28",borderRadius:16,padding:16,border:"1px solid rgba(255,255,255,.04)"},
+  lbl:{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6},
+  inp:{width:"100%",padding:"12px 16px",background:"#141c28",border:"1px solid rgba(255,255,255,.08)",borderRadius:12,color:"#e2e8f0",fontSize:14,outline:"none",boxSizing:"border-box"},
+  btn:(active,color)=>({padding:"8px 14px",borderRadius:20,border:"none",fontSize:12,cursor:"pointer",background:active?color:"#141c28",color:active?"#fff":"#94a3b8",transition:"all .12s"}),
+}
+
+// ══════════════ AUTH ══════════════
+function LoginPage({onLogin}){
+  const[email,setEmail]=useState("")
+  const[pass,setPass]=useState("")
+  const[err,setErr]=useState("")
+  const[loading,setLoading]=useState(false)
+  const go=async()=>{
+    setLoading(true);setErr("")
+    const{error}=await supabase.auth.signInWithPassword({email,password:pass})
+    if(error)setErr(error.message)
+    setLoading(false)
+  }
+  return(
+    <div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{width:"100%",maxWidth:360}}>
+        <h1 style={{fontSize:28,fontWeight:800,color:"#f1f5f9",textAlign:"center",marginBottom:8}}>MisGastos</h1>
+        <p style={{color:"#475569",textAlign:"center",fontSize:14,marginBottom:32}}>Iniciá sesión para continuar</p>
+        {err&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:12,padding:"10px 14px",marginBottom:16,color:"#f87171",fontSize:13}}>{err}</div>}
+        <div style={{marginBottom:16}}>
+          <label style={S.lbl}>Email</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={S.inp}/>
+        </div>
+        <div style={{marginBottom:24}}>
+          <label style={S.lbl}>Contraseña</label>
+          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&go()}/>
+        </div>
+        <button onClick={go} disabled={loading} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:loading?.6:1}}>
+          {loading?"Ingresando...":"Ingresar"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ══════════════ HOME ══════════════
+function HomePage({cuentas,movimientos}){
+  const cuentasByNombre={}
+  cuentas.forEach(c=>{cuentasByNombre[c.nombre]=c})
+  const tP=(cuentasByNombre["Efectivo $"]?.saldo||0)+(cuentasByNombre["BAPRO $"]?.saldo||0)+(cuentasByNombre["Mercado Pago $"]?.saldo||0)
+  const tU=(cuentasByNombre["Efectivo USD"]?.saldo||0)+(cuentasByNombre["BAPRO USD"]?.saldo||0)
+  const recent=movimientos.slice(0,10)
+  const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
+
+  return(
+    <div style={{padding:"0 16px 100px"}}>
+      <div style={S.sec}>Patrimonio Total</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
+        <div style={{background:"linear-gradient(135deg,#1a2332,#2a3f5f)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{fontSize:11,color:"#6b8bb5",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Pesos</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#e8f0fe",...mo}}>{f$(tP)}</div>
+        </div>
+        <div style={{background:"linear-gradient(135deg,#1a2a1a,#2a4f2a)",borderRadius:16,padding:"20px 16px",border:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{fontSize:11,color:"#6bb56b",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Dólares</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#c8f0c8",...mo}}>{f$(tU,true)}</div>
+        </div>
+      </div>
+
+      <div style={S.sec}>Cuentas</div>
+      <div style={{...S.crd,marginBottom:24}}>
+        <div style={{display:"flex",padding:"10px 16px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{flex:"0 0 115px"}}/><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Pesos</div><div style={{flex:1,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>USD</div>
+        </div>
+        {[["Efectivo","Efectivo $","Efectivo USD","#f59e0b"],["BAPRO","BAPRO $","BAPRO USD","#60a5fa"]].map(([n,pk,uk,c])=>(
+          <div key={n} style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+            <div style={{width:10,height:10,borderRadius:"50%",background:c,flexShrink:0}}/><div style={{flex:"0 0 103px",fontSize:13,color:"#94a3b8",fontWeight:500}}>{n}</div>
+            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{f$(cuentasByNombre[pk]?.saldo||0)}</div></div>
+            <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#a7f3d0",...mo}}>{f$(cuentasByNombre[uk]?.saldo||0,true)}</div></div>
+          </div>
+        ))}
+        <div style={{display:"flex",alignItems:"center",padding:"14px 16px",gap:12}}>
+          <div style={{width:10,height:10,borderRadius:"50%",background:"#a78bfa",flexShrink:0}}/><div style={{flex:"0 0 103px",fontSize:13,color:"#94a3b8",fontWeight:500}}>Mercado Pago</div>
+          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",...mo}}>{f$(cuentasByNombre["Mercado Pago $"]?.saldo||0)}</div></div>
+          <div style={{flex:1,textAlign:"right"}}><div style={{fontSize:14,color:"#334155"}}>—</div></div>
+        </div>
+      </div>
+
+      <div style={S.sec}>Últimos Movimientos</div>
+      <div style={S.crd}>
+        {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
+        {recent.map((e,i)=>(
+          <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+            <div><div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{e.subcategoria||e.categoria}</div><div style={{fontSize:11,color:"#475569"}}>{e.fecha} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div></div>
+            <div style={{fontSize:14,fontWeight:600,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo}}>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ══════════════ CARGAR ══════════════
+function AddPage({cuentas,userId,onSaved}){
+  const[mt,setMt]=useState("egreso")
+  const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:""})
+  const[ok,setOk]=useState(false)
+  const[saving,setSaving]=useState(false)
+  const subs=EGRESO_SUBS[fm.cat]||[]
+
+  useEffect(()=>{
+    if(cuentas.length>0&&!fm.cuenta){
+      const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
+      setFm(f=>({...f,cuenta:bapro?.id||cuentas[0].id,from:bapro?.id||cuentas[0].id,to:cuentas.find(c=>c.nombre==="Mercado Pago $")?.id||cuentas[1]?.id||""}))
+    }
+  },[cuentas])
+
+  const go=async()=>{
+    if(saving)return;setSaving(true)
+    try{
+      if(mt==="traspaso"){
+        if(!fm.amt||fm.from===fm.to){setSaving(false);return}
+        const amt=parseFloat(fm.amt)
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"traspaso",categoria:"Traspaso",subcategoria:`${cuentas.find(c=>c.id===fm.from)?.nombre} → ${cuentas.find(c=>c.id===fm.to)?.nombre}`,monto:amt,cuenta_id:fm.from,cuenta_destino_id:fm.to})
+        await supabase.rpc("update_saldo",{p_cuenta_id:fm.from,p_delta:-amt}).catch(()=>{})
+        await supabase.rpc("update_saldo",{p_cuenta_id:fm.to,p_delta:amt}).catch(()=>{})
+        // Fallback: direct update if RPC not available
+        const fromC=cuentas.find(c=>c.id===fm.from)
+        const toC=cuentas.find(c=>c.id===fm.to)
+        if(fromC)await supabase.from("cuentas").update({saldo:fromC.saldo-amt}).eq("id",fm.from)
+        if(toC)await supabase.from("cuentas").update({saldo:toC.saldo+amt}).eq("id",fm.to)
+      }else if(mt==="inversion"){
+        if(!fm.amt||!fm.it){setSaving(false);return}
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:parseFloat(fm.amt),cuenta_id:fm.cuenta})
+      }else{
+        if(!fm.amt||!fm.cat){setSaving(false);return}
+        const amt=parseFloat(fm.amt)
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null})
+        // Update saldo
+        const cuenta=cuentas.find(c=>c.id===fm.cuenta)
+        if(cuenta){
+          const delta=mt==="egreso"?-amt:amt
+          await supabase.from("cuentas").update({saldo:cuenta.saldo+delta}).eq("id",fm.cuenta)
+        }
+        // If pago deuda edgardo, add to deuda table
+        if(mt==="egreso"&&fm.cat==="Pago deuda"&&fm.sub==="Edgardo"){
+          const{data:lastDeuda}=await supabase.from("deuda_edgardo").select("saldo").order("fecha",{ascending:false}).limit(1)
+          const lastSaldo=lastDeuda?.[0]?.saldo||0
+          await supabase.from("deuda_edgardo").insert({user_id:userId,fecha:fm.date,descripcion:"Pago por deuda",monto:-amt,saldo:lastSaldo-amt})
+        }
+      }
+      setOk(true);onSaved()
+      setTimeout(()=>{setOk(false);setFm(f=>({...f,cat:"",sub:"",amt:"",tc:"",it:""}))},1200)
+    }catch(e){console.error(e)}
+    setSaving(false)
+  }
+
+  const cuentaName=id=>cuentas.find(c=>c.id===id)?.nombre||""
+  const tc={egreso:"#dc2626",ingreso:"#16a34a",traspaso:"#3b82f6",inversion:"#f59e0b"}
+  const tl={egreso:"Egreso",ingreso:"Ingreso",traspaso:"Traspaso",inversion:"Inversiones"}
+
+  return(
+    <div style={{padding:"0 16px 100px"}}>
+      <div style={S.sec}>Nuevo Movimiento</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
+        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}))}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tc[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tl[t]}</button>)}
+      </div>
+      <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+      <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+
+      {mt==="egreso"&&<>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{EGRESO_CATS.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div></div>
+        {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
+          <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="D">D</option></select></div>
+          <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+        </div>
+      </>}
+      {mt==="ingreso"&&<>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{INGRESO_CATS.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+      </>}
+      {mt==="traspaso"&&<div style={{marginBottom:16}}>
+        <label style={S.lbl}>Cuenta Origen</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
+        <div style={{textAlign:"center",padding:"10px 0",color:"#3b82f6",fontSize:20}}>↓</div>
+        <label style={S.lbl}>Cuenta Destino</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
+      </div>}
+      {mt==="inversion"&&<>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Inversión</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{INV_TYPES.map(t=><button key={t} onClick={()=>setFm(f=>({...f,it:t}))} style={S.btn(fm.it===t,"#f59e0b")}>{t}</button>)}</div></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+      </>}
+      <button onClick={go} disabled={saving} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:ok?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:ok||fm.amt?1:.4}}>{ok?"✓ Guardado":saving?"Guardando...":"Guardar"}</button>
+    </div>
+  )
+}
+
+// ══════════════ DASHBOARD ══════════════
+function DashboardPage({movimientos,onViewMonth}){
+  const[pi,setPi]=useState(0)
+  // Group by month
+  const monthly={}
+  movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0};if(m.tipo==="egreso")monthly[k].pesos+=m.monto;if(m.tipo==="inversion")monthly[k].inv+=m.monto})
+  const months=Object.keys(monthly).sort()
+  const[bo,setBo]=useState(0)
+  const vb=8,si=Math.max(0,months.length-vb-bo),ei=si+vb
+  const vis=months.slice(si,ei)
+  const maxP=Math.max(...Object.values(monthly).map(m=>m.pesos),1)
+  const maxI=Math.max(...Object.values(monthly).map(m=>m.inv),1)
+
+  // Pie chart
+  const allMonths=months.length>0?months:[monthOf(today())]
+  const pieIdx=Math.max(0,Math.min(pi,allMonths.length-1))
+  const pk=allMonths[pieIdx]||monthOf(today())
+  const pe=movimientos.filter(m=>m.tipo==="egreso"&&monthOf(m.fecha)===pk)
+  const pc={};pe.forEach(e=>{pc[e.categoria]=(pc[e.categoria]||0)+e.monto})
+  const ps=Object.entries(pc).sort((a,b)=>b[1]-a[1])
+  const pt=ps.reduce((s,[,v])=>s+v,0)
+  let ca=-Math.PI/2
+  const arcs=ps.map(([cat,val],i)=>{const ang=(val/Math.max(pt,1))*Math.PI*2;const x1=70*Math.cos(ca),y1=70*Math.sin(ca),x2=70*Math.cos(ca+ang),y2=70*Math.sin(ca+ang);const r={cat,val,c:COLORS[i%COLORS.length],d:`M0,0 L${x1},${y1} A70,70 0 ${ang>Math.PI?1:0},1 ${x2},${y2} Z`};ca+=ang;return r})
+
+  const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];return`${ml[parseInt(m)-1]} ${y.slice(2)}`}
+  const NavBtn=({dir,dis,fn})=><button onClick={fn} disabled={dis} style={{width:28,height:28,borderRadius:8,border:"none",background:dis?"transparent":"#1e293b",color:dis?"#1e293b":"#94a3b8",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Ic d={dir==="l"?IC.left:IC.right} s={14}/></button>
+
+  useEffect(()=>{setPi(allMonths.length-1)},[allMonths.length])
+
+  return(
+    <div style={{padding:"0 16px 100px"}}>
+      <div style={S.sec}>Dashboard</div>
+
+      {/* Gastos Mensuales */}
+      <div style={{...S.crdP,marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Gastos mensuales</div>
+          <div style={{display:"flex",gap:4}}>
+            <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
+            <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:150}}>
+          {vis.map((k,i)=>{const h=Math.max(4,(monthly[k].pesos/maxP)*125);const last=si+i===months.length-1;return(
+            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonth(k)}>
+              <div style={{fontSize:8,color:"#64748b",...mo}}>{fS(monthly[k].pesos)}</div>
+              <div style={{width:"100%",height:h,borderRadius:"6px 6px 2px 2px",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
+              <div style={{fontSize:9,color:last?"#60a5fa":"#475569",fontWeight:last?700:400}}>{fmtMonth(k)}</div>
+            </div>
+          )})}
+        </div>
+        {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver movimientos</div>}
+      </div>
+
+      {/* Inversiones */}
+      {months.some(k=>monthly[k].inv>0)&&<div style={{...S.crdP,marginBottom:20}}>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>Inversiones mensuales</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:100}}>
+          {months.slice(-12).map(k=>(
+            <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              {monthly[k].inv>0&&<div style={{fontSize:8,color:"#f59e0b",...mo}}>{fS(monthly[k].inv)}</div>}
+              <div style={{width:"100%",height:monthly[k].inv>0?(monthly[k].inv/maxI)*80:4,borderRadius:"4px 4px 1px 1px",background:monthly[k].inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
+              <div style={{fontSize:8,color:"#475569"}}>{fmtMonth(k).slice(0,3)}</div>
+            </div>
+          ))}
+        </div>
+      </div>}
+
+      {/* Pie */}
+      <div style={S.crdP}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Gastos por categoría</div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <NavBtn dir="l" dis={pieIdx<=0} fn={()=>setPi(i=>i-1)}/>
+            <span style={{fontSize:13,color:"#e2e8f0",fontWeight:600,minWidth:60,textAlign:"center"}}>{fmtMonth(pk)}</span>
+            <NavBtn dir="r" dis={pieIdx>=allMonths.length-1} fn={()=>setPi(i=>i+1)}/>
+          </div>
+        </div>
+        {ps.length===0?<div style={{textAlign:"center",color:"#475569",padding:30,fontSize:13}}>Sin datos</div>:<>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
+            <svg width="180" height="180" viewBox="-85 -85 170 170">
+              {arcs.map((a,i)=><path key={i} d={a.d} fill={a.c} stroke="#0b1120" strokeWidth="1"/>)}
+              <circle cx="0" cy="0" r="35" fill="#141c28"/>
+              <text x="0" y="-4" textAnchor="middle" fill="#e2e8f0" fontSize="11" fontWeight="700" style={mo}>{f$(pt)}</text>
+              <text x="0" y="10" textAnchor="middle" fill="#64748b" fontSize="8">TOTAL</text>
+            </svg>
+          </div>
+          {ps.map(([cat,total],i)=>{const pct=pt>0?((total/pt)*100).toFixed(1):0;return(
+            <div key={cat} style={{marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:COLORS[i%COLORS.length]}}/><span style={{fontSize:12,color:"#cbd5e1"}}>{cat}</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:11,color:"#64748b"}}>{pct}%</span><span style={{fontSize:12,fontWeight:600,color:"#e2e8f0",...mo}}>{f$(total)}</span></div>
+              </div>
+              <div style={{height:4,background:"#0f1a2a",borderRadius:2}}><div style={{width:`${pct}%`,height:"100%",background:COLORS[i%COLORS.length],borderRadius:2}}/></div>
+            </div>
+          )})}
+        </>}
+      </div>
+    </div>
+  )
+}
+
+// ══════════════ MONTH DETAIL ══════════════
+function MonthDetail({monthKey:mk2,movimientos,cuentas,onBack}){
+  const me=movimientos.filter(m=>monthOf(m.fecha)===mk2).sort((a,b)=>b.fecha.localeCompare(a.fecha))
+  const total=me.filter(m=>m.tipo==="egreso").reduce((s,m)=>s+m.monto,0)
+  const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
+  const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
+
+  return(
+    <div style={{padding:"0 16px 100px"}}>
+      <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#60a5fa",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}><Ic d={IC.left} s={16}/> Dashboard</button>
+      <div style={S.sec}>Movimientos — {fmtMonth(mk2)}</div>
+      <div style={{...S.crdP,marginBottom:20,textAlign:"center"}}>
+        <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Total egresos</div>
+        <div style={{fontSize:22,fontWeight:700,color:"#e2e8f0",...mo,marginTop:4}}>{f$(total)}</div>
+      </div>
+      <div style={S.crd}>
+        {me.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos</div>}
+        {me.map((e,i)=>(
+          <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderBottom:i<me.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+            <div><div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{e.subcategoria||e.categoria}</div><div style={{fontSize:11,color:"#475569"}}>{e.fecha} · {e.categoria} · {cuentaNombre(e.cuenta_id)}</div></div>
+            <div style={{fontSize:14,fontWeight:600,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo}}>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ══════════════ DEUDA ══════════════
+function DebtPage({deuda}){
+  const hist=[...deuda].sort((a,b)=>a.fecha.localeCompare(b.fecha))
+  const cb=hist[hist.length-1]?.saldo||0
+  const tp=Math.abs(hist.filter(e=>e.monto<0).reduce((s,p)=>s+p.monto,0))
+  const tb=hist.filter(e=>e.monto>0).reduce((s,p)=>s+p.monto,0)
+  const pp=tb>0?((tp/tb)*100).toFixed(0):0
+
+  return(
+    <div style={{padding:"0 16px 100px"}}>
+      <div style={S.sec}>Deuda Edgardo</div>
+      <div style={{background:"linear-gradient(135deg,#2a1a1a,#4a1a1a)",borderRadius:16,padding:24,marginBottom:20,border:"1px solid rgba(239,68,68,.15)",textAlign:"center"}}>
+        <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Saldo Actual</div>
+        <div style={{fontSize:32,fontWeight:800,color:"#fca5a5",...mo}}>{f$(cb)}</div>
+        <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:16}}>
+          <div><div style={{fontSize:10,color:"#7f1d1d",textTransform:"uppercase"}}>Prestado</div><div style={{fontSize:14,fontWeight:600,color:"#ef4444"}}>{f$(tb)}</div></div>
+          <div><div style={{fontSize:10,color:"#14532d",textTransform:"uppercase"}}>Pagado</div><div style={{fontSize:14,fontWeight:600,color:"#4ade80"}}>{f$(tp)}</div></div>
+          <div><div style={{fontSize:10,color:"#475569",textTransform:"uppercase"}}>Progreso</div><div style={{fontSize:14,fontWeight:600,color:"#f59e0b"}}>{pp}%</div></div>
+        </div>
+        <div style={{marginTop:16,height:6,background:"rgba(255,255,255,.08)",borderRadius:3,overflow:"hidden"}}><div style={{width:`${pp}%`,height:"100%",background:"linear-gradient(90deg,#4ade80,#16a34a)",borderRadius:3}}/></div>
+      </div>
+      <div style={{...S.crdP,marginBottom:16,background:"#0f1724",border:"1px solid rgba(255,255,255,.03)"}}><div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Los pagos se cargan desde <span style={{color:"#60a5fa"}}>Cargar → Egreso → Pago deuda → Edgardo</span></div></div>
+      <div style={S.crd}>
+        <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Historial</div>
+        <div style={{maxHeight:450,overflowY:"auto"}}>
+          {[...hist].reverse().map((e,i)=>(
+            <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(255,255,255,.02)"}}>
+              <div><div style={{fontSize:12,color:"#cbd5e1"}}>{e.descripcion}</div><div style={{fontSize:10,color:"#475569"}}>{e.fecha}</div></div>
+              <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:600,color:e.monto>0?"#f87171":"#4ade80",...mo}}>{e.monto>0?"+":""}{f$(e.monto)}</div><div style={{fontSize:10,color:"#475569"}}>Saldo: {f$(e.saldo)}</div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ══════════════ EXTRACTO ══════════════
+function ExtractPage({cuentas,userId,onSaved}){
+  const[text,setText]=useState("")
+  const[parsed,setParsed]=useState([])
+  const[done,setDone]=useState(false)
+  const[saving,setSaving]=useState(false)
+
+  const parseT=()=>{const r=[];text.split("\n").filter(l=>l.trim()).forEach(l=>{const p=l.split(/[\t;,|]+/).map(x=>x.trim()).filter(Boolean);if(p.length>=2){const dm=p[0].match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);const as=p[p.length-1].replace(/[$.]/g,"").replace(",",".").trim();const a=parseFloat(as);if(!isNaN(a)&&a!==0)r.push({date:dm?`${dm[3].length===2?"20"+dm[3]:dm[3]}-${dm[2].padStart(2,"0")}-${dm[1].padStart(2,"0")}`:today(),desc:p.slice(dm?1:0,p.length-1).join(" "),amt:Math.abs(a),type:a<0?"egreso":"ingreso",cat:"",sel:true})}});setParsed(r)}
+
+  const doImp=async()=>{
+    setSaving(true)
+    const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
+    const rows=parsed.filter(p=>p.sel).map(p=>({user_id:userId,fecha:p.date,tipo:p.type,categoria:p.cat||"Otros",subcategoria:p.desc,monto:p.amt,cuenta_id:bapro?.id,tc:null}))
+    await supabase.from("movimientos").insert(rows)
+    // Update saldo
+    if(bapro){
+      const totalDelta=rows.reduce((s,r)=>s+(r.tipo==="egreso"?-r.monto:r.monto),0)
+      await supabase.from("cuentas").update({saldo:bapro.saldo+totalDelta}).eq("id",bapro.id)
+    }
+    onSaved();setDone(true);setSaving(false)
+    setTimeout(()=>{setDone(false);setText("");setParsed([])},2000)
+  }
+
+  return(
+    <div style={{padding:"0 16px 100px"}}>
+      <div style={S.sec}>Importar Extracto</div>
+      <div style={{...S.crdP,marginBottom:20}}>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:8}}>Pegá el extracto bancario (tabs, comas o punto y coma)</div>
+        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder={"02/03/2026\tSupermercado DIA\t-45000\n03/03/2026\tUBER\t-8500"} style={{...S.inp,minHeight:140,resize:"vertical",fontSize:12,...mo}}/>
+        <button onClick={parseT} style={{marginTop:12,width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",background:text?"linear-gradient(135deg,#8b5cf6,#7c3aed)":"#1e293b",color:text?"#fff":"#475569"}}>Analizar</button>
+      </div>
+      {parsed.length>0&&<div style={{...S.crdP,marginBottom:20}}>
+        <div style={{fontSize:12,color:"#64748b",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>{parsed.length} movimientos</div>
+        {parsed.map((p,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
+            <input type="checkbox" checked={p.sel} onChange={()=>{const n=[...parsed];n[i]={...n[i],sel:!n[i].sel};setParsed(n)}} style={{accentColor:"#3b82f6"}}/>
+            <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:"#cbd5e1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.desc}</div><div style={{fontSize:10,color:"#475569"}}>{p.date}</div></div>
+            <select value={p.cat} onChange={e=>{const n=[...parsed];n[i]={...n[i],cat:e.target.value};setParsed(n)}} style={{padding:"5px 6px",background:"#0f1a2a",border:"1px solid rgba(255,255,255,.06)",borderRadius:8,color:"#94a3b8",fontSize:10,maxWidth:90}}>
+              <option value="">Cat.</option>{EGRESO_CATS.map(c=><option key={c}>{c}</option>)}
+            </select>
+            <span style={{fontSize:12,fontWeight:600,color:p.type==="ingreso"?"#4ade80":"#f87171",...mo,minWidth:65,textAlign:"right"}}>{p.type==="ingreso"?"+":"-"}{f$(p.amt)}</span>
+          </div>
+        ))}
+        <button onClick={doImp} disabled={saving} style={{marginTop:16,width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:600,background:done?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",cursor:"pointer"}}>{done?"✓ Importado":saving?"Importando...":`Importar ${parsed.filter(p=>p.sel).length}`}</button>
+      </div>}
+    </div>
+  )
+}
+
+// ══════════════ MAIN APP ══════════════
+export default function App(){
+  const[user,setUser]=useState(null)
+  const[loading,setLoading]=useState(true)
+  const[pg,setPg]=useState("home")
+  const[cuentas,setCuentas]=useState([])
+  const[movimientos,setMovimientos]=useState([])
+  const[deuda,setDeuda]=useState([])
+  const[detailMonth,setDetailMonth]=useState(null)
+
+  // Auth listener
+  useEffect(()=>{
+    supabase.auth.getSession().then(({data:{session}})=>{setUser(session?.user||null);setLoading(false)})
+    const{data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>{setUser(session?.user||null)})
+    return()=>subscription.unsubscribe()
+  },[])
+
+  // Load data
+  const loadData=useCallback(async()=>{
+    if(!user)return
+    const[{data:c},{data:m},{data:d}]=await Promise.all([
+      supabase.from("cuentas").select("*").order("nombre"),
+      supabase.from("movimientos").select("*").order("fecha",{ascending:false}),
+      supabase.from("deuda_edgardo").select("*").order("fecha",{ascending:true})
+    ])
+    setCuentas(c||[]);setMovimientos(m||[]);setDeuda(d||[])
+  },[user])
+
+  useEffect(()=>{loadData()},[loadData])
+
+  const logout=async()=>{await supabase.auth.signOut();setUser(null)}
+
+  if(loading)return<div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b"}}>Cargando...</div>
+  if(!user)return<LoginPage/>
+
+  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"}]
+  const viewMonth=k=>{setDetailMonth(k);setPg("md")}
+  const onSaved=()=>loadData()
+
+  let C
+  if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
+  else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
+  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} onViewMonth={viewMonth}/>
+  else if(pg==="md")C=<MonthDetail monthKey={detailMonth} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
+  else if(pg==="debt")C=<DebtPage deuda={deuda}/>
+  else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
+
+  return(
+    <div style={{minHeight:"100vh",background:"#0b1120",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",maxWidth:480,margin:"0 auto",position:"relative"}}>
+      <div style={{padding:"20px 16px 12px",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div><h1 style={{fontSize:20,fontWeight:800,color:"#f1f5f9",margin:0,letterSpacing:-.5}}>MisGastos</h1><div style={{fontSize:11,color:"#475569",marginTop:2}}>{user.email}</div></div>
+          <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8}}><Ic d={IC.logout} s={18}/></button>
+        </div>
+      </div>
+      <div style={{paddingTop:16}}>{C}</div>
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"linear-gradient(180deg,rgba(11,17,32,0) 0%,rgba(11,17,32,.95) 20%,#0b1120 40%)",paddingTop:20,paddingBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",padding:"0 8px"}}>
+          {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
+            <button key={n.id} onClick={()=>setPg(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"8px 12px",color:a?"#3b82f6":"#475569"}}>
+              {n.id==="add"?<div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 12px rgba(59,130,246,.3)",color:"#fff"}}><Ic d={n.ic} s={22}/></div>:<Ic d={n.ic} s={20}/>}
+              <span style={{fontSize:10,fontWeight:a?600:400}}>{n.l}</span>
+            </button>
+          )})}
+        </div>
+      </div>
+      <style>{`input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}select{appearance:auto}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e293b;border-radius:4px}*{box-sizing:border-box}`}</style>
+    </div>
+  )
+}
