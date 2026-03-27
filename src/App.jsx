@@ -9,7 +9,7 @@ const INV_TYPES=["Compra/venta USD","CEDEARs / Acciones","Caución / Plazo fijo"
 const COLORS=["#3b82f6","#8b5cf6","#f59e0b","#ef4444","#10b981","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#06b6d4","#e11d48","#a3e635","#7c3aed","#fb923c","#2dd4bf","#c084fc","#facc15","#f43f5e","#34d399"]
 
 const f$=(n,u)=>{const a=Math.abs(n||0);return u?`USD ${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`:`$${a.toLocaleString("es-AR",{maximumFractionDigits:0})}`}
-const fS=n=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`
+const fS=(n,u)=>{const p=u?"U$":"";return n>=1e6?`${p}${(n/1e6).toFixed(1)}M`:n>=1e3?`${p}${(n/1e3).toFixed(0)}K`:`${p}${Math.round(n)}`}
 const today=()=>new Date().toISOString().split("T")[0]
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
@@ -122,24 +122,35 @@ function HomePage({cuentas,movimientos}){
 
       <div style={S.sec}>Últimos Movimientos</div>
       <div style={S.crd}>
+        <div style={{display:"flex",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,.02)"}}>
+          <div style={{width:42,flexShrink:0}}/>
+          <div style={{flex:1,fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Detalle</div>
+          <div style={{width:95,textAlign:"right",fontSize:11,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>$</div>
+          <div style={{width:80,textAlign:"right",fontSize:11,color:"#34d399",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>USD</div>
+        </div>
         {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
-        {recent.map((e,i)=>(
-          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"16px 18px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:14}}>
+        {recent.map((e,i)=>{
+          const enUSD=cuentas.find(c=>c.id===e.cuenta_id)?.moneda==="USD"
+          const devolucion=e.tipo==="egreso"&&e.monto<0
+          const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
+          const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
+          const formatted=sign+f$(Math.abs(e.monto),enUSD)
+          return(
+          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"16px 18px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:0}}>
             <div style={{width:42,height:42,borderRadius:12,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>
               {catIcon(e.categoria)}
             </div>
-            <div style={{flex:1,minWidth:0}}>
+            <div style={{flex:1,minWidth:0,paddingLeft:14}}>
               <div style={{fontSize:14,color:"#f1f5f9",fontWeight:600,marginBottom:3}}>{e.subcategoria||e.categoria}</div>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{fontSize:12,color:"#475569"}}>{e.fecha?.slice(5)||""}</span>
                 <Badge text={e.categoria}/>
               </div>
             </div>
-            <div style={{fontSize:18,fontWeight:700,color:e.tipo==="ingreso"?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171",...mo,whiteSpace:"nowrap"}}>
-              {hide?"••••":<>{e.tipo==="ingreso"?"+":e.tipo==="egreso"?"-":"↔"}{f$(e.monto)}</>}
-            </div>
-          </div>
-        ))}
+            <div style={{width:95,textAlign:"right",fontSize:16,fontWeight:700,color:enUSD?"transparent":col,...mo,whiteSpace:"nowrap"}}>{hide?"••••":(enUSD?"—":formatted)}</div>
+            <div style={{width:80,textAlign:"right",fontSize:16,fontWeight:700,color:enUSD?col:"transparent",...mo,whiteSpace:"nowrap"}}>{hide?"••••":(enUSD?formatted:"—")}</div>
+          </div>)
+        })}
       </div>
     </div>
   )
@@ -327,7 +338,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
   // Group by month — pesos only for non-USD egresos
   const monthly={}
-  movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0};if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&!isUSDCuenta(m.cuenta_id))monthly[k].pesos+=m.monto;if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&isUSDCuenta(m.cuenta_id))monthly[k].usd+=m.monto;if(m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))monthly[k].inv+=m.monto})
+  movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0,ing:0};if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&!isUSDCuenta(m.cuenta_id))monthly[k].pesos+=m.monto;if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&isUSDCuenta(m.cuenta_id))monthly[k].usd+=m.monto;if(m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))monthly[k].inv+=m.monto;if(m.tipo==="ingreso")monthly[k].ing+=m.monto})
   const months=Object.keys(monthly).sort()
   const[bo,setBo]=useState(0)
   const vb=6,si=Math.max(0,months.length-vb-bo),ei=si+vb
@@ -381,7 +392,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
               <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                 <div style={{display:"flex",gap:2,justifyContent:"center",width:"100%"}}>
                   <span style={{fontSize:10,color:last?"#60a5fa":"#94a3b8",fontWeight:600,...mo}}>{fS(monthly[k].pesos)}</span>
-                  {hasUSD&&<span style={{fontSize:10,color:"#34d399",fontWeight:600,...mo}}>/{fS(monthly[k].usd)}</span>}
+                  {hasUSD&&<span style={{fontSize:10,color:"#34d399",fontWeight:600,...mo}}>/{fS(monthly[k].usd,true)}</span>}
                 </div>
                 <div style={{display:"flex",gap:3,width:"100%",alignItems:"flex-end",height:160}}>
                   <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hP,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
@@ -416,6 +427,35 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
           })}
         </div>
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver inversiones del mes</div>}
+      </div>}
+
+      {/* Inversión como % del ingreso */}
+      {vis.some(k=>monthly[k]?.inv>0&&monthly[k]?.ing>0)&&<div style={{...S.crdP,marginBottom:20}}>
+        <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:16}}>Inversión vs Ingreso</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:180}}>
+          {vis.map(k=>{
+            const ing=monthly[k]?.ing||0
+            const inv=monthly[k]?.inv||0
+            const pct=ing>0?Math.round((inv/ing)*100):0
+            const isGood=pct>=20
+            const barH=Math.max(4,Math.min(pct,100)/100*130)
+            return(
+              <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <div style={{fontSize:13,fontWeight:700,color:pct===0?"#334155":isGood?"#4ade80":"#f87171"}}>{pct}%</div>
+                <div style={{width:"100%",position:"relative",height:130,display:"flex",alignItems:"flex-end"}}>
+                  <div style={{position:"absolute",top:130-130*0.2,left:0,right:0,height:1,borderTop:"1px dashed rgba(74,222,128,.3)"}}/>
+                  <div style={{width:"100%",height:barH,borderRadius:"4px 4px 2px 2px",background:pct===0?"#0f1a2a":isGood?"linear-gradient(180deg,#4ade80,#16a34a)":"linear-gradient(180deg,#f87171,#dc2626)"}}/>
+                </div>
+                <div style={{fontSize:11,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
+              </div>
+            )
+          })}
+        </div>
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:12,marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:12,height:1,borderTop:"1px dashed rgba(74,222,128,.4)"}}/><span style={{fontSize:10,color:"#64748b"}}>Meta 20%</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:8,height:8,borderRadius:2,background:"#4ade80"}}/><span style={{fontSize:10,color:"#64748b"}}>≥20%</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:8,height:8,borderRadius:2,background:"#f87171"}}/><span style={{fontSize:10,color:"#64748b"}}>&lt;20%</span></div>
+        </div>
       </div>}
 
       {/* Pie */}
@@ -672,15 +712,15 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
         </select>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:totalEgresosUSD>0?"1fr 1fr 1fr":"1fr 1fr",gap:12,marginBottom:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:20}}>
         <div style={{...S.crdP,textAlign:"center"}}>
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
           <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
         </div>
-        {totalEgresosUSD>0&&<div style={{...S.crdP,textAlign:"center",border:"1px solid rgba(52,211,153,.15)"}}>
+        <div style={{...S.crdP,textAlign:"center",border:"1px solid rgba(52,211,153,.15)"}}>
           <div style={{fontSize:11,color:"#34d399",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
           <div style={{fontSize:22,fontWeight:700,color:"#34d399",...mo}}>{f$(totalEgresosUSD,true)}</div>
-        </div>}
+        </div>
         <div style={{...S.crdP,textAlign:"center"}}>
           <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos</div>
           <div style={{fontSize:22,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
