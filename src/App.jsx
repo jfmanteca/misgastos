@@ -711,6 +711,13 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
       <div style={{fontSize:13,color:"#64748b",marginBottom:12}}>{filtered.length} movimientos</div>
 
       <div style={S.crd}>
+        <div style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,.02)"}}>
+          <div style={{width:36,flexShrink:0}}/>
+          <div style={{flex:1,fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Detalle</div>
+          <div style={{width:90,textAlign:"right",fontSize:11,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>$</div>
+          <div style={{width:80,textAlign:"right",fontSize:11,color:"#34d399",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>USD</div>
+          <div style={{width:28,flexShrink:0}}/>
+        </div>
         {filtered.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:14}}>Sin movimientos</div>}
         {filtered.map((e,i)=>(
           editId===e.id?
@@ -735,13 +742,12 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               <button onClick={()=>deleteRow(e.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>Eliminar</button>
             </div>
           </div>
-          :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:10}}>
+          :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:0}}>
             <div style={{width:36,height:36,borderRadius:10,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{catIcon(e.categoria)}</div>
-            <div style={{flex:1,minWidth:0}}>
+            <div style={{flex:1,minWidth:0,paddingLeft:10}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
                 <span style={{fontSize:14,color:"#e2e8f0",fontWeight:600}}>{e.subcategoria||e.categoria}</span>
                 <Badge text={e.categoria}/>
-                {isUSDCuenta(e.cuenta_id)&&<span style={{fontSize:9,fontWeight:700,color:"#34d399",background:"rgba(52,211,153,.12)",padding:"2px 5px",borderRadius:4}}>USD</span>}
               </div>
               <div style={{fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
             </div>
@@ -750,9 +756,13 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               const devolucion=e.tipo==="egreso"&&e.monto<0
               const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
               const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
-              return<div style={{fontSize:16,fontWeight:700,color:col,...mo,whiteSpace:"nowrap"}}>{sign}{f$(Math.abs(e.monto),enUSD)}</div>
+              const formatted=sign+f$(Math.abs(e.monto),enUSD)
+              return<>
+                <div style={{width:90,textAlign:"right",fontSize:14,fontWeight:700,color:enUSD?"transparent":col,...mo,whiteSpace:"nowrap"}}>{enUSD?"—":formatted}</div>
+                <div style={{width:80,textAlign:"right",fontSize:14,fontWeight:700,color:enUSD?col:"transparent",...mo,whiteSpace:"nowrap"}}>{enUSD?formatted:"—"}</div>
+              </>
             })()}
-            <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:4,flexShrink:0}}><Ic d={IC.edit} s={14}/></button>
+            <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:4,flexShrink:0,width:28}}><Ic d={IC.edit} s={14}/></button>
           </div>
         ))}
       </div>
