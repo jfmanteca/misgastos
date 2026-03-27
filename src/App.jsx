@@ -332,10 +332,11 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 }
 
 // ══════════════ DASHBOARD ══════════════
-function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
+function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cuentas}){
   const[pi,setPi]=useState(0)
   const[expandedCat,setExpandedCat]=useState(null)
   const[showUSD,setShowUSD]=useState(false)
+  const[hoveredCat,setHoveredCat]=useState(null)
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
   // Group by month
   const monthly={}
@@ -351,9 +352,19 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
   const vb=6,si=Math.max(0,months.length-vb-bo),ei=si+vb
   const vis=months.slice(si,ei)
 
-  // Max values for scaling
+  // Ingresos matching Movimientos logic: sueldo prev month + ingresos this month (excl last sueldo)
+  const getMonthIngresos=(k)=>{
+    const prevK=(()=>{const[y2,m2]=k.split("-").map(Number);const pm=m2===1?12:m2-1;const py=m2===1?y2-1:y2;return`${py}-${String(pm).padStart(2,"0")}`})()
+    const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevK&&m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
+    const sueldoPrev=sueldosPrev.length>0?sueldosPrev[0].monto:0
+    const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===k)
+    const sueldosThis=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
+    const lastSueldoId=sueldosThis.length>0?sueldosThis[0].id:null
+    const ingThisMonth=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.id!==lastSueldoId).reduce((s,m)=>s+m.monto,0)
+    return sueldoPrev+ingThisMonth
+  }
   const getEg=k=>showUSD?(monthly[k]?.egU||0):(monthly[k]?.egP||0)
-  const getIng=k=>showUSD?(monthly[k]?.ingU||0):(monthly[k]?.ingP||0)
+  const getIng=k=>showUSD?(monthly[k]?.ingU||0):getMonthIngresos(k)
   const maxBar=Math.max(...vis.map(k=>Math.max(getEg(k),getIng(k))),1)
   const maxI=Math.max(...Object.values(monthly).map(m=>m.inv),1)
 
@@ -412,7 +423,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
                   <span style={{fontSize:10,color:"#f87171",fontWeight:600,...mo}}>{fS(eg,showUSD)}</span>
                 </div>
                 <div style={{display:"flex",gap:3,width:"100%",alignItems:"flex-end",height:160}}>
-                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hIng,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#4ade80,#16a34a)":"linear-gradient(180deg,#166534,#14532d)"}}/>
+                  <div onClick={()=>onViewMonthIng(k)} style={{flex:1,height:hIng,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#4ade80,#16a34a)":"linear-gradient(180deg,#166534,#14532d)"}}/>
                   <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hEg,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#f87171,#dc2626)":"linear-gradient(180deg,#7f1d1d,#450a0a)"}}/>
                 </div>
                 <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
@@ -470,13 +481,22 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
           </select>
         </div>
         {ps.length===0?<div style={{textAlign:"center",color:"#475569",padding:30,fontSize:13}}>Sin datos</div>:<>
-          <div style={{display:"flex",justifyContent:"center",marginBottom:24}}>
-            <svg width="260" height="260" viewBox="-95 -95 190 190">
-              {arcs.map((a,i)=><path key={i} d={a.d} fill={a.c} stroke="#0b1120" strokeWidth="1"/>)}
-              <circle cx="0" cy="0" r="40" fill="#141c28"/>
-              <text x="0" y="-6" textAnchor="middle" fill="#e2e8f0" fontSize="17" fontWeight="700" style={mo}>{f$(pt)}</text>
-              <text x="0" y="14" textAnchor="middle" fill="#64748b" fontSize="11">TOTAL</text>
-            </svg>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:20}}>
+            <div style={{position:"relative"}}>
+              <svg width="260" height="260" viewBox="-95 -95 190 190">
+                {arcs.map((a,i)=><path key={i} d={a.d} fill={hoveredCat===a.cat?`${a.c}`:a.c} stroke="#0b1120" strokeWidth={hoveredCat===a.cat?"2":"1"} style={{cursor:"pointer",opacity:hoveredCat&&hoveredCat!==a.cat?.5:1,transition:"opacity .15s"}} onMouseEnter={()=>setHoveredCat(a.cat)} onMouseLeave={()=>setHoveredCat(null)} onClick={()=>setHoveredCat(hoveredCat===a.cat?null:a.cat)}/>)}
+                <circle cx="0" cy="0" r="40" fill="#141c28"/>
+                {hoveredCat?<>
+                  <text x="0" y="-10" textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="600">{hoveredCat}</text>
+                  <text x="0" y="8" textAnchor="middle" fill="#e2e8f0" fontSize="14" fontWeight="700" style={mo}>{f$(pc[hoveredCat]||0)}</text>
+                  <text x="0" y="22" textAnchor="middle" fill="#64748b" fontSize="10">{pt>0?((pc[hoveredCat]||0)/pt*100).toFixed(1):0}%</text>
+                </>:<>
+                  <text x="0" y="5" textAnchor="middle" fill="#64748b" fontSize="11">TOTAL</text>
+                </>}
+              </svg>
+            </div>
+            <div style={{fontSize:22,fontWeight:800,color:"#e2e8f0",...mo,marginTop:8}}>{f$(pt)}</div>
+            <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Total egresos del mes</div>
           </div>
           {ps.map(([cat,total],i)=>{
             const pct=pt>0?((total/pt)*100).toFixed(1):0
@@ -621,6 +641,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[filterTipo,setFilterTipo]=useState("")
   const[filterCat,setFilterCat]=useState("")
   const[filterSub,setFilterSub]=useState("")
+  const[filterCuenta,setFilterCuenta]=useState("")
   const[filterFrom,setFilterFrom]=useState("")
   const[filterTo,setFilterTo]=useState("")
   const[searched,setSearched]=useState(false)
@@ -640,6 +661,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
     if(filterTipo) filtered=filtered.filter(m=>m.tipo===filterTipo)
     if(filterCat) filtered=filtered.filter(m=>m.categoria===filterCat)
     if(filterSub) filtered=filtered.filter(m=>(m.subcategoria||"")=== filterSub)
+    if(filterCuenta) filtered=filtered.filter(m=>m.cuenta_id===filterCuenta)
     if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
     if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
   }
@@ -717,7 +739,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   }
 
   const doSearch=()=>setSearched(true)
-  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterSub("");setFilterFrom("");setFilterTo("");setSearched(false)}
+  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterSub("");setFilterCuenta("");setFilterFrom("");setFilterTo("");setSearched(false)}
 
   return(
     <div className="page-inner">
@@ -729,18 +751,18 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
         </select>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:20}}>
-        <div style={{...S.crdP,textAlign:"center"}}>
-          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
+        <div style={{...S.crdP,textAlign:"center",padding:"10px 6px"}}>
+          <div style={{fontSize:9,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
+          <div style={{fontSize:16,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
         </div>
-        <div style={{...S.crdP,textAlign:"center",border:"1px solid rgba(248,113,113,.15)"}}>
-          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresosUSD,true)}</div>
+        <div style={{...S.crdP,textAlign:"center",padding:"10px 6px",border:"1px solid rgba(248,113,113,.15)"}}>
+          <div style={{fontSize:9,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
+          <div style={{fontSize:16,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresosUSD,true)}</div>
         </div>
-        <div style={{...S.crdP,textAlign:"center",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
-          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos ▾</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
+        <div style={{...S.crdP,textAlign:"center",padding:"10px 6px",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
+          <div style={{fontSize:9,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos ▾</div>
+          <div style={{fontSize:16,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
         </div>
       </div>
       {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
@@ -752,14 +774,14 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 
       <div style={{...S.crdP,marginBottom:20}}>
         <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Filtros</div>
-        <div style={{display:"flex",gap:6,marginBottom:12}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
           {[{v:"",l:"Todos"},{v:"egreso",l:"Egresos"},{v:"ingreso",l:"Ingresos"},{v:"traspaso",l:"Traspasos"},{v:"inversion",l:"Inversiones"}].map(t=>(
-            <button key={t.v} onClick={()=>setFilterTipo(t.v)} style={{flex:1,padding:"8px 0",borderRadius:10,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
+            <button key={t.v} onClick={()=>setFilterTipo(t.v)} style={{padding:"7px 12px",borderRadius:10,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
               background:filterTipo===t.v?(t.v==="egreso"?"#dc2626":t.v==="ingreso"?"#16a34a":t.v==="traspaso"?"#3b82f6":t.v==="inversion"?"#f59e0b":"#3b82f6"):"rgba(255,255,255,.04)",
               color:filterTipo===t.v?"#fff":"#64748b"}}>{t.l}</button>
           ))}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
           <div>
             <label style={S.lbl}>Categoría</label>
             <select value={filterCat} onChange={e=>{setFilterCat(e.target.value);setFilterSub("")}} style={{...S.inp,fontSize:12}}>
@@ -774,13 +796,24 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               {subs.map(s=><option key={s} value={s}>{s}</option>)}
             </select>
           </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
           <div>
-            <label style={S.lbl}>Desde</label>
-            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:12}}/>
+            <label style={S.lbl}>Cuenta</label>
+            <select value={filterCuenta} onChange={e=>setFilterCuenta(e.target.value)} style={{...S.inp,fontSize:12}}>
+              <option value="">Todas</option>
+              {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
           </div>
-          <div>
-            <label style={S.lbl}>Hasta</label>
-            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:12}}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            <div>
+              <label style={S.lbl}>Desde</label>
+              <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:11,padding:"14px 8px"}}/>
+            </div>
+            <div>
+              <label style={S.lbl}>Hasta</label>
+              <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:11,padding:"14px 8px"}}/>
+            </div>
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:12}}>
@@ -792,13 +825,6 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
       <div style={{fontSize:13,color:"#64748b",marginBottom:12}}>{filtered.length} movimientos</div>
 
       <div style={S.crd}>
-        <div style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,.02)"}}>
-          <div style={{width:36,flexShrink:0}}/>
-          <div style={{flex:1,fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Detalle</div>
-          <div style={{width:90,textAlign:"right",fontSize:11,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>$</div>
-          <div style={{width:80,textAlign:"right",fontSize:11,color:"#34d399",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>USD</div>
-          <div style={{width:28,flexShrink:0}}/>
-        </div>
         {filtered.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:14}}>Sin movimientos</div>}
         {filtered.map((e,i)=>(
           editId===e.id?
@@ -820,7 +846,6 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontSize:13,color:editForm.esUSD?"#34d399":"#94a3b8"}}>
               <input type="checkbox" checked={editForm.esUSD||false} onChange={ev=>setEditForm(f=>({...f,esUSD:ev.target.checked}))} style={{accentColor:"#34d399"}}/>
               <span style={{fontWeight:600}}>{editForm.esUSD?"USD 💵":"Pesos $"}</span>
-              <span style={{fontSize:11,color:"#64748b"}}>(cambiar moneda)</span>
             </label>
             <div style={{display:"flex",gap:8}}>
               <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Guardar</button>
@@ -828,27 +853,20 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               <button onClick={()=>deleteRow(e.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>Eliminar</button>
             </div>
           </div>
-          :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:0}}>
-            <div style={{width:36,height:36,borderRadius:10,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{catIcon(e.categoria)}</div>
-            <div style={{flex:1,minWidth:0,paddingLeft:10}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                <span style={{fontSize:14,color:"#e2e8f0",fontWeight:600}}>{e.subcategoria||e.categoria}</span>
-                <Badge text={e.categoria}/>
-              </div>
-              <div style={{fontSize:12,color:"#64748b"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
+          :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"10px 12px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:8,overflow:"hidden"}}>
+            <div style={{width:32,height:32,borderRadius:8,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{catIcon(e.categoria)}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,color:"#e2e8f0",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||e.categoria}</div>
+              <div style={{fontSize:10,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
             </div>
             {(()=>{
               const enUSD=isUSDCuenta(e.cuenta_id)
               const devolucion=e.tipo==="egreso"&&e.monto<0
               const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
               const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
-              const formatted=sign+f$(Math.abs(e.monto),enUSD)
-              return<>
-                <div style={{width:90,textAlign:"right",fontSize:14,fontWeight:700,color:enUSD?"transparent":col,...mo,whiteSpace:"nowrap"}}>{enUSD?"—":formatted}</div>
-                <div style={{width:80,textAlign:"right",fontSize:14,fontWeight:700,color:enUSD?col:"transparent",...mo,whiteSpace:"nowrap"}}>{enUSD?formatted:"—"}</div>
-              </>
+              return <div style={{fontSize:14,fontWeight:700,color:col,...mo,whiteSpace:"nowrap",flexShrink:0,marginLeft:4}}>{sign}{f$(Math.abs(e.monto),enUSD)}</div>
             })()}
-            <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:4,flexShrink:0,width:28}}><Ic d={IC.edit} s={14}/></button>
+            <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:2,flexShrink:0}}><Ic d={IC.edit} s={12}/></button>
           </div>
         ))}
       </div>
@@ -1213,13 +1231,14 @@ export default function App(){
   const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
   const viewMonth=k=>{setDetailMonth(k);setDetailTipo(null);setPg("md")}
   const viewMonthInv=k=>{setDetailMonth(k);setDetailTipo("inversion");setPg("md")}
+  const viewMonthIng=k=>{setDetailMonth(k);setDetailTipo("ingreso");setPg("md")}
   const onSaved=()=>loadData()
 
   let C
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
   else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats} invTypes={dynInvTypes}/>
   else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
-  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv}/>
+  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv} onViewMonthIng={viewMonthIng}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats}/>
