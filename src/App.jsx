@@ -717,9 +717,9 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
           <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
         </div>
-        <div style={{...S.crdP,textAlign:"center",border:"1px solid rgba(52,211,153,.15)"}}>
-          <div style={{fontSize:11,color:"#34d399",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#34d399",...mo}}>{f$(totalEgresosUSD,true)}</div>
+        <div style={{...S.crdP,textAlign:"center",border:"1px solid rgba(248,113,113,.15)"}}>
+          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresosUSD,true)}</div>
         </div>
         <div style={{...S.crdP,textAlign:"center"}}>
           <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos</div>
