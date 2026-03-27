@@ -617,6 +617,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[selMonth,setSelMonth]=useState(monthOf(today()))
   const[filterTipo,setFilterTipo]=useState("")
   const[filterCat,setFilterCat]=useState("")
+  const[filterSub,setFilterSub]=useState("")
   const[filterFrom,setFilterFrom]=useState("")
   const[filterTo,setFilterTo]=useState("")
   const[searched,setSearched]=useState(false)
@@ -634,12 +635,14 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   if(searched){
     if(filterTipo) filtered=filtered.filter(m=>m.tipo===filterTipo)
     if(filterCat) filtered=filtered.filter(m=>m.categoria===filterCat)
+    if(filterSub) filtered=filtered.filter(m=>(m.subcategoria||"")=== filterSub)
     if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
     if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
   }
   filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
 
   const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth&&(!filterTipo||m.tipo===filterTipo)).map(m=>m.categoria))].sort()
+  const subs=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth&&(!filterTipo||m.tipo===filterTipo)&&(!filterCat||m.categoria===filterCat)&&m.subcategoria).map(m=>m.subcategoria))].sort()
   const egresosFiltrados=filtered.filter(m=>m.tipo==="egreso")
   const totalEgresos=egresosFiltrados.filter(m=>!isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
@@ -707,7 +710,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   }
 
   const doSearch=()=>setSearched(true)
-  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterFrom("");setFilterTo("");setSearched(false)}
+  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterSub("");setFilterFrom("");setFilterTo("");setSearched(false)}
 
   return(
     <div className="page-inner">
@@ -743,12 +746,19 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               color:filterTipo===t.v?"#fff":"#64748b"}}>{t.l}</button>
           ))}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10}}>
           <div>
             <label style={S.lbl}>Categoría</label>
-            <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{...S.inp,fontSize:12}}>
+            <select value={filterCat} onChange={e=>{setFilterCat(e.target.value);setFilterSub("")}} style={{...S.inp,fontSize:12}}>
               <option value="">Todas</option>
               {cats.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={S.lbl}>Subcategoría</label>
+            <select value={filterSub} onChange={e=>setFilterSub(e.target.value)} style={{...S.inp,fontSize:12}}>
+              <option value="">Todas</option>
+              {subs.map(s=><option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>
