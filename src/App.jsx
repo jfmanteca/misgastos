@@ -159,7 +159,7 @@ function HomePage({cuentas,movimientos}){
 // ══════════════ CARGAR ══════════════
 function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTypes}){
   const[mt,setMt]=useState("egreso")
-  const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:""})
+  const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:"",tcDolar:""})
   const[ok,setOk]=useState(false)
   const[saving,setSaving]=useState(false)
   const[usdCalc,setUsdCalc]=useState(null)
@@ -192,20 +192,22 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
       }else{
         if(!fm.amt||!fm.cat){setSaving(false);return}
         const amt=parseFloat(fm.amt)
-        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null})
+        const tcDolar=fm.tcDolar?parseFloat(fm.tcDolar):null
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null,tc_dolar:tcDolar})
         const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.cuenta).single()
         if(fresh){
           const delta=mt==="egreso"?-amt:amt
           await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",fm.cuenta)
         }
         if(mt==="egreso"&&fm.cat==="Pago deuda"&&fm.sub==="Edgardo"){
-          const{data:lastDeuda}=await supabase.from("deuda_edgardo").select("saldo").order("fecha",{ascending:false}).limit(1)
-          const lastSaldo=lastDeuda?.[0]?.saldo||0
-          await supabase.from("deuda_edgardo").insert({user_id:userId,fecha:fm.date,descripcion:"Pago por deuda",monto:-amt,saldo:lastSaldo-amt})
+          const{data:lastDeuda}=await supabase.from("deuda_edgardo").select("saldo_usd,saldo").order("fecha",{ascending:false}).limit(1)
+          const lastSaldoUSD=lastDeuda?.[0]?.saldo_usd||lastDeuda?.[0]?.saldo||0
+          const montoUSD=tcDolar&&tcDolar>0?Math.abs(amt)/tcDolar:Math.abs(amt)
+          await supabase.from("deuda_edgardo").insert({user_id:userId,fecha:fm.date,descripcion:"Pago por deuda",monto:-Math.abs(amt),monto_usd:-montoUSD,saldo:0,saldo_usd:lastSaldoUSD-montoUSD,tc_dolar:tcDolar})
         }
       }
       setOk(true);await onSaved()
-      setTimeout(()=>{setOk(false);setFm(f=>({...f,cat:"",sub:"",amt:"",tc:"",it:""}))},1200)
+      setTimeout(()=>{setOk(false);setFm(f=>({...f,cat:"",sub:"",amt:"",tc:"",it:"",tcDolar:""}))},1200)
     }catch(e){console.error(e)}
     setSaving(false)
   }
@@ -283,10 +285,27 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
           <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
           <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
         </div>
+        {fm.cat==="Pago deuda"&&fm.sub==="Edgardo"&&<div style={{marginBottom:16}}>
+          <label style={S.lbl}>TC Dólar (para convertir a USD en Deuda)</label>
+          <input type="number" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/>
+          {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{marginTop:8,padding:"10px 14px",borderRadius:10,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)",display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontSize:13,color:"#64748b"}}>Pago en USD</span>
+            <span style={{fontSize:16,fontWeight:700,color:"#34d399",...mo}}>{f$(Math.abs(parseFloat(fm.amt))/parseFloat(fm.tcDolar),true)}</span>
+          </div>}
+        </div>}
       </>}
       {mt==="ingreso"&&<>
         <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{ingresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:16}}>
+          <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div><label style={S.lbl}>TC Dólar</label><input type="number" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
+        </div>
+        {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{...S.crdP,marginBottom:16,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:13,color:"#64748b"}}>Equivalente en USD</span>
+            <span style={{fontSize:18,fontWeight:700,color:"#34d399",...mo}}>{f$(parseFloat(fm.amt)/parseFloat(fm.tcDolar),true)}</span>
+          </div>
+        </div>}
       </>}
       {mt==="traspaso"&&<div style={{marginBottom:16}}>
         <label style={S.lbl}>Cuenta Origen</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
@@ -382,7 +401,11 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
   const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];return`${ml[parseInt(m)-1]} ${y.slice(2)}`}
   const NavBtn=({dir,dis,fn})=><button onClick={fn} disabled={dis} style={{width:28,height:28,borderRadius:8,border:"none",background:dis?"transparent":"#1e293b",color:dis?"#1e293b":"#94a3b8",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Ic d={dir==="l"?IC.left:IC.right} s={14}/></button>
 
-  useEffect(()=>{setPi(allMonths.length-1)},[allMonths.length])
+  useEffect(()=>{
+    const curMonth=monthOf(today())
+    const idx=allMonths.indexOf(curMonth)
+    setPi(idx>=0?idx:allMonths.length-1)
+  },[allMonths.length])
 
   return(
     <div style={{className:"page-inner"}}>
@@ -604,31 +627,45 @@ function MonthDetail({monthKey:mk2,filterTipo,movimientos,cuentas,onBack}){
 // ══════════════ DEUDA ══════════════
 function DebtPage({deuda}){
   const hist=[...deuda].sort((a,b)=>a.fecha.localeCompare(b.fecha))
-  const cb=hist[hist.length-1]?.saldo||0
-  const tp=Math.abs(hist.filter(e=>e.monto<0).reduce((s,p)=>s+p.monto,0))
-  const tb=hist.filter(e=>e.monto>0).reduce((s,p)=>s+p.monto,0)
+  const last=hist[hist.length-1]
+  const saldoUSD=last?.saldo_usd||last?.saldo||0
+  const totalPrestadoUSD=hist.filter(e=>(e.monto_usd||e.monto)>0).reduce((s,p)=>s+(p.monto_usd||p.monto),0)
+  const totalPagadoUSD=Math.abs(hist.filter(e=>(e.monto_usd||e.monto)<0).reduce((s,p)=>s+(p.monto_usd||p.monto),0))
 
   return(
     <div className="page-inner">
       <div style={S.sec}>Deuda Edgardo</div>
       <div style={{background:"linear-gradient(135deg,#450a0a 0%,#991b1b 100%)",borderRadius:24,padding:32,marginBottom:24,border:"1px solid rgba(239,68,68,.2)",textAlign:"center",boxShadow:"0 8px 40px rgba(153,27,27,.2)"}}>
         <div style={{fontSize:14,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:3,marginBottom:12,fontWeight:600}}>Saldo Actual</div>
-        <div style={{fontSize:48,fontWeight:800,color:"#fca5a5",...mo,letterSpacing:-1}}>{f$(cb)}</div>
+        <div style={{fontSize:44,fontWeight:800,color:"#fca5a5",...mo,letterSpacing:-1}}>{f$(saldoUSD,true)}</div>
         <div style={{display:"flex",justifyContent:"center",gap:48,marginTop:24}}>
-          <div><div style={{fontSize:13,color:"rgba(255,255,255,.4)",textTransform:"uppercase",marginBottom:6,fontWeight:600}}>Prestado</div><div style={{fontSize:24,fontWeight:700,color:"#ef4444",...mo}}>{f$(tb)}</div></div>
-          <div><div style={{fontSize:13,color:"rgba(255,255,255,.4)",textTransform:"uppercase",marginBottom:6,fontWeight:600}}>Pagado</div><div style={{fontSize:24,fontWeight:700,color:"#4ade80",...mo}}>{f$(tp)}</div></div>
+          <div><div style={{fontSize:13,color:"rgba(255,255,255,.4)",textTransform:"uppercase",marginBottom:6,fontWeight:600}}>Prestado</div><div style={{fontSize:22,fontWeight:700,color:"#ef4444",...mo}}>{f$(totalPrestadoUSD,true)}</div></div>
+          <div><div style={{fontSize:13,color:"rgba(255,255,255,.4)",textTransform:"uppercase",marginBottom:6,fontWeight:600}}>Pagado</div><div style={{fontSize:22,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalPagadoUSD,true)}</div></div>
         </div>
       </div>
-      <div style={{...S.crdP,marginBottom:16,background:"#0f1724",border:"1px solid rgba(255,255,255,.03)"}}><div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>Los pagos se cargan desde <span style={{color:"#60a5fa"}}>Cargar → Egreso → Pago deuda → Edgardo</span></div></div>
+      <div style={{...S.crdP,marginBottom:16,background:"#0f1724",border:"1px solid rgba(255,255,255,.03)"}}><div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>Los pagos se cargan desde <span style={{color:"#60a5fa"}}>Cargar → Egreso → Pago deuda → Edgardo</span>. Indicá el TC Dólar para la conversión.</div></div>
       <div style={S.crd}>
-        <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.04)",fontSize:13,color:"#94a3b8",textTransform:"uppercase",letterSpacing:1}}>Historial</div>
+        <div style={{display:"flex",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.06)",gap:8}}>
+          <div style={{flex:1,fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Descripción</div>
+          <div style={{width:90,textAlign:"right",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Pesos</div>
+          <div style={{width:90,textAlign:"right",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>USD</div>
+          <div style={{width:80,textAlign:"right",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Saldo USD</div>
+        </div>
         <div style={{maxHeight:500,overflowY:"auto"}}>
-          {[...hist].reverse().map((e,i)=>(
-            <div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.02)"}}>
-              <div><div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{e.descripcion}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>{e.fecha}</div></div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:16,fontWeight:700,color:e.monto>0?"#f87171":"#4ade80",...mo}}>{e.monto>0?"+":""}{f$(e.monto)}</div><div style={{fontSize:12,color:"#64748b",marginTop:2}}>Saldo: {f$(e.saldo)}</div></div>
+          {[...hist].reverse().map((e,i)=>{
+            const montoUSD=e.monto_usd||e.monto
+            const sUSD=e.saldo_usd||e.saldo
+            return(
+            <div key={e.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.02)",gap:8}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{e.descripcion}</div>
+                <div style={{fontSize:11,color:"#475569"}}>{e.fecha}{e.tc_dolar?` · TC ${f$(e.tc_dolar)}`:""}</div>
+              </div>
+              <div style={{width:90,textAlign:"right",fontSize:14,fontWeight:600,color:e.monto>0?"#f87171":"#4ade80",...mo}}>{e.monto>0?"+":""}{f$(e.monto)}</div>
+              <div style={{width:90,textAlign:"right",fontSize:14,fontWeight:600,color:montoUSD>0?"#f87171":"#4ade80",...mo}}>{montoUSD>0?"+":""}{f$(montoUSD,true)}</div>
+              <div style={{width:80,textAlign:"right",fontSize:13,color:"#94a3b8",...mo}}>{f$(sUSD,true)}</div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
     </div>
