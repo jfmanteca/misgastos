@@ -646,10 +646,15 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 
   const prevMk=prevMonth(selMonth)
   const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
+  // Último sueldo del mes anterior (se cobra a fin de mes, se usa el mes siguiente)
   const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
   const sueldoPrevMonth=sueldosPrev.length>0?sueldosPrev[0].monto:0
-  const otrosIngresos=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
-  const totalIngresos=sueldoPrevMonth+otrosIngresos
+  // Último sueldo del mes actual (se excluye porque corresponde al mes siguiente)
+  const sueldosThis=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
+  const ultimoSueldoThisId=sueldosThis.length>0?sueldosThis[0].id:null
+  // Todos los ingresos del mes actual excepto el último sueldo
+  const ingresosThisMonth=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.id!==ultimoSueldoThisId).reduce((s,m)=>s+m.monto,0)
+  const totalIngresos=sueldoPrevMonth+ingresosThisMonth
 
   const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,esUSD:isUSDCuenta(e.cuenta_id),cuenta_id:e.cuenta_id})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
