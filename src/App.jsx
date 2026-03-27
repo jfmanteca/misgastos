@@ -335,16 +335,26 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
   const[pi,setPi]=useState(0)
   const[expandedCat,setExpandedCat]=useState(null)
+  const[showUSD,setShowUSD]=useState(false)
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
-  // Group by month — pesos only for non-USD egresos
+  // Group by month
   const monthly={}
-  movimientos.forEach(m=>{const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={pesos:0,usd:0,inv:0,ing:0};if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&!isUSDCuenta(m.cuenta_id))monthly[k].pesos+=m.monto;if(m.tipo==="egreso"&&m.categoria!=="Inversiones"&&isUSDCuenta(m.cuenta_id))monthly[k].usd+=m.monto;if(m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))monthly[k].inv+=m.monto;if(m.tipo==="ingreso")monthly[k].ing+=m.monto})
+  movimientos.forEach(m=>{
+    const k=monthOf(m.fecha);if(!monthly[k])monthly[k]={egP:0,egU:0,ingP:0,ingU:0,inv:0}
+    const isUSD=isUSDCuenta(m.cuenta_id)
+    if(m.tipo==="egreso"&&m.categoria!=="Inversiones"){if(isUSD)monthly[k].egU+=m.monto;else monthly[k].egP+=m.monto}
+    if(m.tipo==="ingreso"){if(isUSD)monthly[k].ingU+=m.monto;else monthly[k].ingP+=m.monto}
+    if(m.tipo==="inversion"||(m.tipo==="egreso"&&m.categoria==="Inversiones"))monthly[k].inv+=m.monto
+  })
   const months=Object.keys(monthly).sort()
   const[bo,setBo]=useState(0)
   const vb=6,si=Math.max(0,months.length-vb-bo),ei=si+vb
   const vis=months.slice(si,ei)
-  const maxP=Math.max(...Object.values(monthly).map(m=>m.pesos),1)
-  const maxU=Math.max(...Object.values(monthly).map(m=>m.usd),1)
+
+  // Max values for scaling
+  const getEg=k=>showUSD?(monthly[k]?.egU||0):(monthly[k]?.egP||0)
+  const getIng=k=>showUSD?(monthly[k]?.ingU||0):(monthly[k]?.ingP||0)
+  const maxBar=Math.max(...vis.map(k=>Math.max(getEg(k),getIng(k))),1)
   const maxI=Math.max(...Object.values(monthly).map(m=>m.inv),1)
 
   // Pie chart
@@ -367,17 +377,24 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
     <div style={{className:"page-inner"}}>
       <div style={S.sec}>Dashboard</div>
 
-      {/* Gastos Mensuales — dual bar */}
+      {/* Ingresos vs Egresos */}
       <div style={{...S.crdP,marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Gastos mensuales</div>
+            <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Ingresos vs Egresos</div>
             <div style={{display:"flex",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#3b82f6"}}/><span style={{fontSize:10,color:"#64748b"}}>$</span></div>
-              <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#34d399"}}/><span style={{fontSize:10,color:"#64748b"}}>USD</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#4ade80"}}/><span style={{fontSize:10,color:"#64748b"}}>Ing</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#f87171"}}/><span style={{fontSize:10,color:"#64748b"}}>Eg</span></div>
             </div>
           </div>
-          <div style={{display:"flex",gap:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {/* USD Switch */}
+            <div onClick={()=>setShowUSD(!showUSD)} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",padding:"4px 10px",borderRadius:20,background:showUSD?"rgba(52,211,153,.12)":"rgba(255,255,255,.04)",border:"1px solid "+(showUSD?"rgba(52,211,153,.3)":"rgba(255,255,255,.08)")}}>
+              <span style={{fontSize:11,fontWeight:600,color:showUSD?"#34d399":"#64748b"}}>{showUSD?"USD":"$"}</span>
+              <div style={{width:28,height:16,borderRadius:8,background:showUSD?"#059669":"#1e293b",position:"relative",transition:"all .2s"}}>
+                <div style={{width:12,height:12,borderRadius:6,background:"#fff",position:"absolute",top:2,left:showUSD?14:2,transition:"all .2s"}}/>
+              </div>
+            </div>
             <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
             <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
           </div>
@@ -385,18 +402,18 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
         <div style={{display:"flex",alignItems:"flex-end",gap:8,height:210}}>
           {vis.map((k,i)=>{
             const last=si+i===months.length-1
-            const hP=Math.max(4,(monthly[k].pesos/maxP)*160)
-            const hasUSD=monthly[k]?.usd>0
-            const hU=hasUSD?Math.max(4,(monthly[k].usd/maxU)*160):0
+            const eg=getEg(k),ing=getIng(k)
+            const hEg=Math.max(4,(eg/maxBar)*160)
+            const hIng=Math.max(4,(ing/maxBar)*160)
             return(
               <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <div style={{display:"flex",gap:2,justifyContent:"center",width:"100%"}}>
-                  <span style={{fontSize:10,color:last?"#60a5fa":"#94a3b8",fontWeight:600,...mo}}>{fS(monthly[k].pesos)}</span>
-                  {hasUSD&&<span style={{fontSize:10,color:"#34d399",fontWeight:600,...mo}}>/{fS(monthly[k].usd,true)}</span>}
+                <div style={{display:"flex",gap:4,justifyContent:"center",width:"100%",flexWrap:"wrap"}}>
+                  <span style={{fontSize:10,color:"#4ade80",fontWeight:600,...mo}}>{fS(ing,showUSD)}</span>
+                  <span style={{fontSize:10,color:"#f87171",fontWeight:600,...mo}}>{fS(eg,showUSD)}</span>
                 </div>
                 <div style={{display:"flex",gap:3,width:"100%",alignItems:"flex-end",height:160}}>
-                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hP,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#3b82f6,#1d4ed8)":"linear-gradient(180deg,#1e3a5f,#0f2440)"}}/>
-                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hasUSD?hU:0,borderRadius:"4px 4px 2px 2px",cursor:hasUSD?"pointer":"default",background:hasUSD?"linear-gradient(180deg,#34d399,#059669)":"transparent"}}/>
+                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hIng,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#4ade80,#16a34a)":"linear-gradient(180deg,#166534,#14532d)"}}/>
+                  <div onClick={()=>onViewMonth(k)} style={{flex:1,height:hEg,borderRadius:"4px 4px 2px 2px",cursor:"pointer",background:last?"linear-gradient(180deg,#f87171,#dc2626)":"linear-gradient(180deg,#7f1d1d,#450a0a)"}}/>
                 </div>
                 <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
               </div>
@@ -406,7 +423,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver movimientos</div>}
       </div>
 
-      {/* Inversiones - same months as gastos */}
+      {/* Inversiones + % debajo de cada mes */}
       {vis.some(k=>monthly[k]?.inv>0)&&<div style={{...S.crdP,marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
           <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Inversiones mensuales</div>
@@ -422,40 +439,26 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,cuentas}){
             <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:"pointer"}} onClick={()=>onViewMonthInv(k)}>
               {monthly[k]?.inv>0&&<div style={{fontSize:13,color:"#f59e0b",fontWeight:600,...mo}}>{fS(monthly[k].inv)}</div>}
               <div style={{width:"100%",height:invH,borderRadius:"6px 6px 2px 2px",background:monthly[k]?.inv>0?"linear-gradient(180deg,#f59e0b,#b45309)":"#0f1a2a"}}/>
-              <div style={{fontSize:12,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
+              <div style={{fontSize:11,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
             </div>)
           })}
         </div>
-        {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver inversiones del mes</div>}
-      </div>}
-
-      {/* Inversión como % del ingreso */}
-      {vis.some(k=>monthly[k]?.inv>0&&monthly[k]?.ing>0)&&<div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:16}}>Inversión vs Ingreso</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:180}}>
+        {/* % cards below each month */}
+        <div style={{display:"flex",gap:6,marginTop:10}}>
           {vis.map(k=>{
-            const ing=monthly[k]?.ing||0
+            const ing=(monthly[k]?.ingP||0)+(monthly[k]?.ingU||0)
             const inv=monthly[k]?.inv||0
             const pct=ing>0?Math.round((inv/ing)*100):0
             const isGood=pct>=20
-            const barH=Math.max(4,Math.min(pct,100)/100*130)
             return(
-              <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <div style={{fontSize:13,fontWeight:700,color:pct===0?"#334155":isGood?"#4ade80":"#f87171"}}>{pct}%</div>
-                <div style={{width:"100%",position:"relative",height:130,display:"flex",alignItems:"flex-end"}}>
-                  <div style={{position:"absolute",top:130-130*0.2,left:0,right:0,height:1,borderTop:"1px dashed rgba(74,222,128,.3)"}}/>
-                  <div style={{width:"100%",height:barH,borderRadius:"4px 4px 2px 2px",background:pct===0?"#0f1a2a":isGood?"linear-gradient(180deg,#4ade80,#16a34a)":"linear-gradient(180deg,#f87171,#dc2626)"}}/>
-                </div>
-                <div style={{fontSize:11,color:"#94a3b8",fontWeight:500}}>{fmtMonth(k)}</div>
+              <div key={k} style={{flex:1,textAlign:"center",padding:"6px 2px",borderRadius:10,background:pct===0?"rgba(255,255,255,.02)":isGood?"rgba(74,222,128,.08)":"rgba(248,113,113,.08)",border:`1px solid ${pct===0?"transparent":isGood?"rgba(74,222,128,.15)":"rgba(248,113,113,.15)"}`}}>
+                <div style={{fontSize:14,fontWeight:700,color:pct===0?"#334155":isGood?"#4ade80":"#f87171",...mo}}>{pct}%</div>
+                <div style={{fontSize:9,color:"#475569"}}>vs ing</div>
               </div>
             )
           })}
         </div>
-        <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:12,marginTop:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:12,height:1,borderTop:"1px dashed rgba(74,222,128,.4)"}}/><span style={{fontSize:10,color:"#64748b"}}>Meta 20%</span></div>
-          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:8,height:8,borderRadius:2,background:"#4ade80"}}/><span style={{fontSize:10,color:"#64748b"}}>≥20%</span></div>
-          <div style={{display:"flex",alignItems:"center",gap:4}}><div style={{width:8,height:8,borderRadius:2,background:"#f87171"}}/><span style={{fontSize:10,color:"#64748b"}}>&lt;20%</span></div>
-        </div>
+        {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver inversiones del mes</div>}
       </div>}
 
       {/* Pie */}
