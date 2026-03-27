@@ -645,10 +645,12 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
 
   const prevMk=prevMonth(selMonth)
+  const haberesCats=["Sueldo","Incentivado / SAC"]
   const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
   const sueldoPrevMonth=sueldosPrev.length>0?sueldosPrev[0].monto:0
-  const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
-  const totalIngresos=sueldoPrevMonth+ingresosThisMonth
+  const sacPrevMonth=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Incentivado / SAC").reduce((s,m)=>s+m.monto,0)
+  const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&!haberesCats.includes(m.categoria)).reduce((s,m)=>s+m.monto,0)
+  const totalIngresos=sueldoPrevMonth+sacPrevMonth+ingresosThisMonth
 
   const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,esUSD:isUSDCuenta(e.cuenta_id),cuenta_id:e.cuenta_id})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
