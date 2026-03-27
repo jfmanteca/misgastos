@@ -239,7 +239,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
   const tabL={egreso:"Egreso",ingreso:"Ingreso",traspaso:"Traspaso",inversion:"Inversiones"}
 
   return(
-    <div style={{className:"page-inner"}}>
+    <div className="page-inner">
       {/* Confirm modal for Compra USD */}
       {showConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
         <div style={{background:"#141c28",borderRadius:20,padding:28,width:"100%",maxWidth:360,border:"1px solid rgba(245,158,11,.2)"}}>
@@ -408,7 +408,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
   },[allMonths.length])
 
   return(
-    <div style={{className:"page-inner"}}>
+    <div className="page-inner">
       <div style={S.sec}>Dashboard</div>
 
       {/* Ingresos vs Egresos */}
@@ -582,7 +582,7 @@ function MonthDetail({monthKey:mk2,filterTipo,movimientos,cuentas,onBack}){
   const fmtMonth=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
 
   return(
-    <div style={{className:"page-inner"}}>
+    <div className="page-inner">
       <button onClick={onBack} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#60a5fa",fontSize:13,cursor:"pointer",marginBottom:16,padding:0}}><Ic d={IC.left} s={16}/> Dashboard</button>
       <div style={S.sec}>{isInv?"Inversiones":"Gastos"} — {fmtMonth(mk2)}</div>
       {isInv
@@ -647,9 +647,9 @@ function DebtPage({deuda}){
       <div style={S.crd}>
         <div style={{display:"flex",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.06)",gap:8}}>
           <div style={{flex:1,fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Descripción</div>
-          <div style={{width:90,textAlign:"right",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Pesos</div>
-          <div style={{width:90,textAlign:"right",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>USD</div>
-          <div style={{width:80,textAlign:"right",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Saldo USD</div>
+          <div style={{width:90,textAlign:"center",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Pesos</div>
+          <div style={{width:90,textAlign:"center",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>USD</div>
+          <div style={{width:80,textAlign:"center",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Saldo USD</div>
         </div>
         <div style={{maxHeight:500,overflowY:"auto"}}>
           {[...hist].reverse().map((e,i)=>{
@@ -661,9 +661,9 @@ function DebtPage({deuda}){
                 <div style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{e.descripcion}</div>
                 <div style={{fontSize:11,color:"#475569"}}>{e.fecha}{e.tc_dolar?` · TC ${f$(e.tc_dolar)}`:""}</div>
               </div>
-              <div style={{width:90,textAlign:"right",fontSize:14,fontWeight:600,color:e.monto>0?"#f87171":"#4ade80",...mo}}>{e.monto>0?"+":""}{f$(e.monto)}</div>
-              <div style={{width:90,textAlign:"right",fontSize:14,fontWeight:600,color:montoUSD>0?"#f87171":"#4ade80",...mo}}>{montoUSD>0?"+":""}{f$(montoUSD,true)}</div>
-              <div style={{width:80,textAlign:"right",fontSize:13,color:"#94a3b8",...mo}}>{f$(sUSD,true)}</div>
+              <div style={{width:90,textAlign:"center",fontSize:14,fontWeight:600,color:"#475569",...mo}}>—</div>
+              <div style={{width:90,textAlign:"center",fontSize:14,fontWeight:600,color:montoUSD>0?"#f87171":"#4ade80",...mo}}>{montoUSD>0?"+":""}{f$(montoUSD,true)}</div>
+              <div style={{width:80,textAlign:"center",fontSize:13,color:"#94a3b8",...mo}}>{f$(sUSD,true)}</div>
             </div>
           )})}
         </div>
@@ -955,15 +955,22 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
     return{vto,results}
   }
 
-  const handleFile=(type)=>(e)=>{
+  const handleFile=(type)=>async(e)=>{
     const file=e.target.files[0];if(!file)return
-    const reader=new FileReader()
-    reader.onload=(ev)=>{
-      const text=ev.target.result
-      if(type==="visa"){const r=parseVisa(text);setVisaItems(r.results);setVisaVto(r.vto)}
-      else{const r=parseMC(text);setMasterItems(r.results);setMasterVto(r.vto)}
+    const pdfjsLib=window.pdfjsLib
+    if(!pdfjsLib){alert("PDF.js no cargó. Recargá la página e intentá de nuevo.");return}
+    const arrayBuffer=await file.arrayBuffer()
+    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise
+    let fullText=""
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i)
+      const content=await page.getTextContent()
+      const pageText=content.items.map(item=>item.str).join(" ")
+      fullText+=pageText+"\n"
     }
-    reader.readAsText(file)
+    if(type==="visa"){const r=parseVisa(fullText);setVisaItems(r.results);setVisaVto(r.vto)}
+    else{const r=parseMC(fullText);setMasterItems(r.results);setMasterVto(r.vto)}
+    e.target.value=""
   }
 
   const setStatus=(type,i,s)=>{
