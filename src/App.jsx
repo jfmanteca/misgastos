@@ -609,22 +609,33 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
 
-  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto})}
+  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,esUSD:isUSDCuenta(e.cuenta_id),cuenta_id:e.cuenta_id})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
   const saveEdit=async()=>{
     const orig=movimientos.find(m=>m.id===editId)
     const newMonto=parseFloat(editForm.monto)
-    // Adjust account balance: reverse old effect, apply new effect
+    const cambioMoneda=editForm.esUSD!==isUSDCuenta(orig.cuenta_id)
+    const newCuentaId=cambioMoneda?(cuentas.find(c=>c.moneda===(editForm.esUSD?"USD":"ARS"))?.id||orig.cuenta_id):orig.cuenta_id
+    // Reverse old effect on original account
     if(orig?.cuenta_id){
       const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",orig.cuenta_id).single()
       if(fresh){
         const reversal=orig.tipo==="egreso"?orig.monto:orig.tipo==="ingreso"?-orig.monto:0
-        const newDelta=editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0
+        const newDelta=cambioMoneda?0:(editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0)
         if(reversal!==0||newDelta!==0)
           await supabase.from("cuentas").update({saldo:fresh.saldo+reversal+newDelta}).eq("id",orig.cuenta_id)
       }
     }
-    await supabase.from("movimientos").update({fecha:editForm.fecha,tipo:editForm.tipo,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:newMonto}).eq("id",editId)
+    // If currency changed, apply new effect on new account
+    if(cambioMoneda){
+      const{data:freshNew}=await supabase.from("cuentas").select("saldo").eq("id",newCuentaId).single()
+      if(freshNew){
+        const newDelta=editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0
+        if(newDelta!==0)
+          await supabase.from("cuentas").update({saldo:freshNew.saldo+newDelta}).eq("id",newCuentaId)
+      }
+    }
+    await supabase.from("movimientos").update({fecha:editForm.fecha,tipo:editForm.tipo,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:newMonto,cuenta_id:newCuentaId}).eq("id",editId)
     setEditId(null);setEditForm({});onSaved()
   }
   const deleteRow=async(id)=>{
@@ -736,6 +747,11 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               <input value={editForm.categoria} onChange={ev=>setEditForm(f=>({...f,categoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Categoría"/>
               <input value={editForm.subcategoria} onChange={ev=>setEditForm(f=>({...f,subcategoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Detalle"/>
             </div>
+            <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontSize:13,color:editForm.esUSD?"#34d399":"#94a3b8"}}>
+              <input type="checkbox" checked={editForm.esUSD||false} onChange={ev=>setEditForm(f=>({...f,esUSD:ev.target.checked}))} style={{accentColor:"#34d399"}}/>
+              <span style={{fontWeight:600}}>{editForm.esUSD?"USD 💵":"Pesos $"}</span>
+              <span style={{fontSize:11,color:"#64748b"}}>(cambiar moneda)</span>
+            </label>
             <div style={{display:"flex",gap:8}}>
               <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Guardar</button>
               <button onClick={cancelEdit} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Cancelar</button>
