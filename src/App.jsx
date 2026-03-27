@@ -623,6 +623,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[searched,setSearched]=useState(false)
   const[editId,setEditId]=useState(null)
   const[editForm,setEditForm]=useState({})
+  const[showIngDet,setShowIngDet]=useState(false)
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
 
@@ -656,8 +657,11 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const sueldosThis=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
   const ultimoSueldoThisId=sueldosThis.length>0?sueldosThis[0].id:null
   // Todos los ingresos del mes actual excepto el último sueldo
-  const ingresosThisMonth=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.id!==ultimoSueldoThisId).reduce((s,m)=>s+m.monto,0)
+  const ingresosThisItems=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.id!==ultimoSueldoThisId)
+  const ingresosThisMonth=ingresosThisItems.reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
+  // Desglose para debug
+  const ingresoDesglose=[{label:`Sueldo ${fmtMonthFull(prevMk)} (${sueldosPrev[0]?.fecha||"?"})`,monto:sueldoPrevMonth},...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
 
   const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,esUSD:isUSDCuenta(e.cuenta_id),cuenta_id:e.cuenta_id})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
@@ -731,11 +735,17 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
           <div style={{fontSize:22,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresosUSD,true)}</div>
         </div>
-        <div style={{...S.crdP,textAlign:"center"}}>
-          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos</div>
+        <div style={{...S.crdP,textAlign:"center",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
+          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos ▾</div>
           <div style={{fontSize:22,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
         </div>
       </div>
+      {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
+        {ingresoDesglose.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.03)",fontSize:13}}>
+          <span style={{color:"#94a3b8"}}>{d.label}</span>
+          <span style={{color:"#4ade80",fontWeight:600,...mo}}>{f$(d.monto)}</span>
+        </div>)}
+      </div>}
 
       <div style={{...S.crdP,marginBottom:20}}>
         <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Filtros</div>
