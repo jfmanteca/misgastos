@@ -645,7 +645,8 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
 
   const prevMk=prevMonth(selMonth)
-  const sueldoPrevMonth=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").reduce((s,m)=>s+m.monto,0)
+  const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
+  const sueldoPrevMonth=sueldosPrev.length>0?sueldosPrev[0].monto:0
   const ingresosThisMonth=filtered.filter(m=>m.tipo==="ingreso"&&m.categoria!=="Sueldo").reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
 
