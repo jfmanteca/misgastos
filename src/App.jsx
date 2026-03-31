@@ -8,7 +8,7 @@ const INGRESO_CATS=["Sueldo","Incentivado / SAC","Inversiones - Intereses Ganado
 const INV_TYPES=["Compra/venta USD","CEDEARs / Acciones","Caución / Plazo fijo","Crypto / Otros"]
 const COLORS=["#3b82f6","#8b5cf6","#f59e0b","#ef4444","#10b981","#ec4899","#14b8a6","#f97316","#6366f1","#84cc16","#06b6d4","#e11d48","#a3e635","#7c3aed","#fb923c","#2dd4bf","#c084fc","#facc15","#f43f5e","#34d399"]
 
-const f$=(n,u)=>{const a=Math.abs(n||0);return u?`USD ${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`:`$${a.toLocaleString("es-AR",{maximumFractionDigits:0})}`}
+const f$=(n,u)=>{const a=Math.abs(n||0);return u?`USD ${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`:`$${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`}
 const fS=(n,u)=>{const p=u?"U$":"";return n>=1e6?`${p}${(n/1e6).toFixed(1)}M`:n>=1e3?`${p}${(n/1e3).toFixed(0)}K`:`${p}${Math.round(n)}`}
 const today=()=>new Date().toISOString().split("T")[0]
 const monthOf=d=>d?.slice(0,7)||""
@@ -274,7 +274,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 
       {/* Generic fields for non-inversion tabs */}
       {mt!=="inversion"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
         <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
       </>}
 
@@ -287,7 +287,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         </div>
         {fm.cat==="Pago deuda"&&fm.sub==="Edgardo"&&<div style={{marginBottom:16}}>
           <label style={S.lbl}>TC Dólar (para convertir a USD en Deuda)</label>
-          <input type="number" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/>
+          <input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/>
           {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{marginTop:8,padding:"10px 14px",borderRadius:10,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)",display:"flex",justifyContent:"space-between"}}>
             <span style={{fontSize:13,color:"#64748b"}}>Pago en USD</span>
             <span style={{fontSize:16,fontWeight:700,color:"#34d399",...mo}}>{f$(Math.abs(parseFloat(fm.amt))/parseFloat(fm.tcDolar),true)}</span>
@@ -298,7 +298,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{ingresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
         <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:16}}>
           <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
-          <div><label style={S.lbl}>TC Dólar</label><input type="number" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
+          <div><label style={S.lbl}>TC Dólar</label><input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
         </div>
         {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{...S.crdP,marginBottom:16,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -324,7 +324,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 
         {/* Step 2a: Standard inversion form */}
         {fm.it&&!isUSD&&<>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
         </>}
@@ -332,8 +332,8 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         {/* Step 2b: Compra USD form */}
         {fm.it&&isUSD&&<>
           <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="number" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="number" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
           <div style={{marginBottom:20}}><label style={S.lbl}>Cuenta a Acreditar</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
           {usdCalc!==null&&<div style={{...S.crdP,marginBottom:16,textAlign:"center",border:"1px solid rgba(245,158,11,.25)"}}>
@@ -685,6 +685,8 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const[editId,setEditId]=useState(null)
   const[editForm,setEditForm]=useState({})
   const[showIngDet,setShowIngDet]=useState(false)
+  const[page,setPage]=useState(0)
+  const perPage=20
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
 
@@ -725,25 +727,25 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   // Desglose para debug
   const ingresoDesglose=[{label:`Sueldo ${fmtMonthFull(prevMk)} (${sueldosPrev[0]?.fecha||"?"})`,monto:sueldoPrevMonth},...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
 
-  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,esUSD:isUSDCuenta(e.cuenta_id),cuenta_id:e.cuenta_id})}
+  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,cuenta_id:e.cuenta_id})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
   const saveEdit=async()=>{
     const orig=movimientos.find(m=>m.id===editId)
     const newMonto=parseFloat(editForm.monto)
-    const cambioMoneda=editForm.esUSD!==isUSDCuenta(orig.cuenta_id)
-    const newCuentaId=cambioMoneda?(cuentas.find(c=>c.moneda===(editForm.esUSD?"USD":"ARS"))?.id||orig.cuenta_id):orig.cuenta_id
+    const newCuentaId=editForm.cuenta_id
+    const cuentaChanged=newCuentaId!==orig.cuenta_id
     // Reverse old effect on original account
     if(orig?.cuenta_id){
       const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",orig.cuenta_id).single()
       if(fresh){
         const reversal=orig.tipo==="egreso"?orig.monto:orig.tipo==="ingreso"?-orig.monto:0
-        const newDelta=cambioMoneda?0:(editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0)
+        const newDelta=cuentaChanged?0:(editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0)
         if(reversal!==0||newDelta!==0)
           await supabase.from("cuentas").update({saldo:fresh.saldo+reversal+newDelta}).eq("id",orig.cuenta_id)
       }
     }
-    // If currency changed, apply new effect on new account
-    if(cambioMoneda){
+    // If account changed, apply new effect on new account
+    if(cuentaChanged){
       const{data:freshNew}=await supabase.from("cuentas").select("saldo").eq("id",newCuentaId).single()
       if(freshNew){
         const newDelta=editForm.tipo==="egreso"?-newMonto:editForm.tipo==="ingreso"?newMonto:0
@@ -775,15 +777,15 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
     await supabase.from("movimientos").delete().eq("id",id);onSaved()
   }
 
-  const doSearch=()=>setSearched(true)
-  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterSub("");setFilterCuenta("");setFilterFrom("");setFilterTo("");setSearched(false)}
+  const doSearch=()=>{setSearched(true);setPage(0)}
+  const clearFilters=()=>{setFilterTipo("");setFilterCat("");setFilterSub("");setFilterCuenta("");setFilterFrom("");setFilterTo("");setSearched(false);setPage(0)}
 
   return(
     <div className="page-inner">
       <div style={S.sec}>Movimientos</div>
 
       <div style={{marginBottom:16}}>
-        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false)}} style={{...S.inp,fontSize:16,fontWeight:600}}>
+        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false);setPage(0)}} style={{...S.inp,fontSize:16,fontWeight:600}}>
           {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
         </select>
       </div>
@@ -859,31 +861,35 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
         </div>
       </div>
 
-      <div style={{fontSize:13,color:"#64748b",marginBottom:12}}>{filtered.length} movimientos</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontSize:13,color:"#64748b"}}>{filtered.length} movimientos</div>
+        {filtered.length>perPage&&<div style={{fontSize:12,color:"#64748b"}}>Pág {page+1} de {Math.ceil(filtered.length/perPage)}</div>}
+      </div>
 
       <div style={S.crd}>
         {filtered.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:14}}>Sin movimientos</div>}
-        {filtered.map((e,i)=>(
+        {filtered.slice(page*perPage,(page+1)*perPage).map((e,i)=>(
           editId===e.id?
-          <div key={e.id} style={{padding:16,borderBottom:"1px solid rgba(255,255,255,.04)",background:"rgba(59,130,246,.05)"}}>
+          <div key={e.id} style={{padding:14,borderBottom:"1px solid rgba(255,255,255,.04)",background:"rgba(59,130,246,.05)"}}>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
               <input type="date" value={editForm.fecha} onChange={ev=>setEditForm(f=>({...f,fecha:ev.target.value}))} style={{...S.inp,fontSize:12}}/>
-              <input type="number" value={editForm.monto} onChange={ev=>setEditForm(f=>({...f,monto:ev.target.value}))} style={{...S.inp,fontSize:12,...mo}} placeholder="Monto (negativo = devolución)"/>
+              <input type="text" inputMode="decimal" value={editForm.monto} onChange={ev=>setEditForm(f=>({...f,monto:ev.target.value}))} style={{...S.inp,fontSize:12,...mo}} placeholder="Monto (-10000 = devolución)"/>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
               <select value={editForm.tipo} onChange={ev=>setEditForm(f=>({...f,tipo:ev.target.value}))} style={{...S.inp,fontSize:12}}>
                 <option value="egreso">Egreso</option>
                 <option value="ingreso">Ingreso</option>
                 <option value="traspaso">Traspaso</option>
                 <option value="inversion">Inversión</option>
               </select>
+              <select value={editForm.cuenta_id||""} onChange={ev=>setEditForm(f=>({...f,cuenta_id:ev.target.value}))} style={{...S.inp,fontSize:12}}>
+                {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
               <input value={editForm.categoria} onChange={ev=>setEditForm(f=>({...f,categoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Categoría"/>
               <input value={editForm.subcategoria} onChange={ev=>setEditForm(f=>({...f,subcategoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Detalle"/>
             </div>
-            <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontSize:13,color:editForm.esUSD?"#34d399":"#94a3b8"}}>
-              <input type="checkbox" checked={editForm.esUSD||false} onChange={ev=>setEditForm(f=>({...f,esUSD:ev.target.checked}))} style={{accentColor:"#34d399"}}/>
-              <span style={{fontWeight:600}}>{editForm.esUSD?"USD 💵":"Pesos $"}</span>
-            </label>
             <div style={{display:"flex",gap:8}}>
               <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Guardar</button>
               <button onClick={cancelEdit} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Cancelar</button>
@@ -907,6 +913,10 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           </div>
         ))}
       </div>
+      {filtered.length>perPage&&<div style={{display:"flex",justifyContent:"center",gap:8,marginTop:16}}>
+        <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"10px 20px",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:page===0?"default":"pointer",background:page===0?"#0f1623":"#1e293b",color:page===0?"#334155":"#94a3b8"}}>← Anterior</button>
+        <button onClick={()=>setPage(p=>Math.min(Math.ceil(filtered.length/perPage)-1,p+1))} disabled={(page+1)*perPage>=filtered.length} style={{padding:"10px 20px",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:(page+1)*perPage>=filtered.length?"default":"pointer",background:(page+1)*perPage>=filtered.length?"#0f1623":"#1e293b",color:(page+1)*perPage>=filtered.length?"#334155":"#94a3b8"}}>Siguiente →</button>
+      </div>}
     </div>
   )
 }
@@ -927,30 +937,54 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
   const autoCat=desc=>{const u=desc.toUpperCase();for(const[k,v] of Object.entries(catMap)){if(u.includes(k))return v};return""}
 
   const parseMC=(text)=>{
-    const vtoMatch=text.match(/Vencimiento actual:\s+(\d{2})-(\w+)-(\d{2})/)
+    const vtoMatch=text.match(/Vencimiento\s+actual\s*:\s*(\d{2})\s*-\s*(\w+)\s*-\s*(\d{2})/)
     let vto=""
     if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
     const results=[];const lines=text.split("\n");let inSection=false
+    const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
     for(const line of lines){
-      if(line.includes("COMPRAS DEL MES")||line.includes("DEBITOS AUTOMATICOS")||line.includes("CUOTAS DEL MES"))inSection=true
-      if(line.includes("TOTAL TITULAR"))break
+      if(line.includes("COMPRAS DEL MES")||line.includes("DEBITOS AUTOMATICOS")||line.includes("CUOTAS DEL MES")||line.includes("COMPRAS/DEBITOS"))inSection=true
+      if(line.includes("TOTAL TITULAR")||line.includes("INFORMACION INSTITUCIONAL"))break
       if(!inSection)continue
-      const m2=line.match(/^(\d{2})-(\w{3})-(\d{2})\s+(.+?)\s+(\d{5})\s+([\d.,-]+)?\s*([\d.,-]+)?$/)
-      if(m2){const[,,,,,, pesos,usd]=m2;const desc=m2[4].trim();const parseN=s=>s?parseFloat(s.replace(/\./g,"").replace(",",".")):0;const amtP=parseN(pesos);if(amtP!==0)results.push({desc,pesos:amtP,status:"pending",cat:autoCat(desc)})}
+      // Try strict format: DD-Mmm-YY description cupon pesos [dolares]
+      const m2=line.match(/(\d{2})\s*-\s*(\w{3})\s*-\s*(\d{2})\s+(.+?)\s+(\d{4,5})\s+([\d.,-]+)\s*([\d.,-]+)?/)
+      if(m2){
+        const desc=m2[4].trim();const pesos=parseN(m2[6]);const usd=parseN(m2[7])
+        if(pesos!==0||usd!==0)results.push({desc,pesos:pesos||0,usd:usd||0,status:"pending",cat:autoCat(desc)})
+        continue
+      }
+      // Looser format: just look for date + text + number
+      const m3=line.match(/(\d{2})\s*-\s*(\w{3})\s*-\s*(\d{2})\s+(.+?)\s+([\d.,-]+)$/)
+      if(m3){
+        const desc=m3[4].trim();const pesos=parseN(m3[5])
+        if(pesos!==0&&Math.abs(pesos)>1)results.push({desc,pesos,usd:0,status:"pending",cat:autoCat(desc)})
+      }
     }
     return{vto,results}
   }
 
   const parseVisa=(text)=>{
-    const vtoMatch=text.match(/VENCIMIENTO\s+(\d{2})\s+(\w+)\s+(\d{2})/)
+    const vtoMatch=text.match(/VENCIMIENTO\s+(\d{2})\s+(\w+)\.?\s+(\d{2})/)
     let vto=""
     if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
     const results=[];const lines=text.split("\n")
+    const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
     for(const line of lines){
-      if(line.includes("Total Consumos de"))break
-      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV")||line.includes("CANCEL")||line.includes("INTERESES")||line.includes("IIBB")||line.includes("IVA RG")||line.includes("DB.RG"))continue
-      const m2=line.match(/^\s*(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
-      if(m2){const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const parseN=s=>s?parseFloat(s.replace(/\./g,"").replace(",",".")):0;const amtP=parseN(m2[7]);if(amtP!==0)results.push({desc,pesos:amtP,status:"pending",cat:autoCat(desc)})}
+      if(line.includes("Total Consumos de")||line.includes("Tarjeta 5891"))break
+      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV.")||line.includes("CANCEL")||line.includes("INTERESES FINANC")||line.includes("IIBB PERCEP")||line.includes("IVA RG")||line.includes("DB.RG")||line.includes("Plan V:"))continue
+      // Visa format: YY Month DD comprobante type description [C.nn/nn] amount [usd]
+      const m2=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
+      if(m2){
+        const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m2[7])
+        if(pesos!==0)results.push({desc,pesos,status:"pending",cat:autoCat(desc)})
+        continue
+      }
+      // Looser: YY Month DD comprobante description amount
+      const m3=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+(.+?)\s+([\d.,-]+)$/)
+      if(m3){
+        const desc=m3[5].trim().replace(/\s+C\.\d+\/\d+$/,"").replace(/^[*KVPU]\s+/,"");const pesos=parseN(m3[6])
+        if(pesos!==0&&Math.abs(pesos)>1)results.push({desc,pesos,status:"pending",cat:autoCat(desc)})
+      }
     }
     return{vto,results}
   }
@@ -959,17 +993,31 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
     const file=e.target.files[0];if(!file)return
     const pdfjsLib=window.pdfjsLib
     if(!pdfjsLib){alert("PDF.js no cargó. Recargá la página e intentá de nuevo.");return}
-    const arrayBuffer=await file.arrayBuffer()
-    const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise
-    let fullText=""
-    for(let i=1;i<=pdf.numPages;i++){
-      const page=await pdf.getPage(i)
-      const content=await page.getTextContent()
-      const pageText=content.items.map(item=>item.str).join(" ")
-      fullText+=pageText+"\n"
+    try{
+      const arrayBuffer=await file.arrayBuffer()
+      const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise
+      let fullText=""
+      for(let i=1;i<=pdf.numPages;i++){
+        const pg=await pdf.getPage(i)
+        const content=await pg.getTextContent()
+        // Reconstruct lines using Y-coordinate - items on same Y = same line
+        const lines={}
+        content.items.forEach(item=>{
+          const y=Math.round(item.transform[5]) // Y position
+          if(!lines[y])lines[y]=""
+          lines[y]+=item.str+" "
+        })
+        // Sort by Y descending (top of page = higher Y) and join
+        const sorted=Object.entries(lines).sort((a,b)=>Number(b[0])-Number(a[0]))
+        fullText+=sorted.map(([,text])=>text.trim()).join("\n")+"\n"
+      }
+      console.log("PDF extracted text preview:",fullText.substring(0,500))
+      if(type==="visa"){const r=parseVisa(fullText);setVisaItems(r.results);setVisaVto(r.vto);if(r.results.length===0)alert("No se encontraron consumos de Visa en este PDF. Verificá que sea un resumen de Visa BAPRO.")}
+      else{const r=parseMC(fullText);setMasterItems(r.results);setMasterVto(r.vto);if(r.results.length===0)alert("No se encontraron consumos de Mastercard en este PDF. Verificá que sea un resumen de Mastercard BAPRO.")}
+    }catch(err){
+      console.error("Error parsing PDF:",err)
+      alert("Error al leer el PDF: "+err.message)
     }
-    if(type==="visa"){const r=parseVisa(fullText);setVisaItems(r.results);setVisaVto(r.vto)}
-    else{const r=parseMC(fullText);setMasterItems(r.results);setMasterVto(r.vto)}
     e.target.value=""
   }
 
