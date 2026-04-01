@@ -927,6 +927,8 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
   const[masterItems,setMasterItems]=useState([])
   const[visaVto,setVisaVto]=useState("")
   const[masterVto,setMasterVto]=useState("")
+  const[visaCuenta,setVisaCuenta]=useState("")
+  const[masterCuenta,setMasterCuenta]=useState("")
   const[saving,setSaving]=useState("")
   const[done,setDone]=useState("")
   const visaRef=useRef(null)
@@ -950,14 +952,14 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
       const m2=line.match(/(\d{2})\s*-\s*(\w{3})\s*-\s*(\d{2})\s+(.+?)\s+(\d{4,5})\s+([\d.,-]+)\s*([\d.,-]+)?/)
       if(m2){
         const desc=m2[4].trim();const pesos=parseN(m2[6]);const usd=parseN(m2[7])
-        if(pesos!==0||usd!==0)results.push({desc,pesos:pesos||0,usd:usd||0,status:"pending",cat:autoCat(desc)})
+        if(pesos!==0||usd!==0){const monto=Math.abs(pesos||usd);results.push({desc,pesos:pesos||0,usd:usd||0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
         continue
       }
       // Looser format: just look for date + text + number
       const m3=line.match(/(\d{2})\s*-\s*(\w{3})\s*-\s*(\d{2})\s+(.+?)\s+([\d.,-]+)$/)
       if(m3){
         const desc=m3[4].trim();const pesos=parseN(m3[5])
-        if(pesos!==0&&Math.abs(pesos)>1)results.push({desc,pesos,usd:0,status:"pending",cat:autoCat(desc)})
+        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,usd:0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
       }
     }
     return{vto,results}
@@ -976,14 +978,21 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
       const m2=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
       if(m2){
         const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m2[7])
-        if(pesos!==0)results.push({desc,pesos,status:"pending",cat:autoCat(desc)})
+        if(pesos!==0){const monto=Math.abs(pesos);results.push({desc,pesos,monto,sub:"",status:"pending",cat:autoCat(desc)})}
         continue
       }
       // Looser: YY Month DD comprobante description amount
       const m3=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+(.+?)\s+([\d.,-]+)$/)
       if(m3){
         const desc=m3[5].trim().replace(/\s+C\.\d+\/\d+$/,"").replace(/^[*KVPU]\s+/,"");const pesos=parseN(m3[6])
-        if(pesos!==0&&Math.abs(pesos)>1)results.push({desc,pesos,status:"pending",cat:autoCat(desc)})
+        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+        continue
+      }
+      // Continuation line: DD NNNNNN [*KVPU] DESCRIPTION AMOUNT (no year/month prefix)
+      const m4=line.match(/^(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)(?:\s+([\d,.]+))?$/)
+      if(m4){
+        const desc=m4[4].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m4[5])
+        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,monto,sub:"",status:"pending",cat:autoCat(desc)})}
       }
     }
     return{vto,results}
@@ -1027,40 +1036,47 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
   }
   const setCat=(type,i,c)=>{
     const setter=type==="visa"?setVisaItems:setMasterItems
-    setter(prev=>{const n=[...prev];n[i]={...n[i],cat:c};return n})
+    setter(prev=>{const n=[...prev];n[i]={...n[i],cat:c,sub:""};return n})
+  }
+  const setSub=(type,i,s)=>{
+    const setter=type==="visa"?setVisaItems:setMasterItems
+    setter(prev=>{const n=[...prev];n[i]={...n[i],sub:s};return n})
+  }
+  const setMonto=(type,i,v)=>{
+    const setter=type==="visa"?setVisaItems:setMasterItems
+    setter(prev=>{const n=[...prev];n[i]={...n[i],monto:parseFloat(v)||0};return n})
   }
   const editDesc=(type,i,d)=>{
     const setter=type==="visa"?setVisaItems:setMasterItems
     setter(prev=>{const n=[...prev];n[i]={...n[i],desc:d};return n})
   }
 
-  const doConfirm=async(type)=>{
+  const doConfirm=async(type,cuentaId)=>{
     setSaving(type)
     const items=type==="visa"?visaItems:masterItems
     const vto=type==="visa"?visaVto:masterVto
     const tc=type==="visa"?"V":"M"
-    const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
-    const accepted=items.filter(p=>p.status==="accepted"&&p.pesos!==0)
-    const rows=accepted.map(p=>({user_id:userId,fecha:vto||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.desc,monto:Math.abs(p.pesos),cuenta_id:bapro?.id,tc}))
+    const accepted=items.filter(p=>p.status==="accepted"&&(p.monto||p.pesos)!==0)
+    const rows=accepted.map(p=>({user_id:userId,fecha:vto||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.sub||"",monto:Math.abs(p.monto??p.pesos),cuenta_id:cuentaId,tc}))
     if(rows.length>0){
       await supabase.from("movimientos").insert(rows)
-      // Read fresh balance
-      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",bapro?.id).single()
+      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",cuentaId).single()
       if(fresh){
         const totalDelta=rows.reduce((s,r)=>s-r.monto,0)
-        await supabase.from("cuentas").update({saldo:fresh.saldo+totalDelta}).eq("id",bapro.id)
+        await supabase.from("cuentas").update({saldo:fresh.saldo+totalDelta}).eq("id",cuentaId)
       }
     }
     onSaved();setDone(type);setSaving("")
-    setTimeout(()=>{setDone("");if(type==="visa")setVisaItems([]);else setMasterItems([])},2000)
+    setTimeout(()=>{setDone("");if(type==="visa"){setVisaItems([]);setVisaCuenta("")}else{setMasterItems([]);setMasterCuenta("")}},2000)
   }
 
-  const renderCard=(type,items,vto,setVto,fileRef)=>{
-    const accepted=items.filter(p=>p.status==="accepted").length
+  const renderCard=(type,items,vto,setVto,fileRef,cuenta,setCuenta)=>{
+    const accepted=items.filter(p=>p.status==="accepted")
     const pending=items.filter(p=>p.status==="pending").length
     const isVisa=type==="visa"
     const color=isVisa?"#3b82f6":"#f59e0b"
     const label=isVisa?"VISA":"MASTERCARD"
+    const totalAceptado=accepted.reduce((s,p)=>s+(p.monto??Math.abs(p.pesos)),0)
 
     return(
       <div style={{...S.crdP,marginBottom:20,border:`1px solid ${color}22`}}>
@@ -1083,35 +1099,65 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
               <div style={{fontSize:10,color:"#64748b"}}>Pendientes</div>
             </div>
             <div style={{flex:1,textAlign:"center",padding:8,borderRadius:10,background:"rgba(74,222,128,.08)"}}>
-              <div style={{fontSize:16,fontWeight:700,color:"#4ade80",...mo}}>{accepted}</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#4ade80",...mo}}>{accepted.length}</div>
               <div style={{fontSize:10,color:"#64748b"}}>Aceptados</div>
             </div>
           </div>
 
-          <div style={{maxHeight:400,overflowY:"auto",borderRadius:12,border:"1px solid rgba(255,255,255,.04)"}}>
+          <div style={{maxHeight:480,overflowY:"auto",borderRadius:12,border:"1px solid rgba(255,255,255,.04)"}}>
             {items.map((p,i)=>p.status==="rejected"?null:(
               <div key={i} style={{padding:"12px 14px",borderBottom:"1px solid rgba(255,255,255,.03)",background:p.status==="accepted"?"rgba(74,222,128,.03)":"transparent"}}>
+                {/* Row 1: referencia + monto editable */}
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                  <input value={p.desc} onChange={e=>editDesc(type,i,e.target.value)} style={{...S.inp,fontSize:12,padding:"6px 10px",flex:1,background:"transparent"}}/>
-                  <span style={{fontSize:14,fontWeight:700,color:p.pesos<0?"#4ade80":"#f87171",...mo,whiteSpace:"nowrap"}}>{p.pesos<0?"+":"-"}{f$(Math.abs(p.pesos))}</span>
+                  <input value={p.desc} onChange={e=>editDesc(type,i,e.target.value)} style={{...S.inp,fontSize:12,padding:"6px 10px",flex:1,background:"transparent"}} placeholder="Referencia"/>
+                  <div style={{display:"flex",alignItems:"center",gap:2}}>
+                    <span style={{fontSize:12,color:"#f87171",fontWeight:700}}>-$</span>
+                    <input
+                      type="number"
+                      value={p.monto??Math.abs(p.pesos)}
+                      onChange={e=>setMonto(type,i,e.target.value)}
+                      style={{...S.inp,fontSize:13,fontWeight:700,color:"#f87171",padding:"5px 8px",width:110,textAlign:"right",...mo}}
+                    />
+                  </div>
                 </div>
+                {/* Row 2: categoría + subcategoría + botones */}
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   <select value={p.cat} onChange={e=>setCat(type,i,e.target.value)} style={{...S.inp,fontSize:11,padding:"4px 8px",flex:1,color:p.cat?"#e2e8f0":"#475569"}}>
                     <option value="">Categoría...</option>
                     {(egresoCats||EGRESO_CATS).map(c=><option key={c}>{c}</option>)}
                   </select>
+                  <select value={p.sub||""} onChange={e=>setSub(type,i,e.target.value)} style={{...S.inp,fontSize:11,padding:"4px 8px",flex:1,color:p.sub?"#e2e8f0":"#475569"}}>
+                    <option value="">Subcategoría...</option>
+                    {(EGRESO_SUBS[p.cat]||[]).map(s=><option key={s}>{s}</option>)}
+                  </select>
                   {p.status==="pending"?<>
-                    <button onClick={()=>setStatus(type,i,"accepted")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>✓</button>
-                    <button onClick={()=>setStatus(type,i,"rejected")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>✗</button>
-                  </>:<button onClick={()=>setStatus(type,i,"pending")} style={{padding:"4px 12px",borderRadius:8,border:"none",fontSize:11,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>↩</button>}
+                    <button onClick={()=>setStatus(type,i,"accepted")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff",flexShrink:0}}>✓</button>
+                    <button onClick={()=>setStatus(type,i,"rejected")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:11,cursor:"pointer",background:"#7f1d1d",color:"#f87171",flexShrink:0}}>✗</button>
+                  </>:<button onClick={()=>setStatus(type,i,"pending")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:11,cursor:"pointer",background:"#1e293b",color:"#94a3b8",flexShrink:0}}>↩</button>}
                 </div>
               </div>
             ))}
           </div>
 
-          {accepted>0&&<button onClick={()=>doConfirm(type)} disabled={saving===type} style={{marginTop:14,width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:"pointer",background:done===type?"#16a34a":`linear-gradient(135deg,${color},${isVisa?"#1d4ed8":"#b45309"})`,color:"#fff"}}>
-            {done===type?"✓ Confirmado":saving===type?"Guardando...":`Confirmar ${accepted} gastos de ${label}`}
-          </button>}
+          {/* Bottom: cuenta selector + total + imputar */}
+          <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid rgba(255,255,255,.06)"}}>
+            <div style={{marginBottom:10}}>
+              <label style={S.lbl}>Cuenta a debitar</label>
+              <select value={cuenta} onChange={e=>setCuenta(e.target.value)} style={{...S.inp,fontSize:13}}>
+                <option value="">Seleccionar cuenta...</option>
+                {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+            {accepted.length>0&&<>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <span style={{fontSize:13,color:"#64748b"}}>{accepted.length} movimiento{accepted.length!==1?"s":""} aceptado{accepted.length!==1?"s":""}</span>
+                <span style={{fontSize:15,fontWeight:700,color:"#f87171",...mo}}>-{f$(totalAceptado)}</span>
+              </div>
+              <button onClick={()=>doConfirm(type,cuenta)} disabled={saving===type||!cuenta} style={{width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:cuenta?"pointer":"not-allowed",background:done===type?"#16a34a":!cuenta?"#1e293b":`linear-gradient(135deg,${color},${isVisa?"#1d4ed8":"#b45309"})`,color:cuenta?"#fff":"#475569",opacity:saving===type?0.7:1}}>
+                {done===type?"✓ Imputado":saving===type?"Guardando...":`Imputar ${accepted.length} movimiento${accepted.length!==1?"s":""}`}
+              </button>
+            </>}
+          </div>
         </>}
       </div>
     )
@@ -1121,8 +1167,8 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
     <div className="page-inner">
       <div style={S.sec}>Importar Extractos de Tarjeta</div>
       <div style={{fontSize:13,color:"#64748b",marginBottom:20}}>Subí cada PDF por separado. Revisá y aceptá concepto por concepto. Recién al confirmar se impactan en tus movimientos y saldos.</div>
-      {renderCard("visa",visaItems,visaVto,setVisaVto,visaRef)}
-      {renderCard("master",masterItems,masterVto,setMasterVto,masterRef)}
+      {renderCard("visa",visaItems,visaVto,setVisaVto,visaRef,visaCuenta,setVisaCuenta)}
+      {renderCard("master",masterItems,masterVto,setMasterVto,masterRef,masterCuenta,setMasterCuenta)}
     </div>
   )
 }
