@@ -929,6 +929,8 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
   const[masterVto,setMasterVto]=useState("")
   const[visaCuenta,setVisaCuenta]=useState("")
   const[masterCuenta,setMasterCuenta]=useState("")
+  const[visaCuentaUSD,setVisaCuentaUSD]=useState("")
+  const[masterCuentaUSD,setMasterCuentaUSD]=useState("")
   const[saving,setSaving]=useState("")
   const[done,setDone]=useState("")
   const visaRef=useRef(null)
@@ -971,30 +973,42 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
     if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
     const results=[];const lines=text.split("\n")
     const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
+    let inCharges=false;let gastosBancarios=0
     for(const line of lines){
-      if(line.includes("Total Consumos de")||line.includes("Tarjeta 5891"))break
-      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV.")||line.includes("CANCEL")||line.includes("INTERESES FINANC")||line.includes("IIBB PERCEP")||line.includes("IVA RG")||line.includes("DB.RG")||line.includes("Plan V:"))continue
-      // Visa format: YY Month DD comprobante type description [C.nn/nn] amount [usd]
+      if(line.includes("Plan V:"))break
+      // After total line, switch to collecting bank charges only
+      if(line.includes("Total Consumos de")||line.includes("Tarjeta 5891")){inCharges=true;continue}
+      if(inCharges){
+        if(line.includes("IIBB PERCEP")||line.includes("IVA RG")||line.includes("DB.RG")){
+          const mBank=line.match(/([\d.]+,\d{2})\s*$/)
+          if(mBank)gastosBancarios+=parseN(mBank[1])
+        }
+        continue
+      }
+      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV.")||line.includes("CANCEL")||line.includes("INTERESES FINANC"))continue
+      // Visa format: YY Month DD comprobante type description [C.nn/nn] pesos [usd]
       const m2=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
       if(m2){
-        const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m2[7])
-        if(pesos!==0){const monto=Math.abs(pesos);results.push({desc,pesos,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+        const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m2[7]);const usd=parseN(m2[8])
+        if(pesos!==0||usd!==0){const monto=pesos!==0?Math.abs(pesos):Math.abs(usd);results.push({desc,pesos:pesos||0,usd:usd||0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
         continue
       }
       // Looser: YY Month DD comprobante description amount
       const m3=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+(.+?)\s+([\d.,-]+)$/)
       if(m3){
         const desc=m3[5].trim().replace(/\s+C\.\d+\/\d+$/,"").replace(/^[*KVPU]\s+/,"");const pesos=parseN(m3[6])
-        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,usd:0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
         continue
       }
-      // Continuation line: DD NNNNNN [*KVPU] DESCRIPTION AMOUNT (no year/month prefix)
+      // Continuation line: DD NNNNNN [*KVPU] DESCRIPTION AMOUNT [usd] (no year/month prefix)
       const m4=line.match(/^(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)(?:\s+([\d,.]+))?$/)
       if(m4){
-        const desc=m4[4].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m4[5])
-        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+        const desc=m4[4].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m4[5]);const usd=parseN(m4[6])
+        if(pesos!==0||usd!==0){const monto=pesos!==0?Math.abs(pesos):Math.abs(usd);results.push({desc,pesos:pesos||0,usd:usd||0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
       }
     }
+    // Group bank charges as a single item at the end
+    if(gastosBancarios>0)results.push({desc:"Impuestos y cargos bancarios",pesos:gastosBancarios,usd:0,monto:gastosBancarios,sub:"Impuestos e intereses",status:"pending",cat:"Gastos Tarjeta"})
     return{vto,results}
   }
 
@@ -1051,32 +1065,43 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
     setter(prev=>{const n=[...prev];n[i]={...n[i],desc:d};return n})
   }
 
-  const doConfirm=async(type,cuentaId)=>{
+  const doConfirm=async(type,cuentaId,cuentaUSDId)=>{
     setSaving(type)
     const items=type==="visa"?visaItems:masterItems
     const vto=type==="visa"?visaVto:masterVto
     const tc=type==="visa"?"V":"M"
-    const accepted=items.filter(p=>p.status==="accepted"&&(p.monto||p.pesos)!==0)
-    const rows=accepted.map(p=>({user_id:userId,fecha:vto||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.sub||"",monto:Math.abs(p.monto??p.pesos),cuenta_id:cuentaId,tc}))
-    if(rows.length>0){
-      await supabase.from("movimientos").insert(rows)
+    const accepted=items.filter(p=>p.status==="accepted")
+    const isUSD=p=>(p.usd||0)>0&&(p.pesos||0)===0
+    const mkRow=(p,cid,enUSD)=>({user_id:userId,fecha:vto||today(),tipo:"egreso",categoria:p.cat||"Otros",subcategoria:p.sub||"",monto:Math.abs(enUSD?p.usd:(p.monto??p.pesos)),cuenta_id:cid,tc})
+    const rowsPesos=accepted.filter(p=>!isUSD(p)&&(p.monto||p.pesos)!==0).map(p=>mkRow(p,cuentaId,false))
+    const rowsUSD=accepted.filter(p=>isUSD(p)&&cuentaUSDId).map(p=>mkRow(p,cuentaUSDId,true))
+    if(rowsPesos.length>0){
+      await supabase.from("movimientos").insert(rowsPesos)
       const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",cuentaId).single()
-      if(fresh){
-        const totalDelta=rows.reduce((s,r)=>s-r.monto,0)
-        await supabase.from("cuentas").update({saldo:fresh.saldo+totalDelta}).eq("id",cuentaId)
-      }
+      if(fresh){const delta=rowsPesos.reduce((s,r)=>s-r.monto,0);await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",cuentaId)}
+    }
+    if(rowsUSD.length>0){
+      await supabase.from("movimientos").insert(rowsUSD)
+      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",cuentaUSDId).single()
+      if(fresh){const delta=rowsUSD.reduce((s,r)=>s-r.monto,0);await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",cuentaUSDId)}
     }
     onSaved();setDone(type);setSaving("")
-    setTimeout(()=>{setDone("");if(type==="visa"){setVisaItems([]);setVisaCuenta("")}else{setMasterItems([]);setMasterCuenta("")}},2000)
+    setTimeout(()=>{setDone("");if(type==="visa"){setVisaItems([]);setVisaCuenta("");setVisaCuentaUSD("")}else{setMasterItems([]);setMasterCuenta("");setMasterCuentaUSD("")}},2000)
   }
 
-  const renderCard=(type,items,vto,setVto,fileRef,cuenta,setCuenta)=>{
+  const renderCard=(type,items,vto,setVto,fileRef,cuenta,setCuenta,cuentaUSD,setCuentaUSD)=>{
     const accepted=items.filter(p=>p.status==="accepted")
     const pending=items.filter(p=>p.status==="pending").length
     const isVisa=type==="visa"
     const color=isVisa?"#3b82f6":"#f59e0b"
     const label=isVisa?"VISA":"MASTERCARD"
-    const totalAceptado=accepted.reduce((s,p)=>s+(p.monto??Math.abs(p.pesos)),0)
+    const isUSD=p=>(p.usd||0)>0&&(p.pesos||0)===0
+    const hasUSDItems=items.some(isUSD)
+    const acceptedPesos=accepted.filter(p=>!isUSD(p))
+    const acceptedUSD=accepted.filter(isUSD)
+    const totalAceptadoPesos=acceptedPesos.reduce((s,p)=>s+(p.monto??Math.abs(p.pesos)),0)
+    const totalAceptadoUSD=acceptedUSD.reduce((s,p)=>s+Math.abs(p.usd),0)
+    const canImputar=accepted.length>0&&cuenta&&(!acceptedUSD.length||cuentaUSD)
 
     return(
       <div style={{...S.crdP,marginBottom:20,border:`1px solid ${color}22`}}>
@@ -1111,10 +1136,10 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                   <input value={p.desc} onChange={e=>editDesc(type,i,e.target.value)} style={{...S.inp,fontSize:12,padding:"6px 10px",flex:1,background:"transparent"}} placeholder="Referencia"/>
                   <div style={{display:"flex",alignItems:"center",gap:2}}>
-                    <span style={{fontSize:12,color:"#f87171",fontWeight:700}}>-$</span>
+                    <span style={{fontSize:12,color:"#f87171",fontWeight:700}}>{isUSD(p)?"-USD":"-$"}</span>
                     <input
                       type="number"
-                      value={p.monto??Math.abs(p.pesos)}
+                      value={p.monto??((p.usd||0)>0&&(p.pesos||0)===0?Math.abs(p.usd):Math.abs(p.pesos))}
                       onChange={e=>setMonto(type,i,e.target.value)}
                       style={{...S.inp,fontSize:13,fontWeight:700,color:"#f87171",padding:"5px 8px",width:110,textAlign:"right",...mo}}
                     />
@@ -1139,21 +1164,36 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
             ))}
           </div>
 
-          {/* Bottom: cuenta selector + total + imputar */}
+          {/* Bottom: cuenta(s) selector + totales + imputar */}
           <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid rgba(255,255,255,.06)"}}>
-            <div style={{marginBottom:10}}>
-              <label style={S.lbl}>Cuenta a debitar</label>
-              <select value={cuenta} onChange={e=>setCuenta(e.target.value)} style={{...S.inp,fontSize:13}}>
-                <option value="">Seleccionar cuenta...</option>
-                {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+            <div style={{display:"flex",gap:10,marginBottom:10}}>
+              <div style={{flex:1}}>
+                <label style={S.lbl}>Cuenta $ a debitar</label>
+                <select value={cuenta} onChange={e=>setCuenta(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 12px"}}>
+                  <option value="">Seleccionar...</option>
+                  {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>
+              {hasUSDItems&&<div style={{flex:1}}>
+                <label style={S.lbl}>Cuenta USD a debitar</label>
+                <select value={cuentaUSD} onChange={e=>setCuentaUSD(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 12px"}}>
+                  <option value="">Seleccionar...</option>
+                  {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                </select>
+              </div>}
             </div>
             {accepted.length>0&&<>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <span style={{fontSize:13,color:"#64748b"}}>{accepted.length} movimiento{accepted.length!==1?"s":""} aceptado{accepted.length!==1?"s":""}</span>
-                <span style={{fontSize:15,fontWeight:700,color:"#f87171",...mo}}>-{f$(totalAceptado)}</span>
+              <div style={{borderRadius:10,background:"rgba(255,255,255,.02)",padding:"10px 12px",marginBottom:10}}>
+                {acceptedPesos.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:acceptedUSD.length>0?6:0}}>
+                  <span style={{fontSize:13,color:"#64748b"}}>{acceptedPesos.length} mov. en pesos</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#f87171",...mo}}>-{f$(totalAceptadoPesos)}</span>
+                </div>}
+                {acceptedUSD.length>0&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:13,color:"#64748b"}}>{acceptedUSD.length} mov. en USD</span>
+                  <span style={{fontSize:14,fontWeight:700,color:"#fb923c",...mo}}>-{f$(totalAceptadoUSD,true)}</span>
+                </div>}
               </div>
-              <button onClick={()=>doConfirm(type,cuenta)} disabled={saving===type||!cuenta} style={{width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:cuenta?"pointer":"not-allowed",background:done===type?"#16a34a":!cuenta?"#1e293b":`linear-gradient(135deg,${color},${isVisa?"#1d4ed8":"#b45309"})`,color:cuenta?"#fff":"#475569",opacity:saving===type?0.7:1}}>
+              <button onClick={()=>doConfirm(type,cuenta,cuentaUSD)} disabled={saving===type||!canImputar} style={{width:"100%",padding:14,borderRadius:12,border:"none",fontSize:14,fontWeight:700,cursor:canImputar?"pointer":"not-allowed",background:done===type?"#16a34a":!canImputar?"#1e293b":`linear-gradient(135deg,${color},${isVisa?"#1d4ed8":"#b45309"})`,color:canImputar?"#fff":"#475569",opacity:saving===type?0.7:1}}>
                 {done===type?"✓ Imputado":saving===type?"Guardando...":`Imputar ${accepted.length} movimiento${accepted.length!==1?"s":""}`}
               </button>
             </>}
@@ -1167,8 +1207,8 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
     <div className="page-inner">
       <div style={S.sec}>Importar Extractos de Tarjeta</div>
       <div style={{fontSize:13,color:"#64748b",marginBottom:20}}>Subí cada PDF por separado. Revisá y aceptá concepto por concepto. Recién al confirmar se impactan en tus movimientos y saldos.</div>
-      {renderCard("visa",visaItems,visaVto,setVisaVto,visaRef,visaCuenta,setVisaCuenta)}
-      {renderCard("master",masterItems,masterVto,setMasterVto,masterRef,masterCuenta,setMasterCuenta)}
+      {renderCard("visa",visaItems,visaVto,setVisaVto,visaRef,visaCuenta,setVisaCuenta,visaCuentaUSD,setVisaCuentaUSD)}
+      {renderCard("master",masterItems,masterVto,setMasterVto,masterRef,masterCuenta,setMasterCuenta,masterCuentaUSD,setMasterCuentaUSD)}
     </div>
   )
 }
