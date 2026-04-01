@@ -922,11 +922,12 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 }
 
 // ══════════════ EXTRACTO (PDF PARSER REAL) ══════════════
-function ExtractPage({cuentas,userId,onSaved,egresoCats}){
-  const[visaItems,setVisaItems]=useState([])
-  const[masterItems,setMasterItems]=useState([])
-  const[visaVto,setVisaVto]=useState("")
-  const[masterVto,setMasterVto]=useState("")
+function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
+  const lsGet=(key,def)=>{try{const v=localStorage.getItem(key);return v?JSON.parse(v):def}catch{return def}}
+  const[visaItems,setVisaItems]=useState(()=>lsGet("extracto_visa_items",[]))
+  const[masterItems,setMasterItems]=useState(()=>lsGet("extracto_master_items",[]))
+  const[visaVto,setVisaVto]=useState(()=>lsGet("extracto_visa_vto",""))
+  const[masterVto,setMasterVto]=useState(()=>lsGet("extracto_master_vto",""))
   const[visaCuenta,setVisaCuenta]=useState("")
   const[masterCuenta,setMasterCuenta]=useState("")
   const[visaCuentaUSD,setVisaCuentaUSD]=useState("")
@@ -935,6 +936,18 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
   const[done,setDone]=useState("")
   const visaRef=useRef(null)
   const masterRef=useRef(null)
+
+  useEffect(()=>{localStorage.setItem("extracto_visa_items",JSON.stringify(visaItems))},[visaItems])
+  useEffect(()=>{localStorage.setItem("extracto_master_items",JSON.stringify(masterItems))},[masterItems])
+  useEffect(()=>{localStorage.setItem("extracto_visa_vto",JSON.stringify(visaVto))},[visaVto])
+  useEffect(()=>{localStorage.setItem("extracto_master_vto",JSON.stringify(masterVto))},[masterVto])
+
+  const clearExtract=(type)=>{
+    localStorage.removeItem(`extracto_${type}_items`)
+    localStorage.removeItem(`extracto_${type}_vto`)
+    if(type==="visa"){setVisaItems([]);setVisaVto("");setVisaCuenta("");setVisaCuentaUSD("")}
+    else{setMasterItems([]);setMasterVto("");setMasterCuenta("");setMasterCuentaUSD("")}
+  }
 
   const MM={"Ene":"01","Feb":"02","Mar":"03","Abr":"04","May":"05","Jun":"06","Jul":"07","Ago":"08","Sep":"09","Oct":"10","Nov":"11","Dic":"12","Enero":"01","Febrero":"02","Marzo":"03","Abril":"04","Mayo":"05","Junio":"06","Julio":"07","Agosto":"08","Septiembre":"09","Octubre":"10","Noviembre":"11","Diciembre":"12","Noviem":"11","Diciem":"12","Setiem":"09"}
   const catMap={"SPOTIFY":"Apps","NETFLIX":"Apps","YOUTUBE":"Apps","GOOGLE":"Apps","APPLE":"Apps","LINKEDIN":"Apps","ADOBE":"Apps","OPENAI":"Apps","CLAUDE":"Apps","EMOVA":"Transporte","SUBTE":"Transporte","AUTOPISTA":"Auto","MAPFRE":"Auto","UBER":"Transporte","DIDI":"Transporte","RAPPI":"Compras","COTO":"Compras","DISCO":"Compras","SUPERMERCADO":"Compras","FARMACITY":"Compras","ZARA":"Compras","GRIMOLDI":"Compras","DEXTER":"Compras","NIKE":"Compras","ADIDAS":"Compras","MC DONALD":"Salidas","BURGER":"Salidas","RESTAURANT":"Salidas","GRILL":"Salidas","SUSHI":"Salidas","BIRRA":"Salidas","ALMIRO":"Salidas","ESTACIONAMIENTO":"Transporte","PARKING":"Transporte","CLUB ATLETICO BO":"Boca Juniors","SPORT CLUB":"Entrenamiento","TELEPEAJ":"Auto","VIALES":"Auto","AUBASA":"Auto","CODERHOUSE":"Estudios","PERSFLOW":"Departamento","URBA":"Auto","FUNDACIO":"Regalos","VIVARIUM":"Salidas"}
@@ -1086,7 +1099,7 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
       if(fresh){const delta=rowsUSD.reduce((s,r)=>s-r.monto,0);await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",cuentaUSDId)}
     }
     onSaved();setDone(type);setSaving("")
-    setTimeout(()=>{setDone("");if(type==="visa"){setVisaItems([]);setVisaCuenta("");setVisaCuentaUSD("")}else{setMasterItems([]);setMasterCuenta("");setMasterCuentaUSD("")}},2000)
+    setTimeout(()=>{setDone("");clearExtract(type)},2000)
   }
 
   const renderCard=(type,items,vto,setVto,fileRef,cuenta,setCuenta,cuentaUSD,setCuentaUSD)=>{
@@ -1153,7 +1166,7 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
                   </select>
                   <select value={p.sub||""} onChange={e=>setSub(type,i,e.target.value)} style={{...S.inp,fontSize:11,padding:"4px 8px",flex:1,color:p.sub?"#e2e8f0":"#475569"}}>
                     <option value="">Subcategoría...</option>
-                    {(EGRESO_SUBS[p.cat]||[]).map(s=><option key={s}>{s}</option>)}
+                    {((egresoSubs||EGRESO_SUBS)[p.cat]||[]).map(s=><option key={s}>{s}</option>)}
                   </select>
                   {p.status==="pending"?<>
                     <button onClick={()=>setStatus(type,i,"accepted")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff",flexShrink:0}}>✓</button>
@@ -1197,6 +1210,9 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats}){
                 {done===type?"✓ Imputado":saving===type?"Guardando...":`Imputar ${accepted.length} movimiento${accepted.length!==1?"s":""}`}
               </button>
             </>}
+            <button onClick={()=>clearExtract(type)} style={{marginTop:10,width:"100%",padding:10,borderRadius:10,border:"1px solid rgba(248,113,113,.2)",background:"transparent",color:"#f87171",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              Borrar extracto cargado
+            </button>
           </div>
         </>}
       </div>
@@ -1419,7 +1435,7 @@ export default function App(){
   else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv} onViewMonthIng={viewMonthIng}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
-  else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats}/>
+  else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
