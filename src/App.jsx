@@ -108,6 +108,14 @@ function HomePage({cuentas,movimientos}){
   const curMonth=monthOf(today())
   const recent=movimientos.filter(m=>monthOf(m.fecha)<=curMonth).slice(0,12)
   const h=v=>hide?"••••••":v
+  // Group accounts by name — each row shows $ and USD side by side
+  const grupos=[]
+  const seen={}
+  cuentas.forEach(c=>{
+    if(!seen[c.nombre]){seen[c.nombre]=grupos.length;grupos.push({nombre:c.nombre,ars:null,usd:null})}
+    if(c.moneda==="USD")grupos[seen[c.nombre]].usd=c
+    else grupos[seen[c.nombre]].ars=c
+  })
 
   return(
     <div className="page-inner">
@@ -130,20 +138,21 @@ function HomePage({cuentas,movimientos}){
 
       <div style={S.sec}>Cuentas</div>
       <div style={{...S.crd,marginBottom:28}}>
-        {cuentas.map((c,i)=>{
-          const isUSD=c.moneda==="USD"
-          return(
-            <div key={c.id} style={{display:"flex",alignItems:"center",padding:"14px 18px",gap:12,borderBottom:i<cuentas.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-              <div style={{width:36,height:36,borderRadius:10,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{accLogo(c.nombre)}</div>
-              <div style={{flex:1,fontSize:14,color:"#e2e8f0",fontWeight:600}}>{c.nombre}</div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:15,fontWeight:700,color:isUSD?"#a7f3d0":"#e2e8f0",...mo}}>{h(f$(c.saldo,isUSD))}</div>
-                <div style={{fontSize:10,color:"#475569"}}>{c.moneda}</div>
-              </div>
-            </div>
-          )
-        })}
-        {cuentas.length===0&&<div style={{padding:24,textAlign:"center",color:"#475569",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
+        {/* Header */}
+        <div style={{display:"flex",padding:"8px 18px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{flex:1}}/>
+          <div style={{width:110,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>$</div>
+          <div style={{width:100,textAlign:"right",fontSize:10,color:"#34d399",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
+        </div>
+        {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"#475569",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
+        {grupos.map((g,i)=>(
+          <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"14px 18px",gap:12,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{accLogo(g.nombre)}</div>
+            <div style={{flex:1,fontSize:14,color:"#e2e8f0",fontWeight:600}}>{g.nombre}</div>
+            <div style={{width:110,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
+            <div style={{width:100,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
+          </div>
+        ))}
       </div>
 
       <div style={S.sec}>Últimos Movimientos</div>
@@ -1367,7 +1376,7 @@ function ABMPage({cuentas,userId,onSaved}){
   const[newVal,setNewVal]=useState("")
   const[newSub,setNewSub]=useState("")
   const[selCatId,setSelCatId]=useState("")
-  const[newCuenta,setNewCuenta]=useState({nombre:"",moneda:"ARS",saldo:""})
+  const[newCuenta,setNewCuenta]=useState({nombre:"",tieneARS:true,tieneUSD:false,saldoARS:"",saldoUSD:""})
 
   const loadABM=useCallback(async()=>{
     const[{data:ce},{data:se},{data:ci},{data:ti}]=await Promise.all([
@@ -1390,7 +1399,15 @@ function ABMPage({cuentas,userId,onSaved}){
   const delCatIngreso=async(id)=>{await supabase.from("categorias_ingreso").delete().eq("id",id);loadABM();onSaved()}
   const addTipoInv=async()=>{if(!newVal.trim())return;await supabase.from("tipos_inversion").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM();onSaved()}
   const delTipoInv=async(id)=>{await supabase.from("tipos_inversion").delete().eq("id",id);loadABM();onSaved()}
-  const addCuenta=async()=>{if(!newCuenta.nombre.trim())return;await supabase.from("cuentas").insert({user_id:userId,nombre:newCuenta.nombre.trim(),moneda:newCuenta.moneda,saldo:parseFloat(newCuenta.saldo)||0});setNewCuenta({nombre:"",moneda:"ARS",saldo:""});onSaved()}
+  const addCuenta=async()=>{
+    const n=newCuenta.nombre.trim();if(!n)return
+    if(!newCuenta.tieneARS&&!newCuenta.tieneUSD)return
+    const rows=[]
+    if(newCuenta.tieneARS)rows.push({user_id:userId,nombre:n,moneda:"ARS",saldo:parseFloat(newCuenta.saldoARS)||0})
+    if(newCuenta.tieneUSD)rows.push({user_id:userId,nombre:n,moneda:"USD",saldo:parseFloat(newCuenta.saldoUSD)||0})
+    await supabase.from("cuentas").insert(rows)
+    setNewCuenta({nombre:"",tieneARS:true,tieneUSD:false,saldoARS:"",saldoUSD:""});onSaved()
+  }
   const delCuenta=async(id)=>{if(!confirm("¿Eliminar esta cuenta?"))return;await supabase.from("cuentas").delete().eq("id",id);onSaved()}
 
   const tabs=[{id:"cuentas",l:"Cuentas"},{id:"egresos",l:"Egresos"},{id:"ingresos",l:"Ingresos"},{id:"inversiones",l:"Inversiones"}]
@@ -1406,21 +1423,46 @@ function ABMPage({cuentas,userId,onSaved}){
 
       {tab==="cuentas"&&<>
         <div style={S.crd}>
-          {cuentas.map((c,i)=>(
-            <div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<cuentas.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-              <div><div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{c.nombre}</div><div style={{fontSize:12,color:"#64748b"}}>{c.moneda} · Saldo: {f$(c.saldo,c.moneda==="USD")}</div></div>
-              <DelBtn fn={()=>delCuenta(c.id)}/>
-            </div>
-          ))}
+          {(()=>{
+            const grps=[];const seen={}
+            cuentas.forEach(c=>{
+              if(!seen[c.nombre]){seen[c.nombre]=grps.length;grps.push({nombre:c.nombre,ars:null,usd:null})}
+              if(c.moneda==="USD")grps[seen[c.nombre]].usd=c;else grps[seen[c.nombre]].ars=c
+            })
+            return grps.map((g,i)=>(
+              <div key={g.nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<grps.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+                <div>
+                  <div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{g.nombre}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:12}}>
+                    {g.ars&&<span>$ {f$(g.ars.saldo)}</span>}
+                    {g.usd&&<span style={{color:"#34d399"}}>USD {f$(g.usd.saldo,true)}</span>}
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:4}}>
+                  {g.ars&&<DelBtn fn={()=>delCuenta(g.ars.id)}/>}
+                  {g.usd&&<DelBtn fn={()=>delCuenta(g.usd.id)}/>}
+                </div>
+              </div>
+            ))
+          })()}
         </div>
         <div style={{...S.crdP,marginTop:16}}>
           <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Nueva Cuenta</div>
-          <input value={newCuenta.nombre} onChange={e=>setNewCuenta(p=>({...p,nombre:e.target.value}))} placeholder="Nombre" style={{...S.inp,marginBottom:8}}/>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-            <select value={newCuenta.moneda} onChange={e=>setNewCuenta(p=>({...p,moneda:e.target.value}))} style={S.inp}><option value="ARS">ARS</option><option value="USD">USD</option></select>
-            <input type="number" value={newCuenta.saldo} onChange={e=>setNewCuenta(p=>({...p,saldo:e.target.value}))} placeholder="Saldo inicial" style={{...S.inp,...mo}}/>
+          <input value={newCuenta.nombre} onChange={e=>setNewCuenta(p=>({...p,nombre:e.target.value}))} placeholder="Nombre (ej: Banco Provincia)" style={{...S.inp,marginBottom:12}}/>
+          <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Monedas</div>
+          <div style={{display:"flex",gap:10,marginBottom:12}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,flex:1,padding:"10px 12px",borderRadius:10,background:newCuenta.tieneARS?"rgba(96,165,250,.1)":"rgba(255,255,255,.02)",border:`1px solid ${newCuenta.tieneARS?"rgba(96,165,250,.3)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
+              <input type="checkbox" checked={newCuenta.tieneARS} onChange={e=>setNewCuenta(p=>({...p,tieneARS:e.target.checked}))} style={{accentColor:"#60a5fa"}}/>
+              <span style={{fontSize:13,color:newCuenta.tieneARS?"#60a5fa":"#64748b",fontWeight:600}}>Pesos $</span>
+            </label>
+            <label style={{display:"flex",alignItems:"center",gap:8,flex:1,padding:"10px 12px",borderRadius:10,background:newCuenta.tieneUSD?"rgba(52,211,153,.1)":"rgba(255,255,255,.02)",border:`1px solid ${newCuenta.tieneUSD?"rgba(52,211,153,.3)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
+              <input type="checkbox" checked={newCuenta.tieneUSD} onChange={e=>setNewCuenta(p=>({...p,tieneUSD:e.target.checked}))} style={{accentColor:"#34d399"}}/>
+              <span style={{fontSize:13,color:newCuenta.tieneUSD?"#34d399":"#64748b",fontWeight:600}}>USD</span>
+            </label>
           </div>
-          <button onClick={addCuenta} style={{width:"100%",padding:12,borderRadius:10,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",background:"#3b82f6",color:"#fff"}}>Agregar Cuenta</button>
+          {newCuenta.tieneARS&&<input type="number" value={newCuenta.saldoARS} onChange={e=>setNewCuenta(p=>({...p,saldoARS:e.target.value}))} placeholder="Saldo inicial $" style={{...S.inp,...mo,marginBottom:8}}/>}
+          {newCuenta.tieneUSD&&<input type="number" value={newCuenta.saldoUSD} onChange={e=>setNewCuenta(p=>({...p,saldoUSD:e.target.value}))} placeholder="Saldo inicial USD" style={{...S.inp,...mo,marginBottom:8}}/>}
+          <button onClick={addCuenta} disabled={!newCuenta.nombre.trim()||(!newCuenta.tieneARS&&!newCuenta.tieneUSD)} style={{width:"100%",padding:12,borderRadius:10,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",background:"#3b82f6",color:"#fff",opacity:(!newCuenta.nombre.trim()||(!newCuenta.tieneARS&&!newCuenta.tieneUSD))?.5:1}}>Agregar Cuenta</button>
         </div>
       </>}
 
