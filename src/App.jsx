@@ -112,9 +112,10 @@ function HomePage({cuentas,movimientos}){
   const grupos=[]
   const seen={}
   cuentas.forEach(c=>{
-    if(!seen[c.nombre]){seen[c.nombre]=grupos.length;grupos.push({nombre:c.nombre,ars:null,usd:null})}
-    if(c.moneda==="USD")grupos[seen[c.nombre]].usd=c
-    else grupos[seen[c.nombre]].ars=c
+    const key=c.nombre.trim().toLowerCase()
+    if(!seen[key]){seen[key]=grupos.length;grupos.push({nombre:c.nombre.trim(),ars:null,usd:null})}
+    if(c.moneda==="USD")grupos[seen[key]].usd=c
+    else grupos[seen[key]].ars=c
   })
 
   return(
@@ -1511,8 +1512,9 @@ function ABMPage({cuentas,userId,onSaved}){
           {(()=>{
             const grps=[];const seen={}
             cuentas.forEach(c=>{
-              if(!seen[c.nombre]){seen[c.nombre]=grps.length;grps.push({nombre:c.nombre,ars:null,usd:null,extras:[]})}
-              const idx=seen[c.nombre]
+              const key=c.nombre.trim().toLowerCase()
+              if(!seen[key]){seen[key]=grps.length;grps.push({nombre:c.nombre.trim(),ars:null,usd:null,extras:[]})}
+              const idx=seen[key]
               if(c.moneda==="USD"){if(!grps[idx].usd)grps[idx].usd=c;else grps[idx].extras.push(c)}
               else{if(!grps[idx].ars)grps[idx].ars=c;else grps[idx].extras.push(c)}
             })
@@ -1522,8 +1524,8 @@ function ABMPage({cuentas,userId,onSaved}){
                   <div>
                     <div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{g.nombre}</div>
                     <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:12}}>
-                      {g.ars&&<span>$ {f$(g.ars.saldo)}</span>}
-                      {g.usd&&<span style={{color:"#34d399"}}>USD {f$(g.usd.saldo,true)}</span>}
+                      {g.ars&&<span>{f$(g.ars.saldo)}</span>}
+                      {g.usd&&<span style={{color:"#34d399"}}>{f$(g.usd.saldo,true)}</span>}
                     </div>
                   </div>
                   <div style={{display:"flex",gap:4,alignItems:"center"}}>
