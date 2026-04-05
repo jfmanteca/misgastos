@@ -336,7 +336,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
           <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
-          <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
         </div>
         {fm.cat==="Pago deuda"&&fm.sub==="Edgardo"&&<div style={{marginBottom:16}}>
           <label style={S.lbl}>TC Dólar (para convertir a USD en Deuda)</label>
@@ -350,7 +350,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
       {mt==="ingreso"&&<>
         <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{ingresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
         <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:16}}>
-          <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
           <div><label style={S.lbl}>TC Dólar</label><input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
         </div>
         {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{...S.crdP,marginBottom:16,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)"}}>
@@ -361,9 +361,9 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         </div>}
       </>}
       {mt==="traspaso"&&<div style={{marginBottom:16}}>
-        <label style={S.lbl}>Cuenta Origen</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
+        <label style={S.lbl}>Cuenta Origen</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select>
         <div style={{textAlign:"center",padding:"10px 0",color:"#3b82f6",fontSize:20}}>↓</div>
-        <label style={S.lbl}>Cuenta Destino</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select>
+        <label style={S.lbl}>Cuenta Destino</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select>
       </div>}
 
       {mt==="inversion"&&<>
@@ -379,7 +379,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         {fm.it&&!isUSD&&<>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
         </>}
 
         {/* Step 2b: Compra USD form */}
@@ -387,8 +387,8 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
           <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
-          <div style={{marginBottom:20}}><label style={S.lbl}>Cuenta a Acreditar</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
+          <div style={{marginBottom:20}}><label style={S.lbl}>Cuenta a Acreditar</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
           {usdCalc!==null&&<div style={{...S.crdP,marginBottom:16,textAlign:"center",border:"1px solid rgba(245,158,11,.25)"}}>
             <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:4}}>Resultado</div>
             <div style={{fontSize:26,fontWeight:800,color:"#f59e0b",...mo}}>{f$(usdCalc,true)}</div>
@@ -987,7 +987,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             <label style={S.lbl}>Cuenta</label>
             <select value={filterCuenta} onChange={e=>setFilterCuenta(e.target.value)} style={{...S.inp,fontSize:12}}>
               <option value="">Todas</option>
-              {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre} ({c.moneda})</option>)}
             </select>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
@@ -1029,7 +1029,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
                 <option value="inversion">Inversión</option>
               </select>
               <select value={editForm.cuenta_id||""} onChange={ev=>setEditForm(f=>({...f,cuenta_id:ev.target.value}))} style={{...S.inp,fontSize:12}}>
-                {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre} ({c.moneda})</option>)}
               </select>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
@@ -1330,14 +1330,14 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
                 <label style={S.lbl}>Cuenta $ a debitar</label>
                 <select value={cuenta} onChange={e=>setCuenta(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 12px"}}>
                   <option value="">Seleccionar...</option>
-                  {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  {cuentas.filter(c=>c.moneda!=="USD").map(c=><option key={c.id} value={c.id}>{c.nombre} (ARS)</option>)}
                 </select>
               </div>
               {hasUSDItems&&<div style={{flex:1}}>
                 <label style={S.lbl}>Cuenta USD a debitar</label>
                 <select value={cuentaUSD} onChange={e=>setCuentaUSD(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 12px"}}>
                   <option value="">Seleccionar...</option>
-                  {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  {cuentas.filter(c=>c.moneda==="USD").map(c=><option key={c.id} value={c.id}>{c.nombre} (USD)</option>)}
                 </select>
               </div>}
             </div>
