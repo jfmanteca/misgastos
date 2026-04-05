@@ -200,6 +200,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
   const[usdCalc,setUsdCalc]=useState(null)
   const[showConfirm,setShowConfirm]=useState(false)
   const[recupero,setRecupero]=useState(false)
+  const[opUSD,setOpUSD]=useState(false)
   const subs=egresoSubs[fm.cat]||[]
   const isUSD=mt==="inversion"&&fm.it.toLowerCase().includes("usd")
 
@@ -306,16 +307,23 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 
       <div style={S.sec}>Nuevo Movimiento</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
-        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false)}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tabL[t]}</button>)}
+        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tabL[t]}</button>)}
       </div>
 
       {/* Generic fields for non-inversion tabs */}
       {mt!=="inversion"&&<>
-        {mt==="egreso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"12px 14px",borderRadius:12,background:recupero?"rgba(74,222,128,.06)":"rgba(220,38,38,.04)",border:`1px solid ${recupero?"rgba(74,222,128,.2)":"rgba(220,38,38,.1)"}`,cursor:"pointer"}}>
+        {mt==="egreso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,padding:"12px 14px",borderRadius:12,background:recupero?"rgba(74,222,128,.06)":"rgba(220,38,38,.04)",border:`1px solid ${recupero?"rgba(74,222,128,.2)":"rgba(220,38,38,.1)"}`,cursor:"pointer"}}>
           <input type="checkbox" checked={recupero} onChange={e=>setRecupero(e.target.checked)} style={{width:16,height:16,accentColor:"#4ade80",cursor:"pointer",flexShrink:0}}/>
           <div>
             <div style={{fontSize:13,fontWeight:600,color:recupero?"#4ade80":"#fca5a5"}}>¿Recupero de dinero?</div>
             <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Sumará como un ingreso por devolución</div>
+          </div>
+        </label>}
+        {mt!=="traspaso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"12px 14px",borderRadius:12,background:opUSD?"rgba(52,211,153,.06)":"rgba(255,255,255,.02)",border:`1px solid ${opUSD?"rgba(52,211,153,.2)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
+          <input type="checkbox" checked={opUSD} onChange={e=>setOpUSD(e.target.checked)} style={{width:16,height:16,accentColor:"#34d399",cursor:"pointer",flexShrink:0}}/>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:opUSD?"#34d399":"#64748b"}}>Operación en dólares</div>
+            <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Muestra solo cuentas en USD</div>
           </div>
         </label>}
         <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
@@ -327,7 +335,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
           <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
-          <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
         </div>
         {fm.cat==="Pago deuda"&&fm.sub==="Edgardo"&&<div style={{marginBottom:16}}>
           <label style={S.lbl}>TC Dólar (para convertir a USD en Deuda)</label>
@@ -341,7 +349,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
       {mt==="ingreso"&&<>
         <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{ingresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
         <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:16}}>
-          <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+          <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
           <div><label style={S.lbl}>TC Dólar</label><input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
         </div>
         {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{...S.crdP,marginBottom:16,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)"}}>
@@ -1479,23 +1487,33 @@ function ABMPage({cuentas,userId,onSaved}){
           {(()=>{
             const grps=[];const seen={}
             cuentas.forEach(c=>{
-              if(!seen[c.nombre]){seen[c.nombre]=grps.length;grps.push({nombre:c.nombre,ars:null,usd:null})}
-              if(c.moneda==="USD")grps[seen[c.nombre]].usd=c;else grps[seen[c.nombre]].ars=c
+              if(!seen[c.nombre]){seen[c.nombre]=grps.length;grps.push({nombre:c.nombre,ars:null,usd:null,extras:[]})}
+              const idx=seen[c.nombre]
+              if(c.moneda==="USD"){if(!grps[idx].usd)grps[idx].usd=c;else grps[idx].extras.push(c)}
+              else{if(!grps[idx].ars)grps[idx].ars=c;else grps[idx].extras.push(c)}
             })
             return grps.map((g,i)=>(
-              <div key={g.nombre} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:i<grps.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-                <div>
-                  <div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{g.nombre}</div>
-                  <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:12}}>
-                    {g.ars&&<span>$ {f$(g.ars.saldo)}</span>}
-                    {g.usd&&<span style={{color:"#34d399"}}>USD {f$(g.usd.saldo,true)}</span>}
+              <div key={g.nombre} style={{borderBottom:i<grps.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px"}}>
+                  <div>
+                    <div style={{fontSize:15,color:"#e2e8f0",fontWeight:500}}>{g.nombre}</div>
+                    <div style={{fontSize:12,color:"#64748b",marginTop:2,display:"flex",gap:12}}>
+                      {g.ars&&<span>$ {f$(g.ars.saldo)}</span>}
+                      {g.usd&&<span style={{color:"#34d399"}}>USD {f$(g.usd.saldo,true)}</span>}
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                    <button onClick={()=>startEditGrp(g)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:4,fontSize:13}}>✎</button>
+                    {g.ars&&<DelBtn fn={()=>delCuenta(g.ars.id)}/>}
+                    {g.usd&&<DelBtn fn={()=>delCuenta(g.usd.id)}/>}
                   </div>
                 </div>
-                <div style={{display:"flex",gap:4,alignItems:"center"}}>
-                  <button onClick={()=>startEditGrp(g)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:4,fontSize:13}}>✎</button>
-                  {g.ars&&<DelBtn fn={()=>delCuenta(g.ars.id)}/>}
-                  {g.usd&&<DelBtn fn={()=>delCuenta(g.usd.id)}/>}
-                </div>
+                {g.extras.map(ex=>(
+                  <div key={ex.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 16px 6px 32px",background:"rgba(239,68,68,.04)"}}>
+                    <span style={{fontSize:11,color:"#f87171"}}>⚠ Duplicado {ex.moneda}: {f$(ex.saldo,ex.moneda==="USD")}</span>
+                    <DelBtn fn={()=>delCuenta(ex.id)}/>
+                  </div>
+                ))}
               </div>
             ))
           })()}
