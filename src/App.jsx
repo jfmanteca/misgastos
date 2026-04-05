@@ -111,9 +111,10 @@ function HomePage({cuentas,movimientos}){
   // Group accounts by name — each row shows $ and USD side by side
   const grupos=[]
   const seen={}
+  const normN2=s=>s.replace(/[\s\u00A0]+/g," ").trim().toLowerCase()
   cuentas.forEach(c=>{
-    const key=c.nombre.trim().toLowerCase()
-    if(!seen[key]){seen[key]=grupos.length;grupos.push({nombre:c.nombre.trim(),ars:null,usd:null})}
+    const key=normN2(c.nombre)
+    if(!seen[key]){seen[key]=grupos.length;grupos.push({nombre:c.nombre.replace(/[\s\u00A0]+/g," ").trim(),ars:null,usd:null})}
     if(c.moneda==="USD")grupos[seen[key]].usd=c
     else grupos[seen[key]].ars=c
   })
@@ -1450,9 +1451,14 @@ function ABMPage({cuentas,userId,onSaved}){
     saldoARS:g.ars?String(g.ars.saldo):"0",
     saldoUSD:g.usd?String(g.usd.saldo):"0"
   })
+  const normNombre=s=>s.replace(/[\s\u00A0]+/g," ").trim().toLowerCase()
   const saveEditGrp=async()=>{
-    const n=editGrp.nombre2.trim();if(!n)return
+    const n=editGrp.nombre2.replace(/[\s\u00A0]+/g," ").trim();if(!n)return
     const ops=[]
+    // Renombrar en DB cualquier cuenta con nombre similar para forzar consistencia
+    const knownIds=[editGrp.arsId,editGrp.usdId].filter(Boolean)
+    const similar=cuentas.filter(c=>!knownIds.includes(c.id)&&normNombre(c.nombre)===normNombre(n))
+    similar.forEach(c=>ops.push(supabase.from("cuentas").update({nombre:n}).eq("id",c.id)))
     // ARS
     if(editGrp.tieneARS&&editGrp.arsId)
       ops.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoARS)||0}).eq("id",editGrp.arsId))
@@ -1510,10 +1516,11 @@ function ABMPage({cuentas,userId,onSaved}){
         </div>}
         <div style={S.crd}>
           {(()=>{
+            const normN=s=>s.replace(/[\s\u00A0]+/g," ").trim().toLowerCase()
             const grps=[];const seen={}
             cuentas.forEach(c=>{
-              const key=c.nombre.trim().toLowerCase()
-              if(!seen[key]){seen[key]=grps.length;grps.push({nombre:c.nombre.trim(),ars:null,usd:null,extras:[]})}
+              const key=normN(c.nombre)
+              if(!seen[key]){seen[key]=grps.length;grps.push({nombre:c.nombre.replace(/[\s\u00A0]+/g," ").trim(),ars:null,usd:null,extras:[]})}
               const idx=seen[key]
               if(c.moneda==="USD"){if(!grps[idx].usd)grps[idx].usd=c;else grps[idx].extras.push(c)}
               else{if(!grps[idx].ars)grps[idx].ars=c;else grps[idx].extras.push(c)}
