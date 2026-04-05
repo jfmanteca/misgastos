@@ -510,23 +510,24 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         const fijoSubs=(subEgreso||[]).filter(s=>s.es_fijo)
         if(fijoSubs.length===0)return null
         const fijoNombres=new Set(fijoSubs.map(s=>s.nombre))
-        // Last 6 calendar months
         const nowD=new Date()
         const last6=[]
         for(let i=5;i>=0;i--){const d=new Date(nowD.getFullYear(),nowD.getMonth()-i,1);last6.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`)}
         const ml2=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]
         const fmtMk=mk=>{const[,m]=mk.split("-");return ml2[parseInt(m)-1]}
-        // Per-month data
         const mData=last6.map(mk=>{
           const movs=movimientos.filter(m=>m.tipo==="egreso"&&m.monto>0&&fijoNombres.has(m.subcategoria)&&monthOf(m.fecha)===mk)
           return{mk,total:movs.reduce((s,m)=>s+m.monto,0),movs}
         })
-        // SVG line chart
-        const cW=270,cH=60,pX=8,pY=8
+        // SVG geometry only — labels are HTML
+        const cW=280,cH=70,pX=10,pYt=5,pYb=5
+        const step=(cW-2*pX)/(last6.length-1)
         const maxV=Math.max(...mData.map(d=>d.total),1)
-        const pts=mData.map((d,i)=>({x:pX+(i/(last6.length-1))*(cW-2*pX),y:pY+(1-d.total/maxV)*(cH-2*pY),...d}))
-        const polyPts=pts.map(p=>`${p.x},${p.y}`).join(" ")
-        // Selected month breakdown
+        const pts=mData.map((d,i)=>({
+          x:pX+i*step, y:pYt+(1-d.total/maxV)*(cH-pYt-pYb),
+          leftPct:(pX+i*step)/cW*100, ...d
+        }))
+        const linePts=pts.map(p=>`${p.x},${p.y}`).join(" ")
         const selData=mData.find(d=>d.mk===selFijoMk)
         const breakdown=selData?fijoSubs.map(s=>{
           const movs=selData.movs.filter(m=>m.subcategoria===s.nombre)
@@ -537,50 +538,60 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         return(
           <div style={{...S.crdP,marginBottom:20}}>
             <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Gastos Fijos — últimos 6 meses</div>
-            <div style={{fontSize:10,color:"#334155",marginBottom:14}}>Tocá un mes para ver el discriminado</div>
-            {/* Line chart */}
-            <svg viewBox={`0 0 ${cW} ${cH+30}`} style={{width:"100%",display:"block",marginBottom:4}}>
-              {/* Zero baseline */}
-              <line x1={pX} y1={pY+(cH-2*pY)} x2={cW-pX} y2={pY+(cH-2*pY)} stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
-              {/* Area fill */}
-              <polygon points={`${pts[0].x},${pY+(cH-2*pY)} ${polyPts} ${pts[pts.length-1].x},${pY+(cH-2*pY)}`} fill="rgba(251,191,36,.07)"/>
-              {/* Line */}
-              <polyline points={polyPts} fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-              {/* Points + labels */}
-              {pts.map((p,i)=>{
-                const isSel=p.mk===selFijoMk
-                return(
-                  <g key={i} onClick={()=>setSelFijoMk(isSel?null:p.mk)} style={{cursor:"pointer"}}>
-                    {isSel&&<circle cx={p.x} cy={p.y} r="10" fill="rgba(251,191,36,.15)"/>}
-                    <circle cx={p.x} cy={p.y} r={isSel?5:3.5} fill={p.total>0?"#fbbf24":"#334155"} stroke={isSel?"#fff":"#fbbf24"} strokeWidth={isSel?1.5:1}/>
-                    {/* Amount above point */}
-                    {p.total>0&&<text x={p.x} y={p.y-7} textAnchor="middle" fill={isSel?"#fbbf24":"#64748b"} fontSize="7" fontWeight={isSel?"700":"400"} style={mo}>{fS(p.total)}</text>}
-                    {/* Month label below */}
-                    <text x={p.x} y={cH+22} textAnchor="middle" fill={isSel?"#fbbf24":"#64748b"} fontSize="9" fontWeight={isSel?"700":"400"}>{fmtMk(p.mk)}</text>
-                  </g>
-                )
-              })}
-            </svg>
-            {/* Breakdown for selected month */}
-            {selData&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,.06)"}}>
+            <div style={{fontSize:10,color:"#334155",marginBottom:10}}>Tocá un mes para ver el discriminado</div>
+            {/* Chart wrapper: padding-top reserves space for HTML amount labels */}
+            <div style={{position:"relative",paddingTop:18,marginBottom:4}}>
+              {/* Amount labels — HTML, positioned absolutely over SVG */}
+              {pts.map((p,i)=>p.total>0?(
+                <div key={i} style={{position:"absolute",top:0,left:`${p.leftPct}%`,transform:"translateX(-50%)",fontSize:10,fontWeight:600,color:p.mk===selFijoMk?"#fbbf24":"#94a3b8",whiteSpace:"nowrap",pointerEvents:"none",...mo}}>
+                  {fS(p.total)}
+                </div>
+              ):null)}
+              {/* SVG — geometry only, no text */}
+              <svg viewBox={`0 0 ${cW} ${cH}`} style={{width:"100%",display:"block"}}>
+                <polygon points={`${pts[0].x},${cH-pYb} ${linePts} ${pts[pts.length-1].x},${cH-pYb}`} fill="rgba(251,191,36,.07)"/>
+                <polyline points={linePts} fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+                {pts.map((p,i)=>{
+                  const isSel=p.mk===selFijoMk
+                  return(
+                    <g key={i} onClick={()=>setSelFijoMk(isSel?null:p.mk)} style={{cursor:"pointer"}}>
+                      {isSel&&<circle cx={p.x} cy={p.y} r="9" fill="rgba(251,191,36,.15)"/>}
+                      <circle cx={p.x} cy={p.y} r={isSel?5:3.5} fill={p.total>0?"#fbbf24":"#1e293b"} stroke="#fbbf24" strokeWidth={isSel?1.5:1}/>
+                    </g>
+                  )
+                })}
+              </svg>
+            </div>
+            {/* Month labels — HTML flex, matching style of other charts */}
+            <div style={{display:"flex",marginBottom:selData?0:0}}>
+              {last6.map((mk,i)=>(
+                <div key={i} onClick={()=>setSelFijoMk(mk===selFijoMk?null:mk)} style={{flex:1,textAlign:"center",fontSize:11,color:mk===selFijoMk?"#fbbf24":"#94a3b8",fontWeight:mk===selFijoMk?700:500,cursor:"pointer"}}>
+                  {fmtMk(mk)}
+                </div>
+              ))}
+            </div>
+            {/* Breakdown */}
+            {selData&&<div style={{marginTop:14,paddingTop:14,borderTop:"1px solid rgba(255,255,255,.06)"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                 <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{fmtMk(selFijoMk)} — discriminado</span>
                 <span style={{fontSize:14,fontWeight:700,color:"#fbbf24",...mo}}>{f$(selTotal)}</span>
               </div>
-              {breakdown.length===0?<div style={{fontSize:12,color:"#475569",textAlign:"center",padding:8}}>Sin movimientos de gastos fijos en este mes</div>:
-              breakdown.map((item,i)=>(
-                <div key={i} style={{marginBottom:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{fontSize:13}}>{catIcon(item.cat)}</span>
-                      <span style={{fontSize:12,color:"#e2e8f0"}}>{item.sub}</span>
-                      {item.cat&&<span style={{fontSize:10,color:"#475569"}}>{item.cat}</span>}
+              {breakdown.length===0
+                ?<div style={{fontSize:12,color:"#475569",textAlign:"center",padding:8}}>Sin movimientos de gastos fijos en este mes</div>
+                :breakdown.map((item,i)=>(
+                  <div key={i} style={{marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontSize:13}}>{catIcon(item.cat)}</span>
+                        <span style={{fontSize:12,color:"#e2e8f0"}}>{item.sub}</span>
+                        {item.cat&&<span style={{fontSize:10,color:"#475569"}}>{item.cat}</span>}
+                      </div>
+                      <span style={{fontSize:13,fontWeight:700,color:"#fbbf24",...mo}}>{f$(item.monto)}</span>
                     </div>
-                    <span style={{fontSize:13,fontWeight:700,color:"#fbbf24",...mo}}>{f$(item.monto)}</span>
+                    <div style={{height:3,background:"#0f1a2a",borderRadius:2}}><div style={{width:`${(item.monto/maxBreak)*100}%`,height:"100%",background:"linear-gradient(90deg,#92400e,#fbbf24)",borderRadius:2}}/></div>
                   </div>
-                  <div style={{height:3,background:"#0f1a2a",borderRadius:2}}><div style={{width:`${(item.monto/maxBreak)*100}%`,height:"100%",background:"linear-gradient(90deg,#92400e,#fbbf24)",borderRadius:2}}/></div>
-                </div>
-              ))}
+                ))
+              }
             </div>}
           </div>
         )
