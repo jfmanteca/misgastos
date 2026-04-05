@@ -35,34 +35,66 @@ const S={
 }
 
 // ══════════════ AUTH ══════════════
-function LoginPage({onLogin}){
+function LoginPage(){
   const[email,setEmail]=useState("")
   const[pass,setPass]=useState("")
   const[err,setErr]=useState("")
   const[loading,setLoading]=useState(false)
-  const go=async()=>{
+  const[mode,setMode]=useState("login") // "login" | "register"
+
+  const goEmail=async()=>{
     setLoading(true);setErr("")
-    const{error}=await supabase.auth.signInWithPassword({email,password:pass})
+    const fn=mode==="register"
+      ?supabase.auth.signUp({email,password:pass})
+      :supabase.auth.signInWithPassword({email,password:pass})
+    const{error}=await fn
     if(error)setErr(error.message)
+    else if(mode==="register")setErr("✓ Revisá tu email para confirmar el registro.")
     setLoading(false)
   }
+
+  const goGoogle=async()=>{
+    setLoading(true);setErr("")
+    const{error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin}})
+    if(error){setErr(error.message);setLoading(false)}
+  }
+
   return(
     <div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{width:"100%",maxWidth:360}}>
         <h1 style={{fontSize:32,fontWeight:800,textAlign:"center",marginBottom:8,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
-        <p style={{color:"#475569",textAlign:"center",fontSize:14,marginBottom:32}}>Iniciá sesión para continuar</p>
-        {err&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.2)",borderRadius:12,padding:"10px 14px",marginBottom:16,color:"#f87171",fontSize:13}}>{err}</div>}
-        <div style={{marginBottom:16}}>
+        <p style={{color:"#475569",textAlign:"center",fontSize:14,marginBottom:32}}>{mode==="register"?"Creá tu cuenta":"Iniciá sesión para continuar"}</p>
+
+        {/* Google */}
+        <button onClick={goGoogle} disabled={loading} style={{width:"100%",padding:14,borderRadius:14,border:"1px solid rgba(255,255,255,.1)",fontSize:15,fontWeight:600,cursor:"pointer",background:"#fff",color:"#1e293b",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?.6:1}}>
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continuar con Google
+        </button>
+
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+          <div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>
+          <span style={{fontSize:12,color:"#334155"}}>o con email</span>
+          <div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>
+        </div>
+
+        {err&&<div style={{background:err.startsWith("✓")?"rgba(74,222,128,.08)":"rgba(239,68,68,.1)",border:`1px solid ${err.startsWith("✓")?"rgba(74,222,128,.2)":"rgba(239,68,68,.2)"}`,borderRadius:12,padding:"10px 14px",marginBottom:16,color:err.startsWith("✓")?"#4ade80":"#f87171",fontSize:13}}>{err}</div>}
+
+        <div style={{marginBottom:12}}>
           <label style={S.lbl}>Email</label>
           <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={S.inp}/>
         </div>
-        <div style={{marginBottom:24}}>
+        <div style={{marginBottom:20}}>
           <label style={S.lbl}>Contraseña</label>
-          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&go()}/>
+          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&goEmail()}/>
         </div>
-        <button onClick={go} disabled={loading} style={{width:"100%",padding:16,borderRadius:16,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",color:"#fff",opacity:loading?.6:1,boxShadow:"0 6px 20px rgba(59,130,246,.3)"}}>
-          {loading?"Ingresando...":"Ingresar"}
+        <button onClick={goEmail} disabled={loading} style={{width:"100%",padding:16,borderRadius:16,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",color:"#fff",opacity:loading?.6:1,boxShadow:"0 6px 20px rgba(59,130,246,.3)",marginBottom:14}}>
+          {loading?"...":(mode==="register"?"Registrarse":"Ingresar")}
         </button>
+        <div style={{textAlign:"center"}}>
+          <button onClick={()=>{setMode(m=>m==="login"?"register":"login");setErr("")}} style={{background:"none",border:"none",color:"#60a5fa",fontSize:13,cursor:"pointer",textDecoration:"underline"}}>
+            {mode==="login"?"¿No tenés cuenta? Registrate":"¿Ya tenés cuenta? Ingresá"}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -71,13 +103,10 @@ function LoginPage({onLogin}){
 // ══════════════ HOME ══════════════
 function HomePage({cuentas,movimientos}){
   const[hide,setHide]=useState(false)
-  const cuentasByNombre={}
-  cuentas.forEach(c=>{cuentasByNombre[c.nombre]=c})
-  const tP=(cuentasByNombre["Efectivo $"]?.saldo||0)+(cuentasByNombre["BAPRO $"]?.saldo||0)+(cuentasByNombre["Mercado Pago $"]?.saldo||0)
-  const tU=(cuentasByNombre["Efectivo USD"]?.saldo||0)+(cuentasByNombre["BAPRO USD"]?.saldo||0)
+  const tP=cuentas.filter(c=>c.moneda!=="USD").reduce((s,c)=>s+c.saldo,0)
+  const tU=cuentas.filter(c=>c.moneda==="USD").reduce((s,c)=>s+c.saldo,0)
   const curMonth=monthOf(today())
   const recent=movimientos.filter(m=>monthOf(m.fecha)<=curMonth).slice(0,12)
-  const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
   const h=v=>hide?"••••••":v
 
   return(
@@ -101,23 +130,20 @@ function HomePage({cuentas,movimientos}){
 
       <div style={S.sec}>Cuentas</div>
       <div style={{...S.crd,marginBottom:28}}>
-        <div style={{display:"flex",padding:"10px 18px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{flex:"0 0 130px"}}/><div style={{flex:1,textAlign:"center",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>Pesos</div><div style={{flex:1,textAlign:"center",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
-        </div>
-        {[["Efectivo","Efectivo $","Efectivo USD","#f59e0b","💵"],["BAPRO","BAPRO $","BAPRO USD","#60a5fa","🏛️"]].map(([n,pk,uk,c,icon])=>(
-          <div key={n} style={{display:"flex",alignItems:"center",padding:"16px 18px",gap:12,borderBottom:"1px solid rgba(255,255,255,.04)"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:`${c}15`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{icon}</div>
-            <div style={{flex:"0 0 82px",fontSize:14,color:"#e2e8f0",fontWeight:600}}>{n}</div>
-            <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre[pk]?.saldo||0))}</div></div>
-            <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{h(f$(cuentasByNombre[uk]?.saldo||0,true))}</div></div>
-          </div>
-        ))}
-        <div style={{display:"flex",alignItems:"center",padding:"16px 18px",gap:12}}>
-          <div style={{width:36,height:36,borderRadius:10,background:"rgba(167,139,250,.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>💜</div>
-          <div style={{flex:"0 0 82px",fontSize:14,color:"#e2e8f0",fontWeight:600}}>Mercado Pago</div>
-          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{h(f$(cuentasByNombre["Mercado Pago $"]?.saldo||0))}</div></div>
-          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,color:"#334155"}}>—</div></div>
-        </div>
+        {cuentas.map((c,i)=>{
+          const isUSD=c.moneda==="USD"
+          return(
+            <div key={c.id} style={{display:"flex",alignItems:"center",padding:"14px 18px",gap:12,borderBottom:i<cuentas.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+              <div style={{width:36,height:36,borderRadius:10,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{accLogo(c.nombre)}</div>
+              <div style={{flex:1,fontSize:14,color:"#e2e8f0",fontWeight:600}}>{c.nombre}</div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:15,fontWeight:700,color:isUSD?"#a7f3d0":"#e2e8f0",...mo}}>{h(f$(c.saldo,isUSD))}</div>
+                <div style={{fontSize:10,color:"#475569"}}>{c.moneda}</div>
+              </div>
+            </div>
+          )
+        })}
+        {cuentas.length===0&&<div style={{padding:24,textAlign:"center",color:"#475569",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
       </div>
 
       <div style={S.sec}>Últimos Movimientos</div>
@@ -1533,7 +1559,8 @@ export default function App(){
   const dynIngresoCats=catIngreso.length>0?catIngreso.map(c=>c.nombre):INGRESO_CATS
   const dynInvTypes=tiposInv.length>0?tiposInv.map(t=>t.nombre):INV_TYPES
 
-  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"debt",ic:IC.debt,l:"Deuda"},{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
+  const isAdmin=user.email==="juanfmanteca@gmail.com"
+  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},...(isAdmin?[{id:"debt",ic:IC.debt,l:"Deuda"}]:[]),{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
   const viewMonth=k=>{setDetailMonth(k);setDetailTipo(null);setPg("md")}
   const viewMonthInv=k=>{setDetailMonth(k);setDetailTipo("inversion");setPg("md")}
   const viewMonthIng=k=>{setDetailMonth(k);setDetailTipo("ingreso");setPg("md")}
@@ -1545,7 +1572,7 @@ export default function App(){
   else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
   else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv} onViewMonthIng={viewMonthIng} subEgreso={subEgreso}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
-  else if(pg==="debt")C=<DebtPage deuda={deuda}/>
+  else if(pg==="debt"&&isAdmin)C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
