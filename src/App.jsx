@@ -365,6 +365,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
   const[expandedCat,setExpandedCat]=useState(null)
   const[showUSD,setShowUSD]=useState(false)
   const[hoveredCat,setHoveredCat]=useState(null)
+  const[selFijoMk,setSelFijoMk]=useState(null)
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
   // Group by month
   const monthly={}
@@ -508,45 +509,79 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
       {(()=>{
         const fijoSubs=(subEgreso||[]).filter(s=>s.es_fijo)
         if(fijoSubs.length===0)return null
-        const items=fijoSubs.map(s=>{
-          const last=movimientos.filter(m=>m.tipo==="egreso"&&m.subcategoria===s.nombre&&m.monto>0).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0]
-          return{sub:s.nombre,monto:last?.monto||0,fecha:last?.fecha||null,cat:last?.categoria||""}
-        }).sort((a,b)=>b.monto-a.monto)
-        const total=items.reduce((s,i)=>s+i.monto,0)
-        const maxItem=Math.max(...items.map(i=>i.monto),1)
-        const fmtFecha=f=>{if(!f)return null;const[,m,d]=f.split("-");const ml=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];return`${parseInt(d)} ${ml[parseInt(m)-1]}`}
+        const fijoNombres=new Set(fijoSubs.map(s=>s.nombre))
+        // Last 6 calendar months
+        const nowD=new Date()
+        const last6=[]
+        for(let i=5;i>=0;i--){const d=new Date(nowD.getFullYear(),nowD.getMonth()-i,1);last6.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`)}
+        const ml2=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]
+        const fmtMk=mk=>{const[,m]=mk.split("-");return ml2[parseInt(m)-1]}
+        // Per-month data
+        const mData=last6.map(mk=>{
+          const movs=movimientos.filter(m=>m.tipo==="egreso"&&m.monto>0&&fijoNombres.has(m.subcategoria)&&monthOf(m.fecha)===mk)
+          return{mk,total:movs.reduce((s,m)=>s+m.monto,0),movs}
+        })
+        // SVG line chart
+        const cW=270,cH=60,pX=8,pY=8
+        const maxV=Math.max(...mData.map(d=>d.total),1)
+        const pts=mData.map((d,i)=>({x:pX+(i/(last6.length-1))*(cW-2*pX),y:pY+(1-d.total/maxV)*(cH-2*pY),...d}))
+        const polyPts=pts.map(p=>`${p.x},${p.y}`).join(" ")
+        // Selected month breakdown
+        const selData=mData.find(d=>d.mk===selFijoMk)
+        const breakdown=selData?fijoSubs.map(s=>{
+          const movs=selData.movs.filter(m=>m.subcategoria===s.nombre)
+          return{sub:s.nombre,monto:movs.reduce((sum,m)=>sum+m.monto,0),cat:movs[0]?.categoria||""}
+        }).filter(i=>i.monto>0).sort((a,b)=>b.monto-a.monto):[]
+        const selTotal=selData?.total||0
+        const maxBreak=Math.max(...breakdown.map(i=>i.monto),1)
         return(
           <div style={{...S.crdP,marginBottom:20}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div>
-                <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Proyección Gastos Fijos</div>
-                <div style={{fontSize:10,color:"#334155",marginTop:2}}>basado en el último movimiento de cada concepto</div>
+            <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Gastos Fijos — últimos 6 meses</div>
+            <div style={{fontSize:10,color:"#334155",marginBottom:14}}>Tocá un mes para ver el discriminado</div>
+            {/* Line chart */}
+            <svg viewBox={`0 0 ${cW} ${cH+30}`} style={{width:"100%",display:"block",marginBottom:4}}>
+              {/* Zero baseline */}
+              <line x1={pX} y1={pY+(cH-2*pY)} x2={cW-pX} y2={pY+(cH-2*pY)} stroke="rgba(255,255,255,.04)" strokeWidth="1"/>
+              {/* Area fill */}
+              <polygon points={`${pts[0].x},${pY+(cH-2*pY)} ${polyPts} ${pts[pts.length-1].x},${pY+(cH-2*pY)}`} fill="rgba(251,191,36,.07)"/>
+              {/* Line */}
+              <polyline points={polyPts} fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+              {/* Points + labels */}
+              {pts.map((p,i)=>{
+                const isSel=p.mk===selFijoMk
+                return(
+                  <g key={i} onClick={()=>setSelFijoMk(isSel?null:p.mk)} style={{cursor:"pointer"}}>
+                    {isSel&&<circle cx={p.x} cy={p.y} r="10" fill="rgba(251,191,36,.15)"/>}
+                    <circle cx={p.x} cy={p.y} r={isSel?5:3.5} fill={p.total>0?"#fbbf24":"#334155"} stroke={isSel?"#fff":"#fbbf24"} strokeWidth={isSel?1.5:1}/>
+                    {/* Amount above point */}
+                    {p.total>0&&<text x={p.x} y={p.y-7} textAnchor="middle" fill={isSel?"#fbbf24":"#64748b"} fontSize="7" fontWeight={isSel?"700":"400"} style={mo}>{fS(p.total)}</text>}
+                    {/* Month label below */}
+                    <text x={p.x} y={cH+22} textAnchor="middle" fill={isSel?"#fbbf24":"#64748b"} fontSize="9" fontWeight={isSel?"700":"400"}>{fmtMk(p.mk)}</text>
+                  </g>
+                )
+              })}
+            </svg>
+            {/* Breakdown for selected month */}
+            {selData&&<div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(255,255,255,.06)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{fmtMk(selFijoMk)} — discriminado</span>
+                <span style={{fontSize:14,fontWeight:700,color:"#fbbf24",...mo}}>{f$(selTotal)}</span>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:20,fontWeight:800,color:"#fbbf24",...mo}}>{f$(total)}</div>
-                <div style={{fontSize:10,color:"#64748b"}}>total mensual</div>
-              </div>
-            </div>
-            {items.map((item,i)=>(
-              <div key={i} style={{marginBottom:12}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
-                    <span style={{fontSize:14,flexShrink:0}}>{catIcon(item.cat)}</span>
-                    <div style={{minWidth:0}}>
-                      <span style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{item.sub}</span>
-                      {item.cat&&<span style={{fontSize:10,color:"#475569",marginLeft:6}}>{item.cat}</span>}
+              {breakdown.length===0?<div style={{fontSize:12,color:"#475569",textAlign:"center",padding:8}}>Sin movimientos de gastos fijos en este mes</div>:
+              breakdown.map((item,i)=>(
+                <div key={i} style={{marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:13}}>{catIcon(item.cat)}</span>
+                      <span style={{fontSize:12,color:"#e2e8f0"}}>{item.sub}</span>
+                      {item.cat&&<span style={{fontSize:10,color:"#475569"}}>{item.cat}</span>}
                     </div>
+                    <span style={{fontSize:13,fontWeight:700,color:"#fbbf24",...mo}}>{f$(item.monto)}</span>
                   </div>
-                  <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
-                    <div style={{fontSize:14,fontWeight:700,color:item.monto>0?"#fbbf24":"#475569",...mo}}>{item.monto>0?f$(item.monto):"Sin datos"}</div>
-                    {item.fecha&&<div style={{fontSize:10,color:"#475569"}}>últ. {fmtFecha(item.fecha)}</div>}
-                  </div>
+                  <div style={{height:3,background:"#0f1a2a",borderRadius:2}}><div style={{width:`${(item.monto/maxBreak)*100}%`,height:"100%",background:"linear-gradient(90deg,#92400e,#fbbf24)",borderRadius:2}}/></div>
                 </div>
-                <div style={{height:4,background:"#0f1a2a",borderRadius:2}}>
-                  <div style={{width:`${item.monto>0?(item.monto/maxItem)*100:0}%`,height:"100%",background:"linear-gradient(90deg,#92400e,#fbbf24)",borderRadius:2,transition:"width .3s"}}/>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>}
           </div>
         )
       })()}
@@ -1353,6 +1388,10 @@ function ABMPage({cuentas,userId,onSaved}){
       </>}
 
       {tab==="egresos"&&<>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,padding:"10px 12px",borderRadius:10,background:"rgba(251,191,36,.06)",border:"1px solid rgba(251,191,36,.15)"}}>
+          <span style={{fontSize:16,flexShrink:0}}>📌</span>
+          <span style={{fontSize:12,color:"#94a3b8",lineHeight:1.4}}>Tocá el 📌 de una subcategoría para marcarla como <span style={{color:"#fbbf24",fontWeight:600}}>Gasto Fijo</span>. Los gastos fijos aparecen en el Dashboard con proyección mensual.</span>
+        </div>
         <div style={S.crd}>
           {catEgreso.map((c,i)=>{
             const subs=subEgreso.filter(s=>s.categoria_id===c.id)
