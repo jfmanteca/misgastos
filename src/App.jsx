@@ -1385,6 +1385,7 @@ function ABMPage({cuentas,userId,onSaved}){
   const[newSub,setNewSub]=useState("")
   const[selCatId,setSelCatId]=useState("")
   const[newCuenta,setNewCuenta]=useState({nombre:"",tieneARS:true,tieneUSD:false,saldoARS:"",saldoUSD:""})
+  const[reasignModal,setReasignModal]=useState(null) // {id, nombre, destino}
 
   const loadABM=useCallback(async()=>{
     const[{data:ce},{data:se},{data:ci},{data:ti}]=await Promise.all([
@@ -1416,7 +1417,30 @@ function ABMPage({cuentas,userId,onSaved}){
     await supabase.from("cuentas").insert(rows)
     setNewCuenta({nombre:"",tieneARS:true,tieneUSD:false,saldoARS:"",saldoUSD:""});onSaved()
   }
-  const delCuenta=async(id)=>{if(!confirm("¿Eliminar esta cuenta?"))return;await supabase.from("cuentas").delete().eq("id",id);onSaved()}
+  const delCuenta=async(id,nombre)=>{
+    if(!confirm("¿Eliminar esta cuenta?"))return
+    const{error}=await supabase.from("cuentas").delete().eq("id",id)
+    if(error){
+      if(error.code==="23503"){
+        // tiene movimientos — abrir modal de reasignación
+        setReasignModal({id,nombre,destino:""})
+      } else alert("Error al eliminar: "+error.message)
+      return
+    }
+    onSaved()
+  }
+  const doReasign=async()=>{
+    if(!reasignModal.destino)return
+    // reasignar cuenta_id y cuenta_destino_id en movimientos
+    await Promise.all([
+      supabase.from("movimientos").update({cuenta_id:reasignModal.destino}).eq("cuenta_id",reasignModal.id),
+      supabase.from("movimientos").update({cuenta_destino_id:reasignModal.destino}).eq("cuenta_destino_id",reasignModal.id),
+    ])
+    // ahora sí eliminar
+    const{error}=await supabase.from("cuentas").delete().eq("id",reasignModal.id)
+    if(error){alert("Error al eliminar: "+error.message);return}
+    setReasignModal(null);onSaved()
+  }
   const[editGrp,setEditGrp]=useState(null)
   const startEditGrp=g=>setEditGrp({
     nombre:g.nombre,arsId:g.ars?.id||null,usdId:g.usd?.id||null,
@@ -1504,14 +1528,14 @@ function ABMPage({cuentas,userId,onSaved}){
                   </div>
                   <div style={{display:"flex",gap:4,alignItems:"center"}}>
                     <button onClick={()=>startEditGrp(g)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:4,fontSize:13}}>✎</button>
-                    {g.ars&&<DelBtn fn={()=>delCuenta(g.ars.id)}/>}
-                    {g.usd&&<DelBtn fn={()=>delCuenta(g.usd.id)}/>}
+                    {g.ars&&<DelBtn fn={()=>delCuenta(g.ars.id,g.nombre+" $")}/>}
+                    {g.usd&&<DelBtn fn={()=>delCuenta(g.usd.id,g.nombre+" USD")}/>}
                   </div>
                 </div>
                 {g.extras.map(ex=>(
                   <div key={ex.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 16px 6px 32px",background:"rgba(239,68,68,.04)"}}>
                     <span style={{fontSize:11,color:"#f87171"}}>⚠ Duplicado {ex.moneda}: {f$(ex.saldo,ex.moneda==="USD")}</span>
-                    <DelBtn fn={()=>delCuenta(ex.id)}/>
+                    <DelBtn fn={()=>delCuenta(ex.id,ex.nombre+" "+ex.moneda+" (duplicado)")}/>
                   </div>
                 ))}
               </div>
@@ -1618,6 +1642,30 @@ function ABMPage({cuentas,userId,onSaved}){
           </div>
         </div>
       </>}
+
+      {/* Modal reasignación de movimientos */}
+      {reasignModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
+          <div style={{...S.crdP,width:"100%",maxWidth:400}}>
+            <div style={{fontSize:16,fontWeight:700,color:"#e2e8f0",marginBottom:8}}>Cuenta con movimientos</div>
+            <p style={{fontSize:13,color:"#94a3b8",marginBottom:16}}>
+              <strong style={{color:"#f87171"}}>{reasignModal.nombre}</strong> tiene movimientos asociados.<br/>
+              Elegí una cuenta destino para reasignarlos antes de eliminar.
+            </p>
+            <label style={S.lbl}>Reasignar movimientos a</label>
+            <select value={reasignModal.destino} onChange={e=>setReasignModal(p=>({...p,destino:e.target.value}))} style={{...S.inp,marginBottom:20}}>
+              <option value="">Elegir cuenta...</option>
+              {cuentas.filter(c=>c.id!==reasignModal.id).map(c=>(
+                <option key={c.id} value={c.id}>{c.nombre} ({c.moneda})</option>
+              ))}
+            </select>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setReasignModal(null)} style={{flex:1,padding:12,borderRadius:10,border:"1px solid rgba(255,255,255,.1)",background:"none",color:"#94a3b8",cursor:"pointer",fontSize:14}}>Cancelar</button>
+              <button onClick={doReasign} disabled={!reasignModal.destino} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:600,opacity:reasignModal.destino?1:.4}}>Reasignar y eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
