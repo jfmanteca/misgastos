@@ -360,7 +360,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 }
 
 // ══════════════ DASHBOARD ══════════════
-function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cuentas}){
+function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cuentas,subEgreso}){
   const[pi,setPi]=useState(0)
   const[expandedCat,setExpandedCat]=useState(null)
   const[showUSD,setShowUSD]=useState(false)
@@ -503,6 +503,53 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         </div>
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver inversiones del mes</div>}
       </div>}
+
+      {/* Proyección Gastos Fijos */}
+      {(()=>{
+        const fijoSubs=(subEgreso||[]).filter(s=>s.es_fijo)
+        if(fijoSubs.length===0)return null
+        const items=fijoSubs.map(s=>{
+          const last=movimientos.filter(m=>m.tipo==="egreso"&&m.subcategoria===s.nombre&&m.monto>0).sort((a,b)=>b.fecha.localeCompare(a.fecha))[0]
+          return{sub:s.nombre,monto:last?.monto||0,fecha:last?.fecha||null,cat:last?.categoria||""}
+        }).sort((a,b)=>b.monto-a.monto)
+        const total=items.reduce((s,i)=>s+i.monto,0)
+        const maxItem=Math.max(...items.map(i=>i.monto),1)
+        const fmtFecha=f=>{if(!f)return null;const[,m,d]=f.split("-");const ml=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];return`${parseInt(d)} ${ml[parseInt(m)-1]}`}
+        return(
+          <div style={{...S.crdP,marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <div>
+                <div style={{fontSize:12,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Proyección Gastos Fijos</div>
+                <div style={{fontSize:10,color:"#334155",marginTop:2}}>basado en el último movimiento de cada concepto</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:20,fontWeight:800,color:"#fbbf24",...mo}}>{f$(total)}</div>
+                <div style={{fontSize:10,color:"#64748b"}}>total mensual</div>
+              </div>
+            </div>
+            {items.map((item,i)=>(
+              <div key={i} style={{marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                    <span style={{fontSize:14,flexShrink:0}}>{catIcon(item.cat)}</span>
+                    <div style={{minWidth:0}}>
+                      <span style={{fontSize:13,color:"#e2e8f0",fontWeight:500}}>{item.sub}</span>
+                      {item.cat&&<span style={{fontSize:10,color:"#475569",marginLeft:6}}>{item.cat}</span>}
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right",flexShrink:0,marginLeft:8}}>
+                    <div style={{fontSize:14,fontWeight:700,color:item.monto>0?"#fbbf24":"#475569",...mo}}>{item.monto>0?f$(item.monto):"Sin datos"}</div>
+                    {item.fecha&&<div style={{fontSize:10,color:"#475569"}}>últ. {fmtFecha(item.fecha)}</div>}
+                  </div>
+                </div>
+                <div style={{height:4,background:"#0f1a2a",borderRadius:2}}>
+                  <div style={{width:`${item.monto>0?(item.monto/maxItem)*100:0}%`,height:"100%",background:"linear-gradient(90deg,#92400e,#fbbf24)",borderRadius:2,transition:"width .3s"}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* Pie */}
       <div style={S.crdP}>
@@ -1266,6 +1313,7 @@ function ABMPage({cuentas,userId,onSaved}){
   const delCatEgreso=async(id)=>{await supabase.from("categorias_egreso").delete().eq("id",id);loadABM();onSaved()}
   const addSubEgreso=async()=>{if(!newSub.trim()||!selCatId)return;await supabase.from("subcategorias_egreso").insert({user_id:userId,categoria_id:selCatId,nombre:newSub.trim()});setNewSub("");loadABM();onSaved()}
   const delSubEgreso=async(id)=>{await supabase.from("subcategorias_egreso").delete().eq("id",id);loadABM();onSaved()}
+  const toggleFijo=async(id,current)=>{await supabase.from("subcategorias_egreso").update({es_fijo:!current}).eq("id",id);loadABM();onSaved()}
   const addCatIngreso=async()=>{if(!newVal.trim())return;await supabase.from("categorias_ingreso").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM();onSaved()}
   const delCatIngreso=async(id)=>{await supabase.from("categorias_ingreso").delete().eq("id",id);loadABM();onSaved()}
   const addTipoInv=async()=>{if(!newVal.trim())return;await supabase.from("tipos_inversion").insert({user_id:userId,nombre:newVal.trim()});setNewVal("");loadABM();onSaved()}
@@ -1316,7 +1364,11 @@ function ABMPage({cuentas,userId,onSaved}){
                 </div>
                 {subs.length>0&&<div style={{padding:"0 16px 8px",display:"flex",flexWrap:"wrap",gap:6}}>
                   {subs.map(s=>(
-                    <span key={s.id} style={{display:"flex",alignItems:"center",gap:2,padding:"4px 10px",borderRadius:12,background:"#1e293b",fontSize:11,color:"#94a3b8"}}>{s.nombre}<button onClick={()=>delSubEgreso(s.id)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:12,padding:0,marginLeft:4}}>×</button></span>
+                    <span key={s.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 8px 4px 6px",borderRadius:12,background:s.es_fijo?"rgba(251,191,36,.1)":"#1e293b",border:`1px solid ${s.es_fijo?"rgba(251,191,36,.3)":"transparent"}`,fontSize:11,color:s.es_fijo?"#fbbf24":"#94a3b8"}}>
+                      <button onClick={()=>toggleFijo(s.id,s.es_fijo)} title={s.es_fijo?"Quitar de Gastos Fijos":"Marcar como Gasto Fijo"} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontSize:11,lineHeight:1,color:s.es_fijo?"#fbbf24":"#475569",flexShrink:0}}>📌</button>
+                      {s.nombre}
+                      <button onClick={()=>delSubEgreso(s.id)} style={{background:"none",border:"none",color:"#64748b",cursor:"pointer",fontSize:12,padding:0,marginLeft:2}}>×</button>
+                    </span>
                   ))}
                 </div>}
               </div>
@@ -1441,7 +1493,7 @@ export default function App(){
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
   else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats} invTypes={dynInvTypes}/>
   else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
-  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv} onViewMonthIng={viewMonthIng}/>
+  else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv} onViewMonthIng={viewMonthIng} subEgreso={subEgreso}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt")C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs}/>

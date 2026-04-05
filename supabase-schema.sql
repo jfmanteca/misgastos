@@ -86,3 +86,10 @@ CREATE INDEX idx_movimientos_fecha ON movimientos(user_id, fecha DESC);
 CREATE INDEX idx_movimientos_tipo ON movimientos(user_id, tipo);
 CREATE INDEX idx_movimientos_categoria ON movimientos(user_id, categoria);
 CREATE INDEX idx_deuda_fecha ON deuda_edgardo(user_id, fecha DESC);
+
+-- ============================================
+-- Migraciones
+-- ============================================
+
+-- v2: Gastos Fijos - marcar subcategorías como gasto fijo mensual
+ALTER TABLE subcategorias_egreso ADD COLUMN IF NOT EXISTS es_fijo BOOLEAN DEFAULT FALSE;
