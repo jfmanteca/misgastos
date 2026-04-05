@@ -164,6 +164,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
   const[saving,setSaving]=useState(false)
   const[usdCalc,setUsdCalc]=useState(null)
   const[showConfirm,setShowConfirm]=useState(false)
+  const[recupero,setRecupero]=useState(false)
   const subs=egresoSubs[fm.cat]||[]
   const isUSD=mt==="inversion"&&fm.it.toLowerCase().includes("usd")
 
@@ -191,7 +192,8 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:parseFloat(fm.amt),cuenta_id:fm.cuenta})
       }else{
         if(!fm.amt||!fm.cat){setSaving(false);return}
-        const amt=parseFloat(fm.amt)
+        const rawAmt=parseFloat(fm.amt)
+        const amt=mt==="egreso"&&recupero?-Math.abs(rawAmt):rawAmt
         const tcDolar=fm.tcDolar?parseFloat(fm.tcDolar):null
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null,tc_dolar:tcDolar})
         const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.cuenta).single()
@@ -269,11 +271,18 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
 
       <div style={S.sec}>Nuevo Movimiento</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
-        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null)}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tabL[t]}</button>)}
+        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false)}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tabL[t]}</button>)}
       </div>
 
       {/* Generic fields for non-inversion tabs */}
       {mt!=="inversion"&&<>
+        {mt==="egreso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"12px 14px",borderRadius:12,background:recupero?"rgba(74,222,128,.06)":"rgba(220,38,38,.04)",border:`1px solid ${recupero?"rgba(74,222,128,.2)":"rgba(220,38,38,.1)"}`,cursor:"pointer"}}>
+          <input type="checkbox" checked={recupero} onChange={e=>setRecupero(e.target.checked)} style={{width:16,height:16,accentColor:"#4ade80",cursor:"pointer",flexShrink:0}}/>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:recupero?"#4ade80":"#fca5a5"}}>¿Recupero de dinero?</div>
+            <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Sumará como un ingreso por devolución</div>
+          </div>
+        </label>}
         <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
         <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
       </>}
@@ -539,20 +548,20 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:14,color:"#94a3b8",fontWeight:500}}>{pct}%</span>
-                  <span style={{fontSize:16,fontWeight:700,color:"#e2e8f0",...mo}}>{f$(total)}</span>
+                  <span style={{fontSize:16,fontWeight:700,color:total<0?"#4ade80":"#e2e8f0",...mo}}>{total<0?"-":""}{f$(total)}</span>
                 </div>
               </div>
-              <div style={{height:6,background:"#0f1a2a",borderRadius:3}}><div style={{width:`${pct}%`,height:"100%",background:COLORS[i%COLORS.length],borderRadius:3}}/></div>
+              <div style={{height:6,background:"#0f1a2a",borderRadius:3}}><div style={{width:`${Math.max(0,pct)}%`,height:"100%",background:COLORS[i%COLORS.length],borderRadius:3}}/></div>
               {isExpanded&&<div style={{marginTop:10,marginLeft:38,borderLeft:`2px solid ${COLORS[i%COLORS.length]}33`,paddingLeft:14}}>
                 {subSorted.map(([sub,subTotal])=>{
-                  const subPct=total>0?((subTotal/total)*100).toFixed(0):0
+                  const subPct=Math.abs(total)>0?((subTotal/Math.abs(total))*100).toFixed(0):0
                   return(
                     <div key={sub} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.03)"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <span style={{fontSize:13,color:"#94a3b8"}}>{sub}</span>
-                        <span style={{fontSize:11,color:"#475569"}}>{subPct}%</span>
+                        <span style={{fontSize:11,color:subTotal<0?"#4ade80":"#475569"}}>{subPct}%</span>
                       </div>
-                      <span style={{fontSize:14,fontWeight:600,color:"#cbd5e1",...mo}}>{f$(subTotal)}</span>
+                      <span style={{fontSize:14,fontWeight:600,color:subTotal<0?"#4ade80":"#cbd5e1",...mo}}>{subTotal<0?"-":""}{f$(subTotal)}</span>
                     </div>
                   )
                 })}
@@ -793,11 +802,11 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
         <div style={{...S.crdP,textAlign:"center",padding:"10px 6px"}}>
           <div style={{fontSize:9,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
-          <div style={{fontSize:16,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresos)}</div>
+          <div style={{fontSize:16,fontWeight:700,color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"-":""}{f$(totalEgresos)}</div>
         </div>
         <div style={{...S.crdP,textAlign:"center",padding:"10px 6px",border:"1px solid rgba(248,113,113,.15)"}}>
           <div style={{fontSize:9,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
-          <div style={{fontSize:16,fontWeight:700,color:"#f87171",...mo}}>{f$(totalEgresosUSD,true)}</div>
+          <div style={{fontSize:16,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"-":""}{f$(totalEgresosUSD,true)}</div>
         </div>
         <div style={{...S.crdP,textAlign:"center",padding:"10px 6px",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
           <div style={{fontSize:9,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos ▾</div>
