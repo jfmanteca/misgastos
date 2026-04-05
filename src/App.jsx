@@ -1409,6 +1409,16 @@ function ABMPage({cuentas,userId,onSaved}){
     setNewCuenta({nombre:"",tieneARS:true,tieneUSD:false,saldoARS:"",saldoUSD:""});onSaved()
   }
   const delCuenta=async(id)=>{if(!confirm("¿Eliminar esta cuenta?"))return;await supabase.from("cuentas").delete().eq("id",id);onSaved()}
+  const[editGrp,setEditGrp]=useState(null) // {nombre, arsId, usdId, nombre2, saldoARS, saldoUSD}
+  const startEditGrp=g=>setEditGrp({nombre:g.nombre,arsId:g.ars?.id||null,usdId:g.usd?.id||null,nombre2:g.nombre,saldoARS:g.ars?String(g.ars.saldo):"",saldoUSD:g.usd?String(g.usd.saldo):""})
+  const saveEditGrp=async()=>{
+    const n=editGrp.nombre2.trim();if(!n)return
+    const ups=[]
+    if(editGrp.arsId)ups.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoARS)||0}).eq("id",editGrp.arsId))
+    if(editGrp.usdId)ups.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoUSD)||0}).eq("id",editGrp.usdId))
+    await Promise.all(ups)
+    setEditGrp(null);onSaved()
+  }
 
   const tabs=[{id:"cuentas",l:"Cuentas"},{id:"egresos",l:"Egresos"},{id:"ingresos",l:"Ingresos"},{id:"inversiones",l:"Inversiones"}]
   const DelBtn=({fn})=><button onClick={fn} style={{background:"none",border:"none",color:"#7f1d1d",cursor:"pointer",padding:4,fontSize:16}}>×</button>
@@ -1422,6 +1432,20 @@ function ABMPage({cuentas,userId,onSaved}){
       </div>
 
       {tab==="cuentas"&&<>
+        {/* Edit modal */}
+        {editGrp&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#141c28",borderRadius:20,padding:24,width:"100%",maxWidth:360,border:"1px solid rgba(96,165,250,.2)"}}>
+            <div style={{fontSize:15,fontWeight:700,color:"#60a5fa",marginBottom:16}}>Editar cuenta</div>
+            <label style={S.lbl}>Nombre</label>
+            <input value={editGrp.nombre2} onChange={e=>setEditGrp(p=>({...p,nombre2:e.target.value}))} style={{...S.inp,marginBottom:12}}/>
+            {editGrp.arsId&&<><label style={S.lbl}>Saldo $</label><input type="number" value={editGrp.saldoARS} onChange={e=>setEditGrp(p=>({...p,saldoARS:e.target.value}))} style={{...S.inp,...mo,marginBottom:12}}/></>}
+            {editGrp.usdId&&<><label style={S.lbl}>Saldo USD</label><input type="number" value={editGrp.saldoUSD} onChange={e=>setEditGrp(p=>({...p,saldoUSD:e.target.value}))} style={{...S.inp,...mo,marginBottom:16}}/></>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setEditGrp(null)} style={{flex:1,padding:12,borderRadius:10,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"#94a3b8",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button onClick={saveEditGrp} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Guardar</button>
+            </div>
+          </div>
+        </div>}
         <div style={S.crd}>
           {(()=>{
             const grps=[];const seen={}
@@ -1438,7 +1462,8 @@ function ABMPage({cuentas,userId,onSaved}){
                     {g.usd&&<span style={{color:"#34d399"}}>USD {f$(g.usd.saldo,true)}</span>}
                   </div>
                 </div>
-                <div style={{display:"flex",gap:4}}>
+                <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                  <button onClick={()=>startEditGrp(g)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:4,fontSize:13}}>✎</button>
                   {g.ars&&<DelBtn fn={()=>delCuenta(g.ars.id)}/>}
                   {g.usd&&<DelBtn fn={()=>delCuenta(g.usd.id)}/>}
                 </div>
