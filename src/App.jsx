@@ -1409,14 +1409,32 @@ function ABMPage({cuentas,userId,onSaved}){
     setNewCuenta({nombre:"",tieneARS:true,tieneUSD:false,saldoARS:"",saldoUSD:""});onSaved()
   }
   const delCuenta=async(id)=>{if(!confirm("¿Eliminar esta cuenta?"))return;await supabase.from("cuentas").delete().eq("id",id);onSaved()}
-  const[editGrp,setEditGrp]=useState(null) // {nombre, arsId, usdId, nombre2, saldoARS, saldoUSD}
-  const startEditGrp=g=>setEditGrp({nombre:g.nombre,arsId:g.ars?.id||null,usdId:g.usd?.id||null,nombre2:g.nombre,saldoARS:g.ars?String(g.ars.saldo):"",saldoUSD:g.usd?String(g.usd.saldo):""})
+  const[editGrp,setEditGrp]=useState(null)
+  const startEditGrp=g=>setEditGrp({
+    nombre:g.nombre,arsId:g.ars?.id||null,usdId:g.usd?.id||null,
+    nombre2:g.nombre,
+    tieneARS:!!g.ars,tieneUSD:!!g.usd,
+    saldoARS:g.ars?String(g.ars.saldo):"0",
+    saldoUSD:g.usd?String(g.usd.saldo):"0"
+  })
   const saveEditGrp=async()=>{
     const n=editGrp.nombre2.trim();if(!n)return
-    const ups=[]
-    if(editGrp.arsId)ups.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoARS)||0}).eq("id",editGrp.arsId))
-    if(editGrp.usdId)ups.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoUSD)||0}).eq("id",editGrp.usdId))
-    await Promise.all(ups)
+    const ops=[]
+    // ARS
+    if(editGrp.tieneARS&&editGrp.arsId)
+      ops.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoARS)||0}).eq("id",editGrp.arsId))
+    else if(editGrp.tieneARS&&!editGrp.arsId)
+      ops.push(supabase.from("cuentas").insert({user_id:userId,nombre:n,moneda:"ARS",saldo:parseFloat(editGrp.saldoARS)||0}))
+    else if(!editGrp.tieneARS&&editGrp.arsId)
+      ops.push(supabase.from("cuentas").delete().eq("id",editGrp.arsId))
+    // USD
+    if(editGrp.tieneUSD&&editGrp.usdId)
+      ops.push(supabase.from("cuentas").update({nombre:n,saldo:parseFloat(editGrp.saldoUSD)||0}).eq("id",editGrp.usdId))
+    else if(editGrp.tieneUSD&&!editGrp.usdId)
+      ops.push(supabase.from("cuentas").insert({user_id:userId,nombre:n,moneda:"USD",saldo:parseFloat(editGrp.saldoUSD)||0}))
+    else if(!editGrp.tieneUSD&&editGrp.usdId)
+      ops.push(supabase.from("cuentas").delete().eq("id",editGrp.usdId))
+    await Promise.all(ops)
     setEditGrp(null);onSaved()
   }
 
@@ -1437,12 +1455,23 @@ function ABMPage({cuentas,userId,onSaved}){
           <div style={{background:"#141c28",borderRadius:20,padding:24,width:"100%",maxWidth:360,border:"1px solid rgba(96,165,250,.2)"}}>
             <div style={{fontSize:15,fontWeight:700,color:"#60a5fa",marginBottom:16}}>Editar cuenta</div>
             <label style={S.lbl}>Nombre</label>
-            <input value={editGrp.nombre2} onChange={e=>setEditGrp(p=>({...p,nombre2:e.target.value}))} style={{...S.inp,marginBottom:12}}/>
-            {editGrp.arsId&&<><label style={S.lbl}>Saldo $</label><input type="number" value={editGrp.saldoARS} onChange={e=>setEditGrp(p=>({...p,saldoARS:e.target.value}))} style={{...S.inp,...mo,marginBottom:12}}/></>}
-            {editGrp.usdId&&<><label style={S.lbl}>Saldo USD</label><input type="number" value={editGrp.saldoUSD} onChange={e=>setEditGrp(p=>({...p,saldoUSD:e.target.value}))} style={{...S.inp,...mo,marginBottom:16}}/></>}
+            <input value={editGrp.nombre2} onChange={e=>setEditGrp(p=>({...p,nombre2:e.target.value}))} style={{...S.inp,marginBottom:14}}/>
+            <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Monedas</div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,flex:1,padding:"10px 12px",borderRadius:10,background:editGrp.tieneARS?"rgba(96,165,250,.1)":"rgba(255,255,255,.02)",border:`1px solid ${editGrp.tieneARS?"rgba(96,165,250,.3)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
+                <input type="checkbox" checked={editGrp.tieneARS} onChange={e=>setEditGrp(p=>({...p,tieneARS:e.target.checked}))} style={{accentColor:"#60a5fa"}}/>
+                <span style={{fontSize:13,color:editGrp.tieneARS?"#60a5fa":"#64748b",fontWeight:600}}>Pesos $</span>
+              </label>
+              <label style={{display:"flex",alignItems:"center",gap:8,flex:1,padding:"10px 12px",borderRadius:10,background:editGrp.tieneUSD?"rgba(52,211,153,.1)":"rgba(255,255,255,.02)",border:`1px solid ${editGrp.tieneUSD?"rgba(52,211,153,.3)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
+                <input type="checkbox" checked={editGrp.tieneUSD} onChange={e=>setEditGrp(p=>({...p,tieneUSD:e.target.checked}))} style={{accentColor:"#34d399"}}/>
+                <span style={{fontSize:13,color:editGrp.tieneUSD?"#34d399":"#64748b",fontWeight:600}}>USD</span>
+              </label>
+            </div>
+            {editGrp.tieneARS&&<><label style={S.lbl}>Saldo $</label><input type="number" value={editGrp.saldoARS} onChange={e=>setEditGrp(p=>({...p,saldoARS:e.target.value}))} style={{...S.inp,...mo,marginBottom:12}}/></>}
+            {editGrp.tieneUSD&&<><label style={S.lbl}>Saldo USD</label><input type="number" value={editGrp.saldoUSD} onChange={e=>setEditGrp(p=>({...p,saldoUSD:e.target.value}))} style={{...S.inp,...mo,marginBottom:14}}/></>}
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setEditGrp(null)} style={{flex:1,padding:12,borderRadius:10,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"#94a3b8",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-              <button onClick={saveEditGrp} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Guardar</button>
+              <button onClick={saveEditGrp} disabled={!editGrp.nombre2.trim()||(!editGrp.tieneARS&&!editGrp.tieneUSD)} style={{flex:1,padding:12,borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",opacity:(!editGrp.nombre2.trim()||(!editGrp.tieneARS&&!editGrp.tieneUSD))?.5:1}}>Guardar</button>
             </div>
           </div>
         </div>}
