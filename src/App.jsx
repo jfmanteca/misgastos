@@ -1908,7 +1908,7 @@ export default function App(){
         input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.4)!important;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
         button:active{transform:scale(.97)}
 
-        .page-inner{padding:0 16px 32px}
+        .page-inner{padding:0 20px 40px}
 
         .sidebar{display:none}
         .mobile-header{padding:16px 16px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
@@ -1918,20 +1918,20 @@ export default function App(){
 
         @media(min-width:900px){
           .sidebar{
-            display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
+            display:flex!important;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
             background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);z-index:10;
           }
-          .mobile-header{display:none}
+          .mobile-header{display:none!important}
           .desktop-header{
-            display:block;padding:28px 36px 20px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));
+            display:block;padding:28px 48px 20px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));
           }
           .main-content{
             margin-left:240px;max-width:none;padding-bottom:32px;
           }
           .page-content{
-            padding:20px 36px 36px;max-width:920px;
+            padding:24px 48px 40px;max-width:960px;
           }
-          .page-inner{padding:0!important}
+          .page-inner{padding:0 8px!important}
         }
 
         @media(min-width:1200px){
