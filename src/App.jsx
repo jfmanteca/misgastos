@@ -250,8 +250,8 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
           await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",fm.cuenta)
         }
         if(mt==="egreso"&&fm.cat==="Pago deuda"&&fm.sub==="Edgardo"){
-          const{data:lastDeuda}=await supabase.from("deuda_edgardo").select("saldo_usd,saldo").order("fecha",{ascending:false}).limit(1)
-          const lastSaldoUSD=lastDeuda?.[0]?.saldo_usd||lastDeuda?.[0]?.saldo||0
+          const{data:lastDeuda}=await supabase.from("deuda_edgardo").select("saldo_usd,saldo").order("fecha",{ascending:false}).order("created_at",{ascending:false}).limit(1)
+          const lastSaldoUSD=lastDeuda?.[0]?.saldo_usd!=null?lastDeuda[0].saldo_usd:(lastDeuda?.[0]?.saldo||0)
           const montoUSD=tcDolar&&tcDolar>0?Math.abs(amt)/tcDolar:Math.abs(amt)
           await supabase.from("deuda_edgardo").insert({user_id:userId,fecha:fm.date,descripcion:"Pago por deuda",monto:-Math.abs(amt),monto_usd:-montoUSD,saldo:0,saldo_usd:lastSaldoUSD-montoUSD,tc_dolar:tcDolar})
         }
@@ -382,7 +382,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         <div style={{marginBottom:20}}>
           <label style={S.lbl}>Tipo de Inversión</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {invTypes.map(t=><button key={t} onClick={()=>{setFm(f=>({...f,it:t,amt:"",tc:""}));setUsdCalc(null)}} style={{...S.btn(fm.it===t,"#f59e0b"),padding:"12px 16px",fontSize:13}}>{t}</button>)}
+            {invTypes.map(t=><button key={t} onClick={()=>{const isUsdType=t.toLowerCase().includes("usd");setFm(f=>({...f,it:t,amt:"",tc:"",...(isUsdType?{from:cuentas.find(c=>c.nombre==="BAPRO $")?.id||cuentas.find(c=>c.moneda!=="USD")?.id||f.from,to:cuentas.find(c=>c.nombre==="Efectivo USD")?.id||cuentas.find(c=>c.moneda==="USD")?.id||f.to}:{})}));setUsdCalc(null)}} style={{...S.btn(fm.it===t,"#f59e0b"),padding:"12px 16px",fontSize:13}}>{t}</button>)}
           </div>
         </div>
 
