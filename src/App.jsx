@@ -153,16 +153,16 @@ function HomePage({cuentas,movimientos}){
         {/* Header */}
         <div style={{display:"flex",padding:"8px 18px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
           <div style={{flex:1}}/>
-          <div style={{width:110,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>$</div>
-          <div style={{width:100,textAlign:"right",fontSize:10,color:"#34d399",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
+          <div style={{width:140,textAlign:"right",fontSize:10,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>$</div>
+          <div style={{width:130,textAlign:"right",fontSize:10,color:"#34d399",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
         </div>
         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"#475569",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
         {grupos.map((g,i)=>(
           <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"14px 18px",gap:12,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
             <div style={{width:36,height:36,borderRadius:10,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{accLogo(g.nombre)}</div>
             <div style={{flex:1,fontSize:14,color:"#e2e8f0",fontWeight:600}}>{g.nombre}</div>
-            <div style={{width:110,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
-            <div style={{width:100,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
+            <div style={{width:140,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#e2e8f0",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
+            <div style={{width:130,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
           </div>
         ))}
       </div>
@@ -784,11 +784,12 @@ function MonthDetail({monthKey:mk2,filterTipo,movimientos,cuentas,onBack}){
 
 // ══════════════ DEUDA ══════════════
 function DebtPage({deuda}){
-  const hist=[...deuda].sort((a,b)=>a.fecha.localeCompare(b.fecha))
+  const hist=[...deuda].sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.created_at||"").localeCompare(b.created_at||""))
   const last=hist[hist.length-1]
-  const saldoUSD=last?.saldo_usd||last?.saldo||0
-  const totalPrestadoUSD=hist.filter(e=>(e.monto_usd||e.monto)>0).reduce((s,p)=>s+(p.monto_usd||p.monto),0)
-  const totalPagadoUSD=Math.abs(hist.filter(e=>(e.monto_usd||e.monto)<0).reduce((s,p)=>s+(p.monto_usd||p.monto),0))
+  const saldoUSD=last?.saldo_usd!=null?last.saldo_usd:(last?.saldo||0)
+  const getMontoUSD=e=>e.monto_usd!=null?e.monto_usd:e.monto
+  const totalPrestadoUSD=hist.filter(e=>getMontoUSD(e)>0).reduce((s,p)=>s+getMontoUSD(p),0)
+  const totalPagadoUSD=Math.abs(hist.filter(e=>getMontoUSD(e)<0).reduce((s,p)=>s+getMontoUSD(p),0))
 
   return(
     <div className="page-inner">
@@ -811,8 +812,8 @@ function DebtPage({deuda}){
         </div>
         <div style={{maxHeight:500,overflowY:"auto"}}>
           {[...hist].reverse().map((e,i)=>{
-            const montoUSD=e.monto_usd||e.monto
-            const sUSD=e.saldo_usd||e.saldo
+            const montoUSD=e.monto_usd!=null?e.monto_usd:e.monto
+            const sUSD=e.saldo_usd!=null?e.saldo_usd:e.saldo
             return(
             <div key={e.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.02)",gap:8}}>
               <div style={{flex:1,minWidth:0}}>
@@ -1060,7 +1061,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               const devolucion=e.tipo==="egreso"&&e.monto<0
               const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
               const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
-              return <div style={{fontSize:14,fontWeight:700,color:col,...mo,whiteSpace:"nowrap",flexShrink:0,marginLeft:4}}>{sign}{f$(Math.abs(e.monto),enUSD)}</div>
+              return <div style={{fontSize:14,fontWeight:700,color:col,...mo,whiteSpace:"nowrap",flexShrink:0,marginLeft:4}}>{sign}{f$(Math.abs(parseFloat(e.monto)||0),enUSD)}</div>
             })()}
             <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:2,flexShrink:0}}><Ic d={IC.edit} s={12}/></button>
           </div>
@@ -1913,6 +1914,8 @@ export default function App(){
         [data-theme="light"] input::placeholder { color: #94a3b8 !important }
 
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+        select{appearance:auto;background-color:#131a2b;color:#e2e8f0;border:1px solid rgba(255,255,255,.1)}
+        select option{background:#131a2b;color:#e2e8f0}
         [data-theme="dark"] select{appearance:auto;background-color:#131a2b!important;color:#e2e8f0}
         [data-theme="dark"] select option{background:#131a2b;color:#e2e8f0}
         ::-webkit-scrollbar{width:5px}
