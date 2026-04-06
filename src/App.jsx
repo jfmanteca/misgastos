@@ -13,7 +13,7 @@ const fS=(n,u)=>{const p=u?"U$":"";return n>=1e6?`${p}${(n/1e6).toFixed(1)}M`:n>
 const today=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
-const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12"}
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12",sun:"M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 1 0 0 12A6 6 0 0 0 12 6z",moon:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"}
 const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace"}
 // Category emoji icons for visual identification
 const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
@@ -26,12 +26,12 @@ const CAT_COLORS={"Salidas":"#f97316","Compras":"#3b82f6","Departamento":"#8b5cf
 const catColor=c=>CAT_COLORS[c]||"#475569"
 const Badge=({text,color})=><span style={{display:"inline-block",padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,background:`${color||catColor(text)}22`,color:color||catColor(text),whiteSpace:"nowrap"}}>{text}</span>
 const S={
-  sec:{fontSize:14,fontWeight:700,letterSpacing:1,color:"#94a3b8",marginBottom:14},
-  crd:{background:"linear-gradient(145deg,#131a2b,#0f1623)",borderRadius:20,border:"1px solid rgba(255,255,255,.06)",overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,.2)"},
-  crdP:{background:"linear-gradient(145deg,#131a2b,#0f1623)",borderRadius:20,padding:20,border:"1px solid rgba(255,255,255,.06)",boxShadow:"0 4px 24px rgba(0,0,0,.2)"},
-  lbl:{fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8,fontWeight:600},
-  inp:{width:"100%",padding:"14px 18px",background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.1)",borderRadius:14,color:"#e2e8f0",fontSize:14,outline:"none",boxSizing:"border-box",transition:"border .2s"},
-  btn:(active,color)=>({padding:"9px 16px",borderRadius:24,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:active?color:"rgba(255,255,255,.04)",color:active?"#fff":"#94a3b8",transition:"all .15s",boxShadow:active?`0 2px 12px ${color}44`:"none"}),
+  sec:{fontSize:14,fontWeight:700,letterSpacing:1,color:"var(--text-muted)",marginBottom:14},
+  crd:{background:"var(--card-bg)",borderRadius:20,border:"1px solid var(--card-border)",overflow:"hidden",boxShadow:"var(--card-shadow)"},
+  crdP:{background:"var(--card-bg)",borderRadius:20,padding:20,border:"1px solid var(--card-border)",boxShadow:"var(--card-shadow)"},
+  lbl:{fontSize:11,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8,fontWeight:600},
+  inp:{width:"100%",padding:"14px 18px",background:"var(--inp-bg)",border:"1px solid var(--inp-border)",borderRadius:14,color:"var(--text-primary)",fontSize:14,outline:"none",boxSizing:"border-box",transition:"border .2s"},
+  btn:(active,color)=>({padding:"9px 16px",borderRadius:24,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:active?color:"var(--btn-bg)",color:active?"#fff":"var(--text-secondary)",transition:"all .15s",boxShadow:active?`0 2px 12px ${color}44`:"none"}),
 }
 
 // ══════════════ AUTH ══════════════
@@ -1674,6 +1674,8 @@ export default function App(){
   const[loading,setLoading]=useState(true)
   const[pg,setPg]=useState("home")
   const[menuOpen,setMenuOpen]=useState(false)
+  const[darkMode,setDarkMode]=useState(()=>localStorage.getItem("theme")!=="light")
+  const toggleTheme=()=>setDarkMode(d=>{localStorage.setItem("theme",d?"light":"dark");return!d})
   const[cuentas,setCuentas]=useState([])
   const[movimientos,setMovimientos]=useState([])
   const[deuda,setDeuda]=useState([])
@@ -1739,7 +1741,7 @@ export default function App(){
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#070b14 0%,#0b1120 30%,#0d1525 60%,#091018 100%)",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
+    <div data-theme={darkMode?"dark":"light"} style={{minHeight:"100vh",background:"var(--page-bg)",color:"var(--text-primary)",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
       {/* Desktop sidebar */}
       <div className="sidebar">
         <div style={{padding:"28px 20px 24px"}}>
@@ -1760,8 +1762,11 @@ export default function App(){
             </button>
           )})}
         </nav>
-        <div style={{padding:"16px 12px",borderTop:"1px solid rgba(255,255,255,.04)"}}>
-          <button onClick={logout} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"transparent",color:"#475569",fontSize:14}}>
+        <div style={{padding:"16px 12px",borderTop:"1px solid var(--card-border)"}}>
+          <button onClick={toggleTheme} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"var(--btn-bg)",color:"var(--text-secondary)",fontSize:13,marginBottom:4}}>
+            <Ic d={darkMode?IC.sun:IC.moon} s={16}/>{darkMode?"Modo día":"Modo noche"}
+          </button>
+          <button onClick={logout} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",borderRadius:12,border:"none",cursor:"pointer",background:"transparent",color:"var(--text-muted)",fontSize:14}}>
             <Ic d={IC.logout} s={18}/> Cerrar sesión
           </button>
         </div>
@@ -1776,7 +1781,8 @@ export default function App(){
               <Ic d={menuOpen?IC.close:IC.menu} s={22}/>
             </button>
             <h1 style={{fontSize:22,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",flex:1}}>MisGastos</h1>
-            <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={IC.logout} s={18}/></button>
+            <button onClick={toggleTheme} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}} title={darkMode?"Modo día":"Modo noche"}><Ic d={darkMode?IC.sun:IC.moon} s={18}/></button>
+            <button onClick={logout} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={IC.logout} s={18}/></button>
           </div>
           {/* Hamburger drawer */}
           {menuOpen&&(
@@ -1832,9 +1838,48 @@ export default function App(){
 
       <style>{`
         *{box-sizing:border-box}
+
+        /* ── DARK THEME (default) ── */
+        [data-theme="dark"]{
+          --page-bg:linear-gradient(180deg,#070b14 0%,#0b1120 30%,#0d1525 60%,#091018 100%);
+          --card-bg:linear-gradient(145deg,#131a2b,#0f1623);
+          --card-border:rgba(255,255,255,.06);
+          --card-shadow:0 4px 24px rgba(0,0,0,.2);
+          --text-primary:#e2e8f0;
+          --text-secondary:#94a3b8;
+          --text-muted:#64748b;
+          --inp-bg:rgba(255,255,255,.03);
+          --inp-border:rgba(255,255,255,.1);
+          --btn-bg:rgba(255,255,255,.04);
+          --sidebar-bg:linear-gradient(180deg,#080d18,#0a1020);
+          --sidebar-border:rgba(255,255,255,.06);
+          --header-border:rgba(255,255,255,.04);
+        }
+
+        /* ── LIGHT THEME ── */
+        [data-theme="light"]{
+          --page-bg:#f0f4f8;
+          --card-bg:#ffffff;
+          --card-border:rgba(0,0,0,.09);
+          --card-shadow:0 2px 12px rgba(0,0,0,.07);
+          --text-primary:#1e293b;
+          --text-secondary:#475569;
+          --text-muted:#94a3b8;
+          --inp-bg:rgba(0,0,0,.03);
+          --inp-border:rgba(0,0,0,.12);
+          --btn-bg:rgba(0,0,0,.05);
+          --sidebar-bg:#ffffff;
+          --sidebar-border:rgba(0,0,0,.08);
+          --header-border:rgba(0,0,0,.06);
+        }
+        [data-theme="light"] select{background-color:#fff!important;color:#1e293b!important}
+        [data-theme="light"] select option{background:#fff;color:#1e293b}
+        [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator{filter:none}
+        [data-theme="light"] ::-webkit-scrollbar-thumb{background:#cbd5e1}
+
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
-        select{appearance:auto;background-color:#131a2b!important;color:#e2e8f0}
-        select option{background:#131a2b;color:#e2e8f0}
+        [data-theme="dark"] select{appearance:auto;background-color:#131a2b!important;color:#e2e8f0}
+        [data-theme="dark"] select option{background:#131a2b;color:#e2e8f0}
         ::-webkit-scrollbar{width:5px}
         ::-webkit-scrollbar-track{background:transparent}
         ::-webkit-scrollbar-thumb{background:#1e293b;border-radius:5px}
@@ -1844,21 +1889,21 @@ export default function App(){
         .page-inner{padding:0 16px 32px}
 
         .sidebar{display:none}
-        .mobile-header{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
+        .mobile-header{padding:20px 16px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));background:var(--sidebar-bg)}
         .desktop-header{display:none}
         .main-content{max-width:480px;margin:0 auto;position:relative}
         .page-content{padding-top:16px}
-        .mobile-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:linear-gradient(180deg,rgba(11,17,32,0) 0%,rgba(11,17,32,.97) 25%,#0b1120 45%);padding-top:24px;padding-bottom:14px;backdrop-filter:blur(12px)}
+        .mobile-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding-top:24px;padding-bottom:14px;backdrop-filter:blur(12px)}
 
         @media(min-width:768px){
           .sidebar{
             display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
-            background:linear-gradient(180deg,#080d18,#0a1020);border-right:1px solid rgba(255,255,255,.06);z-index:10;
+            background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);z-index:10;
           }
           .mobile-header{display:none}
           .mobile-nav{display:none}
           .desktop-header{
-            display:block;padding:28px 36px 20px;border-bottom:1px solid rgba(255,255,255,.04);
+            display:block;padding:28px 36px 20px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));
           }
           .main-content{
             margin-left:240px;max-width:none;padding-bottom:32px;
