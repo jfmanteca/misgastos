@@ -169,33 +169,24 @@ function HomePage({cuentas,movimientos}){
 
       <div style={S.sec}>Últimos Movimientos</div>
       <div style={S.crd}>
-        <div style={{display:"flex",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid rgba(255,255,255,.06)",background:"rgba(255,255,255,.02)"}}>
-          <div style={{width:42,flexShrink:0}}/>
-          <div style={{flex:1,fontSize:11,color:"#64748b",textTransform:"uppercase",letterSpacing:1}}>Detalle</div>
-          <div style={{width:95,textAlign:"right",fontSize:11,color:"#94a3b8",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>$</div>
-          <div style={{width:80,textAlign:"right",fontSize:11,color:"#34d399",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>USD</div>
-        </div>
         {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"#475569",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
         {recent.map((e,i)=>{
           const enUSD=cuentas.find(c=>c.id===e.cuenta_id)?.moneda==="USD"
+          const cuentaNom=cuentas.find(c=>c.id===e.cuenta_id)?.nombre||""
           const devolucion=e.tipo==="egreso"&&e.monto<0
           const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
           const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
-          const formatted=sign+f$(Math.abs(e.monto),enUSD)
+          const monto=sign+f$(Math.abs(e.monto),enUSD)
           return(
-          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"16px 18px",borderBottom:i<recent.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:0}}>
-            <div style={{width:42,height:42,borderRadius:12,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>
+          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"10px 14px",borderBottom:i<recent.length-1?"1px solid var(--card-border)":"none",gap:10,overflow:"hidden"}}>
+            <div style={{width:34,height:34,borderRadius:9,background:`${catColor(e.categoria)}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
               {catIcon(e.categoria)}
             </div>
-            <div style={{flex:1,minWidth:0,paddingLeft:14}}>
-              <div style={{fontSize:14,color:"#f1f5f9",fontWeight:600,marginBottom:3}}>{e.subcategoria||e.categoria}</div>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{fontSize:12,color:"#475569"}}>{e.fecha?.slice(5)||""}</span>
-                <Badge text={e.categoria}/>
-              </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,color:"var(--text-primary)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||e.categoria}</div>
+              <div style={{fontSize:10,color:"var(--text-muted)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.fecha?.slice(5)||""} · {cuentaNom}</div>
             </div>
-            <div style={{width:95,textAlign:"right",fontSize:16,fontWeight:700,color:enUSD?"transparent":col,...mo,whiteSpace:"nowrap"}}>{hide?"••••":(enUSD?"—":formatted)}</div>
-            <div style={{width:80,textAlign:"right",fontSize:16,fontWeight:700,color:enUSD?col:"transparent",...mo,whiteSpace:"nowrap"}}>{hide?"••••":(enUSD?formatted:"—")}</div>
+            <div style={{fontSize:13,fontWeight:700,color:col,...mo,whiteSpace:"nowrap",flexShrink:0}}>{hide?"••••":monto}</div>
           </div>)
         })}
       </div>
