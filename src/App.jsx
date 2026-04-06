@@ -206,7 +206,7 @@ function HomePage({cuentas,movimientos}){
 // ══════════════ CARGAR ══════════════
 function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTypes}){
   const[mt,setMt]=useState("egreso")
-  const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:"",tcDolar:""})
+  const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:"",tcDolar:"",nota:""})
   const[ok,setOk]=useState(false)
   const[saving,setSaving]=useState(false)
   const[usdCalc,setUsdCalc]=useState(null)
@@ -258,7 +258,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
         const rawAmt=parseFloat(fm.amt)
         const amt=mt==="egreso"&&recupero?-Math.abs(rawAmt):rawAmt
         const tcDolar=fm.tcDolar?parseFloat(fm.tcDolar):null
-        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null,tc_dolar:tcDolar})
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null,tc_dolar:tcDolar,nota:fm.nota||null})
         const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.cuenta).single()
         if(fresh){
           const delta=mt==="egreso"?-amt:amt
@@ -272,7 +272,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
         }
       }
       setOk(true);await onSaved()
-      setTimeout(()=>{setOk(false);setFm(f=>({...f,cat:"",sub:"",amt:"",tc:"",it:"",tcDolar:""}))},1200)
+      setTimeout(()=>{setOk(false);setFm(f=>({...f,cat:"",sub:"",amt:"",tc:"",it:"",tcDolar:"",nota:""}))},1200)
     }catch(e){console.error(e)}
     setSaving(false)
   }
@@ -381,6 +381,10 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
             <span style={{fontSize:16,fontWeight:700,color:"#34d399",...mo}}>{f$(Math.abs(parseFloat(fm.amt))/parseFloat(fm.tcDolar),true)}</span>
           </div>}
         </div>}
+        <div style={{marginBottom:16}}>
+          <label style={S.lbl}>Nota adicional</label>
+          <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Opcional — cualquier detalle extra" rows={2} style={{...S.inp,resize:"vertical",lineHeight:1.5}}/>
+        </div>
       </>}
       {mt==="ingreso"&&<>
         <div style={{marginBottom:16}}>
@@ -918,7 +922,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
   const ingresoDesglose=[...sueldosPrevForThis.map(m=>({label:`Sueldo mes ant. (${m.fecha})`,monto:m.monto})),...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
 
-  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,cuenta_id:e.cuenta_id})}
+  const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,cuenta_id:e.cuenta_id,nota:e.nota||""})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
   const saveEdit=async()=>{
     const orig=movimientos.find(m=>m.id===editId)
@@ -944,7 +948,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           await supabase.from("cuentas").update({saldo:freshNew.saldo+newDelta}).eq("id",newCuentaId)
       }
     }
-    await supabase.from("movimientos").update({fecha:editForm.fecha,tipo:editForm.tipo,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:newMonto,cuenta_id:newCuentaId}).eq("id",editId)
+    await supabase.from("movimientos").update({fecha:editForm.fecha,tipo:editForm.tipo,categoria:editForm.categoria,subcategoria:editForm.subcategoria||null,monto:newMonto,cuenta_id:newCuentaId,nota:editForm.nota||null}).eq("id",editId)
     setEditId(null);setEditForm({});onSaved()
   }
   const deleteRow=async(id)=>{
@@ -1079,6 +1083,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
               <input value={editForm.categoria} onChange={ev=>setEditForm(f=>({...f,categoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Categoría"/>
               <input value={editForm.subcategoria} onChange={ev=>setEditForm(f=>({...f,subcategoria:ev.target.value}))} style={{...S.inp,fontSize:12}} placeholder="Detalle"/>
             </div>
+            <textarea value={editForm.nota||""} onChange={ev=>setEditForm(f=>({...f,nota:ev.target.value}))} placeholder="Nota adicional" rows={2} style={{...S.inp,fontSize:12,resize:"vertical",lineHeight:1.5,marginBottom:8}}/>
             <div style={{display:"flex",gap:8}}>
               <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:12,fontWeight:600,cursor:"pointer",background:"#16a34a",color:"#fff"}}>Guardar</button>
               <button onClick={cancelEdit} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#1e293b",color:"#94a3b8"}}>Cancelar</button>
@@ -1090,6 +1095,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:13,color:"#e2e8f0",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||e.categoria}</div>
               <div style={{fontSize:10,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
+              {e.nota&&<div style={{fontSize:10,color:"#60a5fa",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:1}}>📝 {e.nota}</div>}
             </div>
             {(()=>{
               const enUSD=isUSDCuenta(e.cuenta_id)
