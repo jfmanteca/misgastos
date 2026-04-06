@@ -137,7 +137,7 @@ function HomePage({cuentas,movimientos}){
           <Ic d={hide?IC.eyeOff:IC.eye} s={18}/>
         </button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:28}}>
+      <div className="patrimonio-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:28}}>
         <div style={{background:"linear-gradient(135deg,#0c1929 0%,#1e40af 50%,#7c3aed 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(96,165,250,.15)",boxShadow:"0 8px 32px rgba(37,99,235,.15)"}}>
           <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>PESOS</div>
           <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tP))}</div>
@@ -345,7 +345,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
           </div>
         </label>}
         <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-        <div style={{marginBottom:16,minWidth:0,overflow:"hidden"}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,maxWidth:"100%"}}/></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp}}/></div>
       </>}
 
       {mt==="egreso"&&<>
@@ -417,13 +417,13 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
         {/* Step 2a: Standard inversion form */}
         {fm.it&&!isUSD&&<>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16,minWidth:0,overflow:"hidden"}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,maxWidth:"100%"}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
         </>}
 
         {/* Step 2b: Compra USD form */}
         {fm.it&&isUSD&&<>
-          <div style={{marginBottom:16,minWidth:0,overflow:"hidden"}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,maxWidth:"100%"}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
@@ -1939,11 +1939,13 @@ export default function App(){
         html,body{overflow-x:hidden;width:100%;margin:0;padding:0}
 
         .page-inner{padding:0 0 40px}
+        .patrimonio-grid{grid-template-columns:1fr!important}
         .mobile-header{padding:14px 24px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
         .main-content{width:100%;max-width:100%;overflow-x:hidden;position:relative}
         .page-content{padding:20px 24px 40px}
 
         @media(min-width:900px){
+          .patrimonio-grid{grid-template-columns:1fr 1fr!important}
           .main-content{margin-left:240px;max-width:none;padding-bottom:32px}
           .page-content{padding:24px 48px 40px;max-width:960px}
           .page-inner{padding:0 8px}
