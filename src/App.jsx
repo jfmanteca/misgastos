@@ -35,7 +35,7 @@ const S={
 }
 
 // ══════════════ AUTH ══════════════
-function LoginPage(){
+function LoginPage({darkMode=true}){
   const[email,setEmail]=useState("")
   const[pass,setPass]=useState("")
   const[err,setErr]=useState("")
@@ -59,33 +59,44 @@ function LoginPage(){
     if(error){setErr(error.message);setLoading(false)}
   }
 
+  const bg=darkMode?"#0b1120":"#f0f4f8"
+  const cardBg=darkMode?"linear-gradient(145deg,#131a2b,#0f1623)":"#ffffff"
+  const cardBorder=darkMode?"rgba(255,255,255,.06)":"rgba(0,0,0,.09)"
+  const txtPrimary=darkMode?"#e2e8f0":"#0f172a"
+  const txtMuted=darkMode?"#475569":"#64748b"
+  const inpBg=darkMode?"rgba(255,255,255,.03)":"rgba(0,0,0,.03)"
+  const inpBorder=darkMode?"rgba(255,255,255,.1)":"rgba(0,0,0,.14)"
+  const dividerBg=darkMode?"rgba(255,255,255,.06)":"rgba(0,0,0,.08)"
+  const loginInp={width:"100%",padding:"14px 18px",background:inpBg,border:`1px solid ${inpBorder}`,borderRadius:14,color:txtPrimary,fontSize:14,outline:"none",boxSizing:"border-box"}
+  const loginLbl={fontSize:11,color:txtMuted,textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8,fontWeight:600}
+
   return(
-    <div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+    <div style={{minHeight:"100vh",background:bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{width:"100%",maxWidth:360}}>
         <h1 style={{fontSize:32,fontWeight:800,textAlign:"center",marginBottom:8,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
-        <p style={{color:"#475569",textAlign:"center",fontSize:14,marginBottom:32}}>{mode==="register"?"Creá tu cuenta":"Iniciá sesión para continuar"}</p>
+        <p style={{color:txtMuted,textAlign:"center",fontSize:14,marginBottom:32}}>{mode==="register"?"Creá tu cuenta":"Iniciá sesión para continuar"}</p>
 
         {/* Google */}
-        <button onClick={goGoogle} disabled={loading} style={{width:"100%",padding:14,borderRadius:14,border:"1px solid rgba(255,255,255,.1)",fontSize:15,fontWeight:600,cursor:"pointer",background:"#fff",color:"#1e293b",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?.6:1}}>
+        <button onClick={goGoogle} disabled={loading} style={{width:"100%",padding:14,borderRadius:14,border:`1px solid ${cardBorder}`,fontSize:15,fontWeight:600,cursor:"pointer",background:"#fff",color:"#1e293b",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"center",gap:10,opacity:loading?.6:1}}>
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Continuar con Google
         </button>
 
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-          <div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>
-          <span style={{fontSize:12,color:"#334155"}}>o con email</span>
-          <div style={{flex:1,height:1,background:"rgba(255,255,255,.06)"}}/>
+          <div style={{flex:1,height:1,background:dividerBg}}/>
+          <span style={{fontSize:12,color:txtMuted}}>o con email</span>
+          <div style={{flex:1,height:1,background:dividerBg}}/>
         </div>
 
         {err&&<div style={{background:err.startsWith("✓")?"rgba(74,222,128,.08)":"rgba(239,68,68,.1)",border:`1px solid ${err.startsWith("✓")?"rgba(74,222,128,.2)":"rgba(239,68,68,.2)"}`,borderRadius:12,padding:"10px 14px",marginBottom:16,color:err.startsWith("✓")?"#4ade80":"#f87171",fontSize:13}}>{err}</div>}
 
         <div style={{marginBottom:12}}>
-          <label style={S.lbl}>Email</label>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={S.inp}/>
+          <label style={loginLbl}>Email</label>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" style={loginInp}/>
         </div>
         <div style={{marginBottom:20}}>
-          <label style={S.lbl}>Contraseña</label>
-          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={S.inp} onKeyDown={e=>e.key==="Enter"&&goEmail()}/>
+          <label style={loginLbl}>Contraseña</label>
+          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••" style={loginInp} onKeyDown={e=>e.key==="Enter"&&goEmail()}/>
         </div>
         <button onClick={goEmail} disabled={loading} style={{width:"100%",padding:16,borderRadius:16,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",color:"#fff",opacity:loading?.6:1,boxShadow:"0 6px 20px rgba(59,130,246,.3)",marginBottom:14}}>
           {loading?"...":(mode==="register"?"Registrarse":"Ingresar")}
@@ -1676,6 +1687,8 @@ export default function App(){
   const[menuOpen,setMenuOpen]=useState(false)
   const[darkMode,setDarkMode]=useState(()=>localStorage.getItem("theme")!=="light")
   const toggleTheme=()=>setDarkMode(d=>{localStorage.setItem("theme",d?"light":"dark");return!d})
+  const[isMobile,setIsMobile]=useState(()=>window.innerWidth<900)
+  useEffect(()=>{const h=()=>setIsMobile(window.innerWidth<900);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h)},[])
   const[cuentas,setCuentas]=useState([])
   const[movimientos,setMovimientos]=useState([])
   const[deuda,setDeuda]=useState([])
@@ -1714,8 +1727,8 @@ export default function App(){
 
   const logout=async()=>{await supabase.auth.signOut();setUser(null)}
 
-  if(loading)return<div style={{minHeight:"100vh",background:"#0b1120",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b"}}>Cargando...</div>
-  if(!user)return<LoginPage/>
+  if(loading)return<div data-theme={darkMode?"dark":"light"} style={{minHeight:"100vh",background:"var(--page-bg,#0b1120)",display:"flex",alignItems:"center",justifyContent:"center",color:"#64748b"}}>Cargando...</div>
+  if(!user)return<div data-theme={darkMode?"dark":"light"}><LoginPage darkMode={darkMode}/></div>
 
   // Build dynamic categories from ABM tables (fallback to hardcoded if empty)
   const dynEgresoCats=catEgreso.length>0?catEgreso.map(c=>c.nombre):EGRESO_CATS
@@ -1774,8 +1787,8 @@ export default function App(){
 
       {/* Main content */}
       <div className="main-content">
-        {/* Mobile header */}
-        <div className="mobile-header">
+        {/* Mobile header - solo se renderiza en mobile */}
+        {isMobile&&<div className="mobile-header">
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",color:"var(--text-secondary)",cursor:"pointer",padding:8,flexShrink:0}}>
               <Ic d={menuOpen?IC.close:IC.menu} s={22}/>
@@ -1784,7 +1797,7 @@ export default function App(){
             <button onClick={toggleTheme} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={darkMode?IC.sun:IC.moon} s={18}/></button>
             <button onClick={logout} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={IC.logout} s={18}/></button>
           </div>
-        </div>
+        </div>}
 
         {/* Hamburger overlay — fixed, no empuja el contenido */}
         {menuOpen&&<>
