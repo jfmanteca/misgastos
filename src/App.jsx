@@ -345,7 +345,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
           </div>
         </label>}
         <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp}}/></div>
+        <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,display:"block",width:"100%",WebkitAppearance:"none"}}/></div>
       </>}
 
       {mt==="egreso"&&<>
@@ -417,13 +417,13 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
         {/* Step 2a: Standard inversion form */}
         {fm.it&&!isUSD&&<>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,display:"block",width:"100%",WebkitAppearance:"none"}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
         </>}
 
         {/* Step 2b: Compra USD form */}
         {fm.it&&isUSD&&<>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp}}/></div>
+          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,display:"block",width:"100%",WebkitAppearance:"none"}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
@@ -976,18 +976,18 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
         </select>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
-        <div style={{...S.crdP,textAlign:"center",padding:"10px 6px"}}>
-          <div style={{fontSize:9,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos $</div>
-          <div style={{fontSize:16,fontWeight:700,color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"-":""}{f$(totalEgresos)}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
+          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Ingresos ▾</div>
+          <div style={{fontSize:18,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
         </div>
-        <div style={{...S.crdP,textAlign:"center",padding:"10px 6px",border:"1px solid rgba(248,113,113,.15)"}}>
-          <div style={{fontSize:9,color:"#f87171",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Egresos USD</div>
-          <div style={{fontSize:16,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"-":""}{f$(totalEgresosUSD,true)}</div>
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px"}}>
+          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos $</div>
+          <div style={{fontSize:18,fontWeight:700,color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"+":"-"}{f$(Math.abs(totalEgresos))}</div>
         </div>
-        <div style={{...S.crdP,textAlign:"center",padding:"10px 6px",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
-          <div style={{fontSize:9,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Ingresos ▾</div>
-          <div style={{fontSize:16,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(248,113,113,.15)"}}>
+          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos USD</div>
+          <div style={{fontSize:18,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</div>
         </div>
       </div>
       {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
@@ -1032,11 +1032,11 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
           <div style={{minWidth:0}}>
             <label style={S.lbl}>Desde</label>
-            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 6px",width:"100%"}}/>
+            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:12,display:"block",width:"100%",WebkitAppearance:"none"}}/>
           </div>
           <div style={{minWidth:0}}>
             <label style={S.lbl}>Hasta</label>
-            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 6px",width:"100%"}}/>
+            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:12,display:"block",width:"100%",WebkitAppearance:"none"}}/>
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:12}}>
