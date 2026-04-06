@@ -1755,11 +1755,11 @@ export default function App(){
 
   return(
     <div data-theme={darkMode?"dark":"light"} style={{minHeight:"100vh",background:"var(--page-bg)",color:"var(--text-primary)",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
-      {/* Desktop sidebar */}
-      <div className="sidebar">
+      {/* Desktop sidebar — solo se renderiza si NO es mobile */}
+      {!isMobile&&<div style={{position:"fixed",left:0,top:0,bottom:0,width:240,background:"var(--sidebar-bg)",borderRight:"1px solid var(--sidebar-border)",display:"flex",flexDirection:"column",zIndex:10,overflowY:"auto"}}>
         <div style={{padding:"28px 20px 24px"}}>
           <h1 style={{fontSize:24,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
-          <div style={{fontSize:11,color:"#475569",marginTop:6}}>{user.email}</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>{user.email}</div>
         </div>
         <nav style={{flex:1,padding:"8px 12px"}}>
           {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
@@ -1767,7 +1767,7 @@ export default function App(){
               display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",marginBottom:4,
               borderRadius:14,border:"none",cursor:"pointer",transition:"all .15s",
               background:a?"linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))":"transparent",
-              color:a?"#60a5fa":"#64748b",
+              color:a?"#60a5fa":"var(--text-muted)",
               boxShadow:a?"0 2px 12px rgba(59,130,246,.08)":"none"
             }}>
               <Ic d={n.ic} s={20}/>
@@ -1783,10 +1783,10 @@ export default function App(){
             <Ic d={IC.logout} s={18}/> Cerrar sesión
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* Main content */}
-      <div className="main-content">
+      <div className="main-content" style={!isMobile?{marginLeft:240}:{}}>
         {/* Mobile header - solo se renderiza en mobile */}
         {isMobile&&<div className="mobile-header">
           <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -1923,17 +1923,12 @@ export default function App(){
 
         .page-inner{padding:0 20px 40px}
 
-        .sidebar{display:none}
         .mobile-header{padding:16px 16px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
         .desktop-header{display:none}
         .main-content{max-width:480px;margin:0 auto;position:relative}
         .page-content{padding-top:16px}
 
         @media(min-width:900px){
-          .sidebar{
-            display:flex!important;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
-            background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);z-index:10;
-          }
           .mobile-header{display:none!important}
           .desktop-header{
             display:block;padding:28px 48px 20px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));
@@ -1948,8 +1943,6 @@ export default function App(){
         }
 
         @media(min-width:1200px){
-          .sidebar{width:280px}
-          .main-content{margin-left:280px}
           .page-content{max-width:1000px;padding:28px 48px 48px}
         }
       `}</style>
