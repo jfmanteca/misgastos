@@ -1777,30 +1777,36 @@ export default function App(){
         {/* Mobile header */}
         <div className="mobile-header">
           <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",padding:8,flexShrink:0}}>
+            <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",color:"var(--text-secondary)",cursor:"pointer",padding:8,flexShrink:0}}>
               <Ic d={menuOpen?IC.close:IC.menu} s={22}/>
             </button>
             <h1 style={{fontSize:22,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",flex:1}}>MisGastos</h1>
-            <button onClick={toggleTheme} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}} title={darkMode?"Modo día":"Modo noche"}><Ic d={darkMode?IC.sun:IC.moon} s={18}/></button>
+            <button onClick={toggleTheme} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={darkMode?IC.sun:IC.moon} s={18}/></button>
             <button onClick={logout} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={IC.logout} s={18}/></button>
           </div>
-          {/* Hamburger drawer */}
-          {menuOpen&&(
-            <div style={{marginTop:12,borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:8}}>
-              {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
-                <button key={n.id} onClick={()=>{setPg(n.id);setMenuOpen(false)}} style={{
-                  display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 8px",marginBottom:2,
-                  borderRadius:12,border:"none",cursor:"pointer",
-                  background:a?"linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))":"transparent",
-                  color:a?"#60a5fa":"#94a3b8"
-                }}>
-                  <Ic d={n.ic} s={20}/>
-                  <span style={{fontSize:15,fontWeight:a?600:400}}>{n.l}</span>
-                </button>
-              )})}
-            </div>
-          )}
         </div>
+
+        {/* Hamburger overlay — fixed, no empuja el contenido */}
+        {menuOpen&&<>
+          <div onClick={()=>setMenuOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:40}}/>
+          <div style={{position:"fixed",top:0,left:0,bottom:0,width:260,background:"var(--sidebar-bg,#0a1020)",borderRight:"1px solid var(--card-border)",zIndex:41,padding:"20px 12px",overflowY:"auto"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,paddingLeft:8}}>
+              <h1 style={{fontSize:20,fontWeight:800,margin:0,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
+              <button onClick={()=>setMenuOpen(false)} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:4}}><Ic d={IC.close} s={20}/></button>
+            </div>
+            {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
+              <button key={n.id} onClick={()=>{setPg(n.id);setMenuOpen(false)}} style={{
+                display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 16px",marginBottom:4,
+                borderRadius:12,border:"none",cursor:"pointer",
+                background:a?"linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))":"transparent",
+                color:a?"#60a5fa":"var(--text-secondary)"
+              }}>
+                <Ic d={n.ic} s={20}/>
+                <span style={{fontSize:14,fontWeight:a?600:400}}>{n.l}</span>
+              </button>
+            )})}
+          </div>
+        </>}
 
         {/* Desktop header */}
         <div className="desktop-header">
@@ -1823,17 +1829,6 @@ export default function App(){
           </button>
         )}
 
-        {/* Mobile bottom nav - hidden, replaced by hamburger */}
-        <div className="mobile-nav" style={{display:"none"}}>
-          <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",padding:"0 8px"}}>
-            {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
-              <button key={n.id} onClick={()=>setPg(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"8px 12px",color:a?"#3b82f6":"#475569"}}>
-                {n.id==="add"?<div style={{width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 6px 20px rgba(59,130,246,.35)",color:"#fff"}}><Ic d={n.ic} s={24}/></div>:<Ic d={n.ic} s={20}/>}
-                <span style={{fontSize:10,fontWeight:a?600:400}}>{n.l}</span>
-              </button>
-            )})}
-          </div>
-        </div>
       </div>
 
       <style>{`
@@ -1916,19 +1911,17 @@ export default function App(){
         .page-inner{padding:0 16px 32px}
 
         .sidebar{display:none}
-        .mobile-header{padding:20px 16px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));background:var(--sidebar-bg)}
+        .mobile-header{padding:16px 16px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
         .desktop-header{display:none}
         .main-content{max-width:480px;margin:0 auto;position:relative}
         .page-content{padding-top:16px}
-        .mobile-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding-top:24px;padding-bottom:14px;backdrop-filter:blur(12px)}
 
-        @media(min-width:768px){
+        @media(min-width:900px){
           .sidebar{
             display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;width:240px;
             background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);z-index:10;
           }
           .mobile-header{display:none}
-          .mobile-nav{display:none}
           .desktop-header{
             display:block;padding:28px 36px 20px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));
           }
