@@ -10,10 +10,10 @@ const COLORS=["#3b82f6","#8b5cf6","#f59e0b","#ef4444","#10b981","#ec4899","#14b8
 
 const f$=(n,u)=>{const a=Math.abs(n||0);return u?`USD ${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`:`$${a.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2})}`}
 const fS=(n,u)=>{const p=u?"U$":"";return n>=1e6?`${p}${(n/1e6).toFixed(1)}M`:n>=1e3?`${p}${(n/1e3).toFixed(0)}K`:`${p}${Math.round(n)}`}
-const today=()=>new Date().toISOString().split("T")[0]
+const today=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
-const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"}
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12"}
 const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace"}
 // Category emoji icons for visual identification
 const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
@@ -328,7 +328,7 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
           </div>
         </label>}
         <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+        <div style={{marginBottom:16,minWidth:0,overflow:"hidden"}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,maxWidth:"100%"}}/></div>
       </>}
 
       {mt==="egreso"&&<>
@@ -378,13 +378,13 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         {/* Step 2a: Standard inversion form */}
         {fm.it&&!isUSD&&<>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+          <div style={{marginBottom:16,minWidth:0,overflow:"hidden"}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,maxWidth:"100%"}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
         </>}
 
         {/* Step 2b: Compra USD form */}
         {fm.it&&isUSD&&<>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={S.inp}/></div>
+          <div style={{marginBottom:16,minWidth:0,overflow:"hidden"}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,maxWidth:"100%"}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
           <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
@@ -425,15 +425,16 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
   const vb=6,si=Math.max(0,months.length-vb-bo),ei=si+vb
   const vis=months.slice(si,ei)
 
-  // Ingresos matching Movimientos logic: sueldo prev month + ingresos this month (excl last sueldo)
+  // Sueldo con fecha <= día 15 cuenta para ese mes; > día 15 cuenta para el mes siguiente
+  const dayN=d=>parseInt((d||"").split("-")[2],10)
   const getMonthIngresos=(k)=>{
     const prevK=(()=>{const[y2,m2]=k.split("-").map(Number);const pm=m2===1?12:m2-1;const py=m2===1?y2-1:y2;return`${py}-${String(pm).padStart(2,"0")}`})()
-    const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevK&&m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
-    const sueldoPrev=sueldosPrev.length>0?sueldosPrev[0].monto:0
+    // Sueldos del mes anterior cobrados después del 15 → cuentan para este mes
+    const sueldosPrevForThis=movimientos.filter(m=>monthOf(m.fecha)===prevK&&m.tipo==="ingreso"&&m.categoria==="Sueldo"&&dayN(m.fecha)>15)
+    const sueldoPrev=sueldosPrevForThis.reduce((s,m)=>s+m.monto,0)
     const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===k)
-    const sueldosThis=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
-    const lastSueldoId=sueldosThis.length>0?sueldosThis[0].id:null
-    const ingThisMonth=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.id!==lastSueldoId).reduce((s,m)=>s+m.monto,0)
+    // Ingresos de este mes: todos excepto sueldos cobrados después del día 15 (esos son del mes siguiente)
+    const ingThisMonth=allThisMonth.filter(m=>m.tipo==="ingreso"&&(m.categoria!=="Sueldo"||dayN(m.fecha)<=15)).reduce((s,m)=>s+m.monto,0)
     return sueldoPrev+ingThisMonth
   }
   const getEg=k=>showUSD?(monthly[k]?.egU||0):(monthly[k]?.egP||0)
@@ -860,18 +861,15 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
 
   const prevMk=prevMonth(selMonth)
   const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
-  // Último sueldo del mes anterior (se cobra a fin de mes, se usa el mes siguiente)
-  const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
-  const sueldoPrevMonth=sueldosPrev.length>0?sueldosPrev[0].monto:0
-  // Último sueldo del mes actual (se excluye porque corresponde al mes siguiente)
-  const sueldosThis=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.categoria==="Sueldo").sort((a,b)=>b.fecha.localeCompare(a.fecha))
-  const ultimoSueldoThisId=sueldosThis.length>0?sueldosThis[0].id:null
-  // Todos los ingresos del mes actual excepto el último sueldo
-  const ingresosThisItems=allThisMonth.filter(m=>m.tipo==="ingreso"&&m.id!==ultimoSueldoThisId)
+  const dayNM=d=>parseInt((d||"").split("-")[2],10)
+  // Sueldos del mes anterior cobrados después del día 15 → cuentan para este mes
+  const sueldosPrevForThis=movimientos.filter(m=>monthOf(m.fecha)===prevMk&&m.tipo==="ingreso"&&m.categoria==="Sueldo"&&dayNM(m.fecha)>15)
+  const sueldoPrevMonth=sueldosPrevForThis.reduce((s,m)=>s+m.monto,0)
+  // Ingresos de este mes: todos excepto sueldos después del día 15 (esos son del mes siguiente)
+  const ingresosThisItems=allThisMonth.filter(m=>m.tipo==="ingreso"&&(m.categoria!=="Sueldo"||dayNM(m.fecha)<=15))
   const ingresosThisMonth=ingresosThisItems.reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
-  // Desglose para debug
-  const ingresoDesglose=[{label:`Sueldo ${fmtMonthFull(prevMk)} (${sueldosPrev[0]?.fecha||"?"})`,monto:sueldoPrevMonth},...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
+  const ingresoDesglose=[...sueldosPrevForThis.map(m=>({label:`Sueldo mes ant. (${m.fecha})`,monto:m.monto})),...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
 
   const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,cuenta_id:e.cuenta_id})}
   const cancelEdit=()=>{setEditId(null);setEditForm({})}
@@ -991,13 +989,13 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             </select>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            <div>
+            <div style={{minWidth:0,overflow:"hidden"}}>
               <label style={S.lbl}>Desde</label>
-              <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:11,padding:"14px 8px"}}/>
+              <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 4px",maxWidth:"100%"}}/>
             </div>
-            <div>
+            <div style={{minWidth:0,overflow:"hidden"}}>
               <label style={S.lbl}>Hasta</label>
-              <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:11,padding:"14px 8px"}}/>
+              <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 4px",maxWidth:"100%"}}/>
             </div>
           </div>
         </div>
@@ -1677,6 +1675,7 @@ export default function App(){
   const[user,setUser]=useState(null)
   const[loading,setLoading]=useState(true)
   const[pg,setPg]=useState("home")
+  const[menuOpen,setMenuOpen]=useState(false)
   const[cuentas,setCuentas]=useState([])
   const[movimientos,setMovimientos]=useState([])
   const[deuda,setDeuda]=useState([])
@@ -1774,10 +1773,29 @@ export default function App(){
       <div className="main-content">
         {/* Mobile header */}
         <div className="mobile-header">
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div><h1 style={{fontSize:22,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1><div style={{fontSize:11,color:"#475569",marginTop:2}}>{user.email}</div></div>
-            <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8}}><Ic d={IC.logout} s={18}/></button>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",padding:8,flexShrink:0}}>
+              <Ic d={menuOpen?IC.close:IC.menu} s={22}/>
+            </button>
+            <h1 style={{fontSize:22,fontWeight:800,margin:0,letterSpacing:-.5,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",flex:1}}>MisGastos</h1>
+            <button onClick={logout} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",padding:8,flexShrink:0}}><Ic d={IC.logout} s={18}/></button>
           </div>
+          {/* Hamburger drawer */}
+          {menuOpen&&(
+            <div style={{marginTop:12,borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:8}}>
+              {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
+                <button key={n.id} onClick={()=>{setPg(n.id);setMenuOpen(false)}} style={{
+                  display:"flex",alignItems:"center",gap:12,width:"100%",padding:"12px 8px",marginBottom:2,
+                  borderRadius:12,border:"none",cursor:"pointer",
+                  background:a?"linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.1))":"transparent",
+                  color:a?"#60a5fa":"#94a3b8"
+                }}>
+                  <Ic d={n.ic} s={20}/>
+                  <span style={{fontSize:15,fontWeight:a?600:400}}>{n.l}</span>
+                </button>
+              )})}
+            </div>
+          )}
         </div>
 
         {/* Desktop header */}
@@ -1789,8 +1807,8 @@ export default function App(){
 
         <div className="page-content">{C}</div>
 
-        {/* Mobile bottom nav */}
-        <div className="mobile-nav">
+        {/* Mobile bottom nav - hidden, replaced by hamburger */}
+        <div className="mobile-nav" style={{display:"none"}}>
           <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",padding:"0 8px"}}>
             {nav.map(n=>{const a=pg===n.id||(pg==="md"&&n.id==="dash");return(
               <button key={n.id} onClick={()=>setPg(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:"8px 12px",color:a?"#3b82f6":"#475569"}}>
@@ -1813,7 +1831,7 @@ export default function App(){
         input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.4)!important;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
         button:active{transform:scale(.97)}
 
-        .page-inner{padding:0 16px 100px}
+        .page-inner{padding:0 16px 32px}
 
         .sidebar{display:none}
         .mobile-header{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,.04)}
