@@ -333,8 +333,8 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
       </div>}
 
       <div style={S.sec}>Nuevo Movimiento</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
-        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}} style={{padding:"11px 0",borderRadius:12,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"#141c28",color:mt===t?"#fff":"#64748b"}}>{tabL[t]}</button>)}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:20}}>
+        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}} style={{padding:"12px 0",borderRadius:12,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"var(--btn-bg)",color:mt===t?"#fff":"var(--text-muted)"}}>{tabL[t]}</button>)}
       </div>
 
       {/* Generic fields for non-inversion tabs */}
@@ -1035,13 +1035,13 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           </select>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-          <div>
+          <div style={{minWidth:0}}>
             <label style={S.lbl}>Desde</label>
-            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:13,padding:"10px 10px"}}/>
+            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 6px",width:"100%"}}/>
           </div>
-          <div>
+          <div style={{minWidth:0}}>
             <label style={S.lbl}>Hasta</label>
-            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:13,padding:"10px 10px"}}/>
+            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:12,padding:"10px 6px",width:"100%"}}/>
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:12}}>
@@ -1857,12 +1857,12 @@ export default function App(){
           </div>
         </>}
 
-        {/* Desktop header */}
-        <div className="desktop-header">
-          <h2 style={{fontSize:18,fontWeight:700,color:"#f1f5f9",margin:0}}>
+        {/* Desktop header — solo en desktop */}
+        {!isMobile&&<div style={{padding:"28px 48px 20px",borderBottom:"1px solid var(--header-border,rgba(255,255,255,.04))"}}>
+          <h2 style={{fontSize:18,fontWeight:700,color:"var(--text-primary)",margin:0}}>
             {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":pg==="abm"?"Configuración":""}
           </h2>
-        </div>
+        </div>}
 
         <div className="page-content">{C}</div>
 
@@ -1961,39 +1961,15 @@ export default function App(){
 
         *,*::before,*::after{box-sizing:border-box}
         html,body{overflow-x:hidden;width:100%;margin:0;padding:0}
-        img,input,select,textarea,button{max-width:100%}
-        /* Prevenir auto-zoom de iOS en inputs con font-size < 16px */
-        @media(max-width:899px){
-          input,select,textarea{font-size:16px!important}
-        }
 
-        /* Mobile: un solo nivel de padding horizontal, respeta safe area (Dynamic Island) */
         .page-inner{padding:0 0 40px}
-        .mobile-header{
-          padding:14px 20px 12px;
-          padding-left:max(20px,env(safe-area-inset-left));
-          padding-right:max(20px,env(safe-area-inset-right));
-          border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))
-        }
-        .desktop-header{display:none}
+        .mobile-header{padding:14px 24px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
         .main-content{width:100%;max-width:100%;overflow-x:hidden;position:relative}
-        .page-content{
-          padding:16px 20px 40px;
-          padding-left:max(20px,env(safe-area-inset-left));
-          padding-right:max(20px,env(safe-area-inset-right));
-        }
+        .page-content{padding:20px 24px 40px}
 
         @media(min-width:900px){
-          .mobile-header{display:none!important}
-          .desktop-header{
-            display:block;padding:28px 48px 20px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04));
-          }
-          .main-content{
-            margin-left:240px;max-width:none;padding-bottom:32px;
-          }
-          .page-content{
-            padding:24px 48px 40px;max-width:960px;
-          }
+          .main-content{margin-left:240px;max-width:none;padding-bottom:32px}
+          .page-content{padding:24px 48px 40px;max-width:960px}
           .page-inner{padding:0 8px}
         }
 
