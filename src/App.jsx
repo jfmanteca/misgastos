@@ -204,7 +204,7 @@ function HomePage({cuentas,movimientos}){
 }
 
 // ══════════════ CARGAR ══════════════
-function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTypes}){
+function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTypes}){
   const[mt,setMt]=useState("egreso")
   const[fm,setFm]=useState({date:today(),cat:"",sub:"",tc:"",cuenta:"",amt:"",it:"",from:"",to:"",tcDolar:""})
   const[ok,setOk]=useState(false)
@@ -213,14 +213,29 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
   const[showConfirm,setShowConfirm]=useState(false)
   const[recupero,setRecupero]=useState(false)
   const[opUSD,setOpUSD]=useState(false)
+  const[catSort,setCatSort]=useState("uso") // "uso" | "az"
   const subs=egresoSubs[fm.cat]||[]
   const isUSD=mt==="inversion"&&fm.it.toLowerCase().includes("usd")
 
+  // Conteo de uso por categoría y por cuenta
+  const catUsage={}
+  const cuentaUsage={}
+  movimientos.forEach(m=>{
+    if(m.categoria){catUsage[m.categoria]=(catUsage[m.categoria]||0)+1}
+    if(m.cuenta_id){cuentaUsage[m.cuenta_id]=(cuentaUsage[m.cuenta_id]||0)+1}
+  })
+
+  // Ordenar categorías según modo seleccionado
+  const sortCats=cats=>catSort==="az"?[...cats].sort((a,b)=>a.localeCompare(b,"es")):[...cats].sort((a,b)=>(catUsage[b]||0)-(catUsage[a]||0))
+
   useEffect(()=>{
     if(cuentas.length>0&&!fm.cuenta){
-      const bapro=cuentas.find(c=>c.nombre==="BAPRO $")
+      // Default: cuenta más utilizada en ARS, o la primera
+      const arsCuentas=cuentas.filter(c=>c.moneda!=="USD")
+      const mostUsedARS=arsCuentas.sort((a,b)=>(cuentaUsage[b.id]||0)-(cuentaUsage[a.id]||0))[0]
       const usdAcc=cuentas.find(c=>c.nombre==="Efectivo USD")||cuentas.find(c=>c.moneda==="USD")||cuentas[0]
-      setFm(f=>({...f,cuenta:bapro?.id||cuentas[0].id,from:bapro?.id||cuentas[0].id,to:usdAcc?.id||cuentas[1]?.id||""}))
+      const defARS=mostUsedARS?.id||cuentas[0].id
+      setFm(f=>({...f,cuenta:defARS,from:defARS,to:usdAcc?.id||cuentas[1]?.id||""}))
     }
   },[cuentas])
 
@@ -343,7 +358,16 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
       </>}
 
       {mt==="egreso"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{egresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div></div>
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <label style={{...S.lbl,marginBottom:0}}>Categoría</label>
+            <div style={{display:"flex",gap:4}}>
+              <button onClick={()=>setCatSort("uso")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="uso"?"#3b82f6":"var(--btn-bg)",color:catSort==="uso"?"#fff":"var(--text-muted)"}}>Más usadas</button>
+              <button onClick={()=>setCatSort("az")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="az"?"#3b82f6":"var(--btn-bg)",color:catSort==="az"?"#fff":"var(--text-muted)"}}>A-Z</button>
+            </div>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sortCats(egresoCats).map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div>
+        </div>
         {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
           <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
@@ -359,7 +383,16 @@ function AddPage({cuentas,userId,onSaved,egresoCats,egresoSubs,ingresoCats,invTy
         </div>}
       </>}
       {mt==="ingreso"&&<>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Categoría</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{ingresoCats.map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div></div>
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <label style={{...S.lbl,marginBottom:0}}>Categoría</label>
+            <div style={{display:"flex",gap:4}}>
+              <button onClick={()=>setCatSort("uso")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="uso"?"#16a34a":"var(--btn-bg)",color:catSort==="uso"?"#fff":"var(--text-muted)"}}>Más usadas</button>
+              <button onClick={()=>setCatSort("az")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="az"?"#16a34a":"var(--btn-bg)",color:catSort==="az"?"#fff":"var(--text-muted)"}}>A-Z</button>
+            </div>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sortCats(ingresoCats).map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div>
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:16}}>
           <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
           <div><label style={S.lbl}>TC Dólar</label><input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
@@ -1748,7 +1781,7 @@ export default function App(){
 
   let C
   if(pg==="home")C=<HomePage cuentas={cuentas} movimientos={movimientos}/>
-  else if(pg==="add")C=<AddPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats} invTypes={dynInvTypes}/>
+  else if(pg==="add")C=<AddPage cuentas={cuentas} movimientos={movimientos} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats} invTypes={dynInvTypes}/>
   else if(pg==="mov")C=<MovimientosPage movimientos={movimientos} cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
   else if(pg==="dash")C=<DashboardPage movimientos={movimientos} cuentas={cuentas} onViewMonth={viewMonth} onViewMonthInv={viewMonthInv} onViewMonthIng={viewMonthIng} subEgreso={subEgreso}/>
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
@@ -1926,12 +1959,13 @@ export default function App(){
         input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.4)!important;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
         button:active{transform:scale(.97)}
 
-        .page-inner{padding:0 20px 40px}
+        *{box-sizing:border-box}
+        .page-inner{padding:0 16px 40px}
 
-        .mobile-header{padding:16px 16px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
+        .mobile-header{padding:14px 20px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
         .desktop-header{display:none}
-        .main-content{max-width:480px;margin:0 auto;position:relative}
-        .page-content{padding-top:16px}
+        .main-content{max-width:100%;margin:0 auto;position:relative;overflow-x:hidden}
+        .page-content{padding:16px 16px 40px}
 
         @media(min-width:900px){
           .mobile-header{display:none!important}
