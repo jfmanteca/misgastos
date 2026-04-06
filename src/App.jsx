@@ -1027,21 +1027,21 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             </select>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
-          <div style={{minWidth:0}}>
-            <label style={S.lbl}>Cuenta</label>
-            <select value={filterCuenta} onChange={e=>setFilterCuenta(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 4px"}}>
-              <option value="">Todas</option>
-              {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre} ({c.moneda})</option>)}
-            </select>
-          </div>
-          <div style={{minWidth:0,overflow:"hidden"}}>
+        <div style={{marginBottom:6}}>
+          <label style={S.lbl}>Cuenta</label>
+          <select value={filterCuenta} onChange={e=>setFilterCuenta(e.target.value)} style={{...S.inp,fontSize:13}}>
+            <option value="">Todas</option>
+            {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre} ({c.moneda})</option>)}
+          </select>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+          <div>
             <label style={S.lbl}>Desde</label>
-            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 2px",maxWidth:"100%",width:"100%"}}/>
+            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:13,padding:"10px 10px"}}/>
           </div>
-          <div style={{minWidth:0,overflow:"hidden"}}>
+          <div>
             <label style={S.lbl}>Hasta</label>
-            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 2px",maxWidth:"100%",width:"100%"}}/>
+            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:13,padding:"10px 10px"}}/>
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:12}}>
@@ -1959,13 +1959,29 @@ export default function App(){
         input:focus,select:focus,textarea:focus{border-color:rgba(59,130,246,.4)!important;box-shadow:0 0 0 3px rgba(59,130,246,.1)}
         button:active{transform:scale(.97)}
 
-        *{box-sizing:border-box}
-        .page-inner{padding:0 16px 40px}
+        *,*::before,*::after{box-sizing:border-box}
+        html,body{overflow-x:hidden;width:100%;margin:0;padding:0}
+        img,input,select,textarea,button{max-width:100%}
+        /* Prevenir auto-zoom de iOS en inputs con font-size < 16px */
+        @media(max-width:899px){
+          input,select,textarea{font-size:16px!important}
+        }
 
-        .mobile-header{padding:14px 20px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
+        /* Mobile: un solo nivel de padding horizontal, respeta safe area (Dynamic Island) */
+        .page-inner{padding:0 0 40px}
+        .mobile-header{
+          padding:14px 20px 12px;
+          padding-left:max(20px,env(safe-area-inset-left));
+          padding-right:max(20px,env(safe-area-inset-right));
+          border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))
+        }
         .desktop-header{display:none}
-        .main-content{max-width:100%;margin:0 auto;position:relative;overflow-x:hidden}
-        .page-content{padding:16px 16px 40px}
+        .main-content{width:100%;max-width:100%;overflow-x:hidden;position:relative}
+        .page-content{
+          padding:16px 20px 40px;
+          padding-left:max(20px,env(safe-area-inset-left));
+          padding-right:max(20px,env(safe-area-inset-right));
+        }
 
         @media(min-width:900px){
           .mobile-header{display:none!important}
@@ -1978,7 +1994,7 @@ export default function App(){
           .page-content{
             padding:24px 48px 40px;max-width:960px;
           }
-          .page-inner{padding:0 8px!important}
+          .page-inner{padding:0 8px}
         }
 
         @media(min-width:1200px){
