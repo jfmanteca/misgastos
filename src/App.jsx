@@ -1922,36 +1922,39 @@ export default function App(){
           --sidebar-border:rgba(0,0,0,.08);
           --header-border:rgba(0,0,0,.06);
         }
-        /* Forzar contraste en todos los textos que tienen color hardcodeado en inline styles */
-        [data-theme="light"] span,
-        [data-theme="light"] p,
-        [data-theme="light"] label,
-        [data-theme="light"] div { color: inherit }
-        [data-theme="light"] .page-content { color: #0f172a }
-        [data-theme="light"] .sidebar { color: #0f172a }
-        [data-theme="light"] .mobile-header { color: #0f172a }
+        /* ── Modo día: override universal de colores hardcodeados ── */
 
-        /* Overrides !important para colores hardcodeados en inline styles */
-        [data-theme="light"] button:not([style*="background:linear"]):not([style*="background:\"linear"]):not([style*="#3b82f6"]):not([style*="#8b5cf6"]):not([style*="#ef4444"]):not([style*="#16a34a"]):not([style*="#f59e0b"]) {
-          color: #1e293b !important;
-        }
-        [data-theme="light"] span[style*="color:#94a3b8"],
-        [data-theme="light"] span[style*="color:#64748b"],
-        [data-theme="light"] span[style*="color:#475569"],
-        [data-theme="light"] div[style*="color:#94a3b8"],
-        [data-theme="light"] div[style*="color:#64748b"],
-        [data-theme="light"] div[style*="color:#475569"] { color: #334155 !important }
-        [data-theme="light"] span[style*="color:#e2e8f0"],
-        [data-theme="light"] div[style*="color:#e2e8f0"] { color: #0f172a !important }
-        [data-theme="light"] span[style*="color:#cbd5e1"],
-        [data-theme="light"] div[style*="color:#cbd5e1"] { color: #475569 !important }
+        /* Colores casi blancos (invisibles en fondo blanco) → negro */
+        [data-theme="light"] *[style*="color:#e2e8f0"],
+        [data-theme="light"] *[style*="color:#f1f5f9"],
+        [data-theme="light"] *[style*="color:#f8fafc"],
+        [data-theme="light"] *[style*="color:#cbd5e1"] { color: #0f172a !important }
+
+        /* Grises claros → grises oscuros legibles */
+        [data-theme="light"] *[style*="color:#94a3b8"] { color: #334155 !important }
+        [data-theme="light"] *[style*="color:#64748b"] { color: #334155 !important }
+        [data-theme="light"] *[style*="color:#475569"] { color: #1e293b !important }
+        [data-theme="light"] *[style*="color:#334155"] { color: #0f172a !important }
+
+        /* Fondos oscuros de cards/modales que no usan variables → blanco */
+        [data-theme="light"] *[style*="background:#141c28"],
+        [data-theme="light"] *[style*="background:#0b1120"],
+        [data-theme="light"] *[style*="background:#131a2b"],
+        [data-theme="light"] *[style*="background:#0f1724"],
+        [data-theme="light"] *[style*="background:#1e293b"] { background: #f8fafc !important }
+        [data-theme="light"] *[style*="background-color:#131a2b"] { background-color: #f8fafc !important }
+
+        /* Botones sin color explícito → texto oscuro */
+        [data-theme="light"] button { color: #1e293b }
+
+        /* Inputs, selects, textareas */
         [data-theme="light"] input,
         [data-theme="light"] select,
         [data-theme="light"] textarea { color: #0f172a !important }
-        [data-theme="light"] select{background-color:#fff!important;color:#0f172a!important}
-        [data-theme="light"] select option{background:#fff;color:#0f172a}
-        [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator{filter:none}
-        [data-theme="light"] ::-webkit-scrollbar-thumb{background:#cbd5e1}
+        [data-theme="light"] select { background-color:#fff!important;color:#0f172a!important }
+        [data-theme="light"] select option { background:#fff;color:#0f172a }
+        [data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator { filter:none }
+        [data-theme="light"] ::-webkit-scrollbar-thumb { background:#cbd5e1 }
         [data-theme="light"] input::placeholder { color: #94a3b8 !important }
 
         input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
