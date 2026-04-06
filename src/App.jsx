@@ -785,9 +785,11 @@ function MonthDetail({monthKey:mk2,filterTipo,movimientos,cuentas,onBack}){
 // ══════════════ DEUDA ══════════════
 function DebtPage({deuda}){
   const hist=[...deuda].sort((a,b)=>a.fecha.localeCompare(b.fecha)||(a.created_at||"").localeCompare(b.created_at||""))
-  const last=hist[hist.length-1]
-  const saldoUSD=last?.saldo_usd!=null?last.saldo_usd:(last?.saldo||0)
   const getMontoUSD=e=>e.monto_usd!=null?e.monto_usd:e.monto
+  // Calcular saldo corrido dinámicamente para evitar errores en saldo_usd almacenado en DB
+  let runSaldo=0
+  const histConSaldo=hist.map(e=>{runSaldo+=getMontoUSD(e);return{...e,_saldo:runSaldo}})
+  const saldoUSD=runSaldo
   const totalPrestadoUSD=hist.filter(e=>getMontoUSD(e)>0).reduce((s,p)=>s+getMontoUSD(p),0)
   const totalPagadoUSD=Math.abs(hist.filter(e=>getMontoUSD(e)<0).reduce((s,p)=>s+getMontoUSD(p),0))
 
@@ -811,9 +813,9 @@ function DebtPage({deuda}){
           <div style={{width:80,textAlign:"center",fontSize:11,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Saldo USD</div>
         </div>
         <div style={{maxHeight:500,overflowY:"auto"}}>
-          {[...hist].reverse().map((e,i)=>{
-            const montoUSD=e.monto_usd!=null?e.monto_usd:e.monto
-            const sUSD=e.saldo_usd!=null?e.saldo_usd:e.saldo
+          {[...histConSaldo].reverse().map((e,i)=>{
+            const montoUSD=getMontoUSD(e)
+            const sUSD=e._saldo
             return(
             <div key={e.id} style={{display:"flex",alignItems:"center",padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.02)",gap:8}}>
               <div style={{flex:1,minWidth:0}}>
