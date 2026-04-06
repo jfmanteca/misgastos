@@ -980,23 +980,21 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
             </select>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-          <div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+          <div style={{minWidth:0}}>
             <label style={S.lbl}>Cuenta</label>
-            <select value={filterCuenta} onChange={e=>setFilterCuenta(e.target.value)} style={{...S.inp,fontSize:12}}>
+            <select value={filterCuenta} onChange={e=>setFilterCuenta(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 4px"}}>
               <option value="">Todas</option>
               {cuentas.map(c=><option key={c.id} value={c.id}>{c.nombre} ({c.moneda})</option>)}
             </select>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            <div style={{minWidth:0,overflow:"hidden"}}>
-              <label style={S.lbl}>Desde</label>
-              <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 4px",maxWidth:"100%"}}/>
-            </div>
-            <div style={{minWidth:0,overflow:"hidden"}}>
-              <label style={S.lbl}>Hasta</label>
-              <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 4px",maxWidth:"100%"}}/>
-            </div>
+          <div style={{minWidth:0,overflow:"hidden"}}>
+            <label style={S.lbl}>Desde</label>
+            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 2px",maxWidth:"100%",width:"100%"}}/>
+          </div>
+          <div style={{minWidth:0,overflow:"hidden"}}>
+            <label style={S.lbl}>Hasta</label>
+            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={{...S.inp,fontSize:10,padding:"10px 2px",maxWidth:"100%",width:"100%"}}/>
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:12}}>
@@ -1016,7 +1014,7 @@ function MovimientosPage({movimientos,cuentas,userId,onSaved}){
           editId===e.id?
           <div key={e.id} style={{padding:14,borderBottom:"1px solid rgba(255,255,255,.04)",background:"rgba(59,130,246,.05)"}}>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-              <input type="date" value={editForm.fecha} onChange={ev=>setEditForm(f=>({...f,fecha:ev.target.value}))} style={{...S.inp,fontSize:12}}/>
+              <div style={{minWidth:0,overflow:"hidden"}}><input type="date" value={editForm.fecha} onChange={ev=>setEditForm(f=>({...f,fecha:ev.target.value}))} style={{...S.inp,fontSize:12,maxWidth:"100%",width:"100%"}}/></div>
               <input type="text" inputMode="decimal" value={editForm.monto} onChange={ev=>setEditForm(f=>({...f,monto:ev.target.value}))} style={{...S.inp,fontSize:12,...mo}} placeholder="Monto (-10000 = devolución)"/>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
@@ -1806,6 +1804,18 @@ export default function App(){
         </div>
 
         <div className="page-content">{C}</div>
+
+        {/* FAB: acceso rápido a Cargar desde Inicio */}
+        {pg==="home"&&(
+          <button onClick={()=>setPg("add")} className="fab-add" style={{
+            position:"fixed",bottom:28,right:20,width:56,height:56,borderRadius:"50%",
+            background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",border:"none",cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",
+            boxShadow:"0 6px 24px rgba(59,130,246,.45)",zIndex:50
+          }}>
+            <Ic d={IC.plus} s={26}/>
+          </button>
+        )}
 
         {/* Mobile bottom nav - hidden, replaced by hamburger */}
         <div className="mobile-nav" style={{display:"none"}}>
