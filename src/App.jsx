@@ -18,45 +18,51 @@ const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monosp
 // Category emoji icons for visual identification
 const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
 const catIcon=c=>{for(const[k,v] of Object.entries(CAT_ICON)){if(c?.includes(k))return v};return"📌"}
-// Account logo domains — se usa clearbit para obtener el logo real
-const ACC_DOMAINS={
-  "Mercado Pago":"mercadopago.com.ar",
-  "Mercado":"mercadopago.com.ar",
-  "BAPRO":"bapro.com.ar",
-  "Banco Provincia":"bapro.com.ar",
-  "Banco Ciudad":"bancociudad.com.ar",
-  "Ciudad":"bancociudad.com.ar",
-  "Banco Nación":"bna.com.ar",
-  "BNA":"bna.com.ar",
-  "Galicia":"galicia.com.ar",
-  "Santander":"santander.com.ar",
-  "BBVA":"bbva.com.ar",
-  "Frances":"bbva.com.ar",
-  "HSBC":"hsbc.com.ar",
-  "Brubank":"brubank.com.ar",
-  "Naranja":"naranjax.com",
+// Account icons: favicon URL para los que funciona bien, badge de iniciales+color para el resto
+const ACC_FAVICON={
+  "Mercado Pago":"mercadopago.com",
+  "Mercado":"mercadopago.com",
+  "Brubank":"brubank.com",
   "Ualá":"uala.com.ar",
-  "Prex":"prexcard.com",
   "Lemon":"lemon.me",
-  "Macro":"macro.com.ar",
-  "Supervielle":"supervielle.com.ar",
-  "Patagonia":"bancopatagonia.com.ar",
-  "ICBC":"icbc.com.ar",
-  "Comafi":"comafi.com.ar",
-  "Credicoop":"creditocooperativo.coop",
-  "Wilobank":"wilobank.com",
+  "Naranja":"naranjax.com",
   "Personal Pay":"personal.com.ar",
-  "Uilo":"uilo.com.ar",
+  "Prex":"prexcard.com",
 }
-const ACC_EMOJI={"Efectivo":"💵","Ahorro":"🏦","Inversión":"📈"}
+const ACC_BADGE={
+  "Banco Provincia": {label:"BP", bg:"#006341", color:"#fff"},
+  "BAPRO":           {label:"BP", bg:"#006341", color:"#fff"},
+  "Banco Ciudad":    {label:"BC", bg:"#e30613", color:"#fff"},
+  "Ciudad":          {label:"BC", bg:"#e30613", color:"#fff"},
+  "Banco Nación":    {label:"BN", bg:"#003082", color:"#fff"},
+  "Galicia":         {label:"G",  bg:"#e30613", color:"#fff"},
+  "Santander":       {label:"S",  bg:"#ec0000", color:"#fff"},
+  "BBVA":            {label:"BB", bg:"#004481", color:"#fff"},
+  "Frances":         {label:"BB", bg:"#004481", color:"#fff"},
+  "HSBC":            {label:"H",  bg:"#db0011", color:"#fff"},
+  "Macro":           {label:"M",  bg:"#ffdd00", color:"#000"},
+  "Supervielle":     {label:"SV", bg:"#ff6200", color:"#fff"},
+  "Patagonia":       {label:"Pa", bg:"#005baa", color:"#fff"},
+  "ICBC":            {label:"IC", bg:"#c00", color:"#fff"},
+  "Comafi":          {label:"Co", bg:"#003087", color:"#fff"},
+  "Credicoop":       {label:"CC", bg:"#005baa", color:"#fff"},
+  "Wilobank":        {label:"Wi", bg:"#7c3aed", color:"#fff"},
+}
+const ACC_EMOJI={"Efectivo":"💵"}
 const AccIcon=({name,size=30})=>{
-  const domain=Object.entries(ACC_DOMAINS).find(([k])=>name?.toLowerCase().includes(k.toLowerCase()))?.[1]
-  const emoji=Object.entries(ACC_EMOJI).find(([k])=>name?.toLowerCase().includes(k.toLowerCase()))?.[1]
+  const n=name||""
+  const faviconDomain=Object.entries(ACC_FAVICON).find(([k])=>n.toLowerCase().includes(k.toLowerCase()))?.[1]
+  const badge=Object.entries(ACC_BADGE).find(([k])=>n.toLowerCase().includes(k.toLowerCase()))?.[1]
+  const emoji=Object.entries(ACC_EMOJI).find(([k])=>n.toLowerCase().includes(k.toLowerCase()))?.[1]
   const[err,setErr]=useState(false)
-  if(domain&&!err){
-    return<img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} onError={()=>setErr(true)} alt={name} style={{width:size,height:size,borderRadius:6,objectFit:"contain"}}/>
-  }
-  return<span style={{fontSize:Math.round(size*.6)}}>{emoji||"💰"}</span>
+  const r=Math.round(size*.35)
+  if(faviconDomain&&!err)
+    return<img src={`https://www.google.com/s2/favicons?domain=${faviconDomain}&sz=64`} onError={()=>setErr(true)} alt={n} style={{width:size,height:size,borderRadius:6,objectFit:"contain"}}/>
+  if(badge)
+    return<div style={{width:size,height:size,borderRadius:8,background:badge.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:r,fontWeight:800,color:badge.color,letterSpacing:-.5,fontFamily:"sans-serif"}}>{badge.label}</div>
+  if(emoji)
+    return<span style={{fontSize:Math.round(size*.65)}}>{emoji}</span>
+  return<div style={{width:size,height:size,borderRadius:8,background:"#334155",display:"flex",alignItems:"center",justifyContent:"center",fontSize:r,fontWeight:800,color:"#fff"}}>{n.slice(0,2).toUpperCase()}</div>
 }
 // Category color map for badges
 const CAT_COLORS={"Salidas":"#f97316","Compras":"#3b82f6","Departamento":"#8b5cf6","Auto":"#ef4444","Apps":"#06b6d4","Entrenamiento":"#10b981","Transporte":"#f59e0b","Préstamo":"#64748b","Boca Juniors":"#facc15","Módulo":"#14b8a6","Cuidado Personal":"#ec4899","Regalos":"#a78bfa","Comida laboral":"#fb923c","Estudios":"#6366f1","Pago deuda":"#7f1d1d","Gastos Tarjeta":"#475569","Otros":"#334155","Sueldo":"#22c55e","Inversiones":"#eab308","Traspaso":"#60a5fa"}
