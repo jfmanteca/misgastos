@@ -161,7 +161,7 @@ function HomePage({cuentas,movimientos}){
         {grupos.map((g,i)=>(
           <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"12px 10px",gap:8,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
             <div style={{width:30,height:30,borderRadius:8,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{accLogo(g.nombre)}</div>
-            <div style={{flex:1,minWidth:0,fontSize:13,color:"var(--text-primary)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.nombre}</div>
+            <div style={{flex:1,minWidth:0,fontSize:13,color:"var(--text-primary)",fontWeight:600,lineHeight:1.3}}>{g.nombre}</div>
             <div style={{width:110,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
             <div style={{width:100,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
           </div>
