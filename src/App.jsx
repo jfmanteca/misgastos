@@ -1460,15 +1460,15 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
 // ══════════════ ALERTAS ══════════════
 function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   const[alertas,setAlertas]=useState([])
-  const[form,setForm]=useState({fecha:today(),hora:"09:00",categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica",dia_mes:""})
+  const[form,setForm]=useState({fecha:today(),hora:"09:00",categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"})
   const[saving,setSaving]=useState(false)
   const[ok,setOk]=useState(false)
   const[editId,setEditId]=useState(null)
   const[editForm,setEditForm]=useState({})
-  const[notifPerm,setNotifPerm]=useState(typeof Notification!=="undefined"?Notification.permission:"unsupported")
+  const[vista,setVista]=useState("inicio") // "inicio" | "crear" | "guardadas"
   const allCats=[...egresoCats,...ingresoCats]
-  const subs=(egresoSubs[form.categoria]||[])
-  const editSubs=(egresoSubs[editForm.categoria]||[])
+  const subs=egresoSubs[form.categoria]||[]
+  const editSubs=egresoSubs[editForm.categoria]||[]
 
   const load=async()=>{
     const{data}=await supabase.from("alertas").select("*").eq("user_id",userId).order("fecha").order("hora")
@@ -1476,93 +1476,87 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   }
   useEffect(()=>{load()},[])
 
-  const requestNotif=async()=>{
-    if(typeof Notification==="undefined")return
-    const p=await Notification.requestPermission()
-    setNotifPerm(p)
-  }
-
   const save=async()=>{
-    if(!form.fecha||!form.categoria){return}
+    if(!form.fecha||!form.categoria)return
     setSaving(true)
-    const payload={
-      user_id:userId,
-      fecha:form.fecha,
-      hora:form.hora||null,
-      categoria:form.categoria,
-      subcategoria:form.subcategoria||null,
-      importe:form.importe?parseFloat(form.importe):null,
-      nota:form.nota||null,
-      frecuencia:form.frecuencia,
-      dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,
-      activa:true,
-    }
-    await supabase.from("alertas").insert(payload)
+    await supabase.from("alertas").insert({
+      user_id:userId,fecha:form.fecha,hora:form.hora||null,categoria:form.categoria,
+      subcategoria:form.subcategoria||null,importe:form.importe?parseFloat(form.importe):null,
+      nota:form.nota||null,frecuencia:form.frecuencia,
+      dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,activa:true,
+    })
     setOk(true);await load()
-    setTimeout(()=>{setOk(false);setForm(f=>({...f,categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"}))},1200)
+    setTimeout(()=>{setOk(false);setForm(f=>({...f,categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"}));setVista("guardadas")},1200)
     setSaving(false)
   }
 
   const del=async(id)=>{
     if(!confirm("¿Eliminar esta alerta?"))return
-    await supabase.from("alertas").delete().eq("id",id)
-    load()
+    await supabase.from("alertas").delete().eq("id",id);load()
   }
 
   const startEdit=(a)=>{
     setEditId(a.id)
-    setEditForm({fecha:a.fecha,hora:a.hora||"",categoria:a.categoria,subcategoria:a.subcategoria||"",importe:a.importe||"",nota:a.nota||"",frecuencia:a.frecuencia||"unica",activa:a.activa})
+    setEditForm({fecha:a.fecha,hora:a.hora||"09:00",categoria:a.categoria,subcategoria:a.subcategoria||"",importe:a.importe||"",nota:a.nota||"",frecuencia:a.frecuencia||"unica"})
   }
   const saveEdit=async()=>{
     await supabase.from("alertas").update({
       fecha:editForm.fecha,hora:editForm.hora||null,categoria:editForm.categoria,
       subcategoria:editForm.subcategoria||null,importe:editForm.importe?parseFloat(editForm.importe):null,
-      nota:editForm.nota||null,frecuencia:editForm.frecuencia,activa:editForm.activa,
+      nota:editForm.nota||null,frecuencia:editForm.frecuencia,
       dia_mes:editForm.frecuencia==="mensual"?parseInt(editForm.fecha.split("-")[2],10):null,
     }).eq("id",editId)
     setEditId(null);setEditForm({});load()
   }
 
   const toggleActiva=async(a)=>{
-    await supabase.from("alertas").update({activa:!a.activa}).eq("id",a.id)
-    load()
+    await supabase.from("alertas").update({activa:!a.activa}).eq("id",a.id);load()
   }
 
   const FREC={unica:"Una vez",diaria:"Diaria",semanal:"Semanal",mensual:"Mensual",anual:"Anual"}
   const fmtFecha=f=>{if(!f)return"";const[y,m,d]=f.split("-");const ml=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];return`${parseInt(d)} ${ml[parseInt(m)-1]} ${y}`}
 
-  return(
+  const Volver=()=><button onClick={()=>{setEditId(null);setVista("inicio")}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",color:"#f59e0b",fontSize:13,cursor:"pointer",padding:0,marginBottom:20}}>
+    <Ic d={IC.left} s={16}/> Volver
+  </button>
+
+  // ── INICIO ──
+  if(vista==="inicio") return(
     <div className="page-inner">
-      {/* Banner de permisos */}
-      {notifPerm!=="granted"&&<div style={{...S.crdP,marginBottom:20,background:"rgba(245,158,11,.06)",border:"1px solid rgba(245,158,11,.2)"}}>
-        <div style={{fontSize:13,color:"#f59e0b",fontWeight:600,marginBottom:6}}>🔔 Activá las notificaciones</div>
-        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12}}>
-          {notifPerm==="unsupported"?"Tu navegador no soporta notificaciones.":"Necesitás dar permiso para recibir alertas cuando la app esté abierta."}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <button onClick={()=>setVista("crear")} style={{...S.crdP,border:"none",cursor:"pointer",textAlign:"center",padding:28,display:"flex",flexDirection:"column",alignItems:"center",gap:10,background:"var(--card-bg)",borderRadius:20,border:"1px solid var(--card-border)"}}>
+          <span style={{fontSize:32}}>➕</span>
+          <span style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>Crear alerta</span>
+        </button>
+        <button onClick={()=>{load();setVista("guardadas")}} style={{...S.crdP,border:"none",cursor:"pointer",textAlign:"center",padding:28,display:"flex",flexDirection:"column",alignItems:"center",gap:10,background:"var(--card-bg)",borderRadius:20,border:"1px solid var(--card-border)",position:"relative"}}>
+          <span style={{fontSize:32}}>🔔</span>
+          <span style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>Alertas guardadas</span>
+          {alertas.length>0&&<span style={{position:"absolute",top:10,right:10,background:"#f59e0b",color:"#000",borderRadius:20,fontSize:11,fontWeight:700,padding:"2px 8px"}}>{alertas.length}</span>}
+        </button>
+      </div>
+    </div>
+  )
+
+  // ── CREAR ──
+  if(vista==="crear") return(
+    <div className="page-inner">
+      <Volver/>
+      <div style={{...S.crdP}}>
+        <div style={{fontSize:13,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:16,fontWeight:700}}>Nueva Alerta</div>
+
+        <div style={{marginBottom:12}}>
+          <label style={S.lbl}>Fecha</label>
+          <input type="date" value={form.fecha} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
         </div>
-        {notifPerm!=="unsupported"&&<button onClick={requestNotif} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#f59e0b",color:"#000",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-          Dar permiso
-        </button>}
-      </div>}
-
-      {/* Formulario nueva alerta */}
-      <div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:14,fontWeight:700}}>Nueva Alerta</div>
-
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-          <div><label style={S.lbl}>Fecha</label>
-            <input type="date" value={form.fecha} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
-          </div>
-          <div><label style={S.lbl}>Hora</label>
-            <input type="time" value={form.hora} onChange={e=>setForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
-          </div>
+        <div style={{marginBottom:12}}>
+          <label style={S.lbl}>Hora</label>
+          <input type="time" value={form.hora} onChange={e=>setForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
         </div>
 
         <div style={{marginBottom:12}}>
           <label style={S.lbl}>Recurrencia</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-            {Object.entries(FREC).map(([v,l])=>(
-              <button key={v} onClick={()=>setForm(f=>({...f,frecuencia:v}))} style={S.btn(form.frecuencia===v,"#f59e0b")}>{l}</button>
-            ))}
+            {Object.entries(FREC).map(([v,l])=><button key={v} onClick={()=>setForm(f=>({...f,frecuencia:v}))} style={S.btn(form.frecuencia===v,"#f59e0b")}>{l}</button>)}
           </div>
         </div>
 
@@ -1585,7 +1579,7 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
           <input type="text" inputMode="decimal" value={form.importe} onChange={e=>setForm(f=>({...f,importe:e.target.value}))} placeholder="Ej: 50000" style={{...S.inp,...mo}}/>
         </div>
 
-        <div style={{marginBottom:16}}>
+        <div style={{marginBottom:20}}>
           <label style={S.lbl}>Nota adicional (opcional)</label>
           <textarea value={form.nota} onChange={e=>setForm(f=>({...f,nota:e.target.value}))} placeholder="Ej: Pagar antes de las 18hs" rows={2} style={{...S.inp,resize:"vertical",lineHeight:1.5}}/>
         </div>
@@ -1594,57 +1588,70 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
           {ok?"✓ Guardada":saving?"Guardando...":"Guardar alerta"}
         </button>
       </div>
+    </div>
+  )
 
-      {/* Lista de alertas */}
-      <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:10,fontWeight:700}}>
-        Alertas guardadas ({alertas.length})
-      </div>
-
-      {alertas.length===0&&<div style={{...S.crdP,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin alertas. Creá la primera arriba.</div>}
-
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+  // ── GUARDADAS ──
+  return(
+    <div className="page-inner">
+      <Volver/>
+      {alertas.length===0&&<div style={{...S.crdP,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin alertas guardadas.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {alertas.map(a=>(
           editId===a.id?
-          <div key={a.id} style={{...S.crdP,border:"1px solid rgba(245,158,11,.3)"}}>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-              <div><label style={S.lbl}>Fecha</label><input type="date" value={editForm.fecha} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,fontSize:13,display:"block",width:"100%"}}/></div>
-              <div><label style={S.lbl}>Hora</label><input type="time" value={editForm.hora} onChange={e=>setEditForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,fontSize:13,display:"block",width:"100%"}}/></div>
+          <div key={a.id} style={{...S.crdP,border:"1px solid rgba(245,158,11,.35)"}}>
+            <div style={{fontSize:12,color:"#f59e0b",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Editando alerta</div>
+            <div style={{marginBottom:10}}>
+              <label style={S.lbl}>Fecha</label>
+              <input type="date" value={editForm.fecha} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
             </div>
-            <div style={{marginBottom:8}}>
+            <div style={{marginBottom:10}}>
+              <label style={S.lbl}>Hora</label>
+              <input type="time" value={editForm.hora} onChange={e=>setEditForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
+            </div>
+            <div style={{marginBottom:10}}>
               <label style={S.lbl}>Recurrencia</label>
               <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                 {Object.entries(FREC).map(([v,l])=><button key={v} onClick={()=>setEditForm(f=>({...f,frecuencia:v}))} style={S.btn(editForm.frecuencia===v,"#f59e0b")}>{l}</button>)}
               </div>
             </div>
-            <input value={editForm.categoria} onChange={e=>setEditForm(f=>({...f,categoria:e.target.value,subcategoria:""}))} style={{...S.inp,fontSize:13,marginBottom:8}} placeholder="Categoría"/>
-            {editSubs.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
-              {editSubs.map(s=><button key={s} onClick={()=>setEditForm(f=>({...f,subcategoria:s}))} style={S.btn(editForm.subcategoria===s,"#a78bfa")}>{s}</button>)}
+            <div style={{marginBottom:10}}>
+              <label style={S.lbl}>Categoría</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {allCats.map(c=><button key={c} onClick={()=>setEditForm(f=>({...f,categoria:c,subcategoria:""}))} style={S.btn(editForm.categoria===c,"#f59e0b")}>{c}</button>)}
+              </div>
+            </div>
+            {editSubs.length>0&&<div style={{marginBottom:10}}>
+              <label style={S.lbl}>Subcategoría</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {editSubs.map(s=><button key={s} onClick={()=>setEditForm(f=>({...f,subcategoria:s}))} style={S.btn(editForm.subcategoria===s,"#a78bfa")}>{s}</button>)}
+              </div>
             </div>}
-            <input type="text" inputMode="decimal" value={editForm.importe} onChange={e=>setEditForm(f=>({...f,importe:e.target.value}))} placeholder="Importe (opcional)" style={{...S.inp,fontSize:13,...mo,marginBottom:8}}/>
-            <textarea value={editForm.nota||""} onChange={e=>setEditForm(f=>({...f,nota:e.target.value}))} placeholder="Nota adicional" rows={2} style={{...S.inp,fontSize:13,resize:"vertical",lineHeight:1.5,marginBottom:10}}/>
+            <input type="text" inputMode="decimal" value={editForm.importe} onChange={e=>setEditForm(f=>({...f,importe:e.target.value}))} placeholder="Importe (opcional)" style={{...S.inp,...mo,marginBottom:10}}/>
+            <textarea value={editForm.nota||""} onChange={e=>setEditForm(f=>({...f,nota:e.target.value}))} placeholder="Nota adicional" rows={2} style={{...S.inp,resize:"vertical",lineHeight:1.5,marginBottom:14}}/>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#f59e0b",color:"#000"}}>Guardar</button>
-              <button onClick={()=>setEditId(null)} style={{padding:"8px 14px",borderRadius:8,border:"none",fontSize:13,cursor:"pointer",background:"var(--btn-bg)",color:"var(--text-secondary)"}}>Cancelar</button>
+              <button onClick={saveEdit} style={{flex:1,padding:"10px 0",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#f59e0b",color:"#000"}}>Guardar</button>
+              <button onClick={()=>setEditId(null)} style={{padding:"10px 16px",borderRadius:10,border:"none",fontSize:13,cursor:"pointer",background:"var(--btn-bg)",color:"var(--text-secondary)"}}>Cancelar</button>
             </div>
           </div>
           :
-          <div key={a.id} style={{...S.crdP,opacity:a.activa?1:.5,border:`1px solid ${a.activa?"var(--card-border)":"rgba(255,255,255,.03)"}`}}>
-            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-              <div style={{fontSize:22,flexShrink:0}}>{catIcon(a.categoria)}</div>
+          <div key={a.id} style={{...S.crdP,opacity:a.activa?1:.5}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+              <div style={{fontSize:24,flexShrink:0,marginTop:2}}>{catIcon(a.categoria)}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:2}}>{a.subcategoria||a.categoria}</div>
+                <div style={{fontSize:15,fontWeight:700,color:"var(--text-primary)",marginBottom:2}}>{a.subcategoria||a.categoria}</div>
                 {a.subcategoria&&<div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{a.categoria}</div>}
-                <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
-                  <span style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>📅 {fmtFecha(a.fecha)}{a.hora?` · ${a.hora.slice(0,5)}`:""}</span>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",marginBottom:4}}>
+                  <span style={{fontSize:12,color:"#f59e0b",fontWeight:600}}>📅 {fmtFecha(a.fecha)}{a.hora?` · ${a.hora.slice(0,5)}`:""}</span>
                   <span style={{fontSize:10,background:"rgba(245,158,11,.15)",color:"#f59e0b",padding:"2px 8px",borderRadius:20,fontWeight:600}}>{FREC[a.frecuencia]||a.frecuencia}</span>
                 </div>
-                {a.importe&&<div style={{fontSize:13,fontWeight:700,color:"#4ade80",...mo,marginTop:4}}>{f$(a.importe)}</div>}
+                {a.importe&&<div style={{fontSize:13,fontWeight:700,color:"#4ade80",...mo}}>{f$(a.importe)}</div>}
                 {a.nota&&<div style={{fontSize:11,color:"#60a5fa",marginTop:4}}>📝 {a.nota}</div>}
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
-                <button onClick={()=>toggleActiva(a)} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",padding:2}} title={a.activa?"Desactivar":"Activar"}>{a.activa?"🔔":"🔕"}</button>
-                <button onClick={()=>startEdit(a)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:2}}><Ic d={IC.edit} s={14}/></button>
-                <button onClick={()=>del(a.id)} style={{background:"none",border:"none",color:"#f87171",cursor:"pointer",padding:2}}>×</button>
+              <div style={{display:"flex",flexDirection:"column",gap:8,flexShrink:0,alignItems:"center"}}>
+                <button onClick={()=>toggleActiva(a)} style={{background:"none",border:"none",fontSize:18,cursor:"pointer",padding:2}}>{a.activa?"🔔":"🔕"}</button>
+                <button onClick={()=>startEdit(a)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:2}}><Ic d={IC.edit} s={16}/></button>
+                <button onClick={()=>del(a.id)} style={{background:"none",border:"none",color:"#f87171",cursor:"pointer",fontSize:18,padding:2,fontWeight:700,lineHeight:1}}>×</button>
               </div>
             </div>
           </div>
