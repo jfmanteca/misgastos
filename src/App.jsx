@@ -18,9 +18,46 @@ const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monosp
 // Category emoji icons for visual identification
 const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
 const catIcon=c=>{for(const[k,v] of Object.entries(CAT_ICON)){if(c?.includes(k))return v};return"📌"}
-// Account logos as colored text badges
-const ACC_LOGO={"Efectivo":"💵","BAPRO":"🏛️","Mercado Pago":"💜"}
-const accLogo=name=>{for(const[k,v] of Object.entries(ACC_LOGO)){if(name?.includes(k))return v};return"💰"}
+// Account logo domains — se usa clearbit para obtener el logo real
+const ACC_DOMAINS={
+  "Mercado Pago":"mercadopago.com.ar",
+  "Mercado":"mercadopago.com.ar",
+  "BAPRO":"bapro.com.ar",
+  "Banco Provincia":"bapro.com.ar",
+  "Banco Ciudad":"bancociudad.com.ar",
+  "Ciudad":"bancociudad.com.ar",
+  "Banco Nación":"bna.com.ar",
+  "BNA":"bna.com.ar",
+  "Galicia":"galicia.com.ar",
+  "Santander":"santander.com.ar",
+  "BBVA":"bbva.com.ar",
+  "Frances":"bbva.com.ar",
+  "HSBC":"hsbc.com.ar",
+  "Brubank":"brubank.com.ar",
+  "Naranja":"naranjax.com",
+  "Ualá":"uala.com.ar",
+  "Prex":"prexcard.com",
+  "Lemon":"lemon.me",
+  "Macro":"macro.com.ar",
+  "Supervielle":"supervielle.com.ar",
+  "Patagonia":"bancopatagonia.com.ar",
+  "ICBC":"icbc.com.ar",
+  "Comafi":"comafi.com.ar",
+  "Credicoop":"creditocooperativo.coop",
+  "Wilobank":"wilobank.com",
+  "Personal Pay":"personal.com.ar",
+  "Uilo":"uilo.com.ar",
+}
+const ACC_EMOJI={"Efectivo":"💵","Ahorro":"🏦","Inversión":"📈"}
+const AccIcon=({name,size=30})=>{
+  const domain=Object.entries(ACC_DOMAINS).find(([k])=>name?.toLowerCase().includes(k.toLowerCase()))?.[1]
+  const emoji=Object.entries(ACC_EMOJI).find(([k])=>name?.toLowerCase().includes(k.toLowerCase()))?.[1]
+  const [err,setErr]=useState(false)
+  if(domain&&!err){
+    return<img src={`https://logo.clearbit.com/${domain}`} onError={()=>setErr(true)} alt={name} style={{width:size,height:size,borderRadius:8,objectFit:"contain",background:"#fff",padding:2}}/>
+  }
+  return<span style={{fontSize:Math.round(size*.6)}}>{emoji||"💰"}</span>
+}
 // Category color map for badges
 const CAT_COLORS={"Salidas":"#f97316","Compras":"#3b82f6","Departamento":"#8b5cf6","Auto":"#ef4444","Apps":"#06b6d4","Entrenamiento":"#10b981","Transporte":"#f59e0b","Préstamo":"#64748b","Boca Juniors":"#facc15","Módulo":"#14b8a6","Cuidado Personal":"#ec4899","Regalos":"#a78bfa","Comida laboral":"#fb923c","Estudios":"#6366f1","Pago deuda":"#7f1d1d","Gastos Tarjeta":"#475569","Otros":"#334155","Sueldo":"#22c55e","Inversiones":"#eab308","Traspaso":"#60a5fa"}
 const catColor=c=>CAT_COLORS[c]||"#475569"
@@ -160,7 +197,7 @@ function HomePage({cuentas,movimientos}){
         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
         {grupos.map((g,i)=>(
           <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"12px 10px",gap:8,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-            <div style={{width:30,height:30,borderRadius:8,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{accLogo(g.nombre)}</div>
+            <div style={{width:30,height:30,borderRadius:8,overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(96,165,250,.08)"}}><AccIcon name={g.nombre} size={30}/></div>
             <div style={{flex:1,minWidth:0,fontSize:13,color:"var(--text-primary)",fontWeight:600,lineHeight:1.3}}>{g.nombre}</div>
             <div style={{width:110,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
             <div style={{width:100,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
