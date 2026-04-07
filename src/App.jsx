@@ -264,12 +264,13 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
 
   useEffect(()=>{
     if(cuentas.length>0&&!fm.cuenta){
-      // Default: cuenta más utilizada en ARS, o la primera
+      // Buscar explícitamente la cuenta ARS por nombre para evitar confusión con cuentas USD homónimas
       const arsCuentas=cuentas.filter(c=>c.moneda!=="USD")
-      const mostUsedARS=arsCuentas.sort((a,b)=>(cuentaUsage[b.id]||0)-(cuentaUsage[a.id]||0))[0]
-      const usdAcc=cuentas.find(c=>c.nombre==="Efectivo USD")||cuentas.find(c=>c.moneda==="USD")||cuentas[0]
-      const defARS=mostUsedARS?.id||cuentas[0].id
-      setFm(f=>({...f,cuenta:defARS,from:defARS,to:usdAcc?.id||cuentas[1]?.id||""}))
+      const usdCuentas=cuentas.filter(c=>c.moneda==="USD")
+      // Prioridad: BAPRO ARS > primera ARS disponible (NO depende de movimientos para evitar race condition)
+      const defARS=arsCuentas.find(c=>c.nombre.toLowerCase().includes("bapro"))||arsCuentas[0]
+      const defUSD=usdCuentas.find(c=>c.nombre.toLowerCase().includes("efectivo"))||usdCuentas[0]
+      if(defARS)setFm(f=>({...f,cuenta:defARS.id,from:defARS.id,to:defUSD?.id||""}))
     }
   },[cuentas])
 
@@ -368,7 +369,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
 
       <div style={S.sec}>Nuevo Movimiento</div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:20}}>
-        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);const arsCuentas=cuentas.filter(c=>c.moneda!=="USD");const mostUsedARS=arsCuentas.sort((a,b)=>(cuentaUsage[b.id]||0)-(cuentaUsage[a.id]||0))[0];setFm(f=>({...f,cat:"",sub:"",it:"",cuenta:mostUsedARS?.id||f.cuenta}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}} style={{padding:"12px 0",borderRadius:12,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"var(--btn-bg)",color:mt===t?"#fff":"var(--text-muted)"}}>{tabL[t]}</button>)}
+        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}} style={{padding:"12px 0",borderRadius:12,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"var(--btn-bg)",color:mt===t?"#fff":"var(--text-muted)"}}>{tabL[t]}</button>)}
       </div>
 
       {/* Generic fields for non-inversion tabs */}
@@ -381,7 +382,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
           </div>
         </label>}
         {mt!=="traspaso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"12px 14px",borderRadius:12,background:opUSD?"rgba(52,211,153,.06)":"rgba(255,255,255,.02)",border:`1px solid ${opUSD?"rgba(52,211,153,.2)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
-          <input type="checkbox" checked={opUSD} onChange={e=>{const nuevoOpUSD=e.target.checked;setOpUSD(nuevoOpUSD);const cuentasDisp=cuentas.filter(a=>nuevoOpUSD?a.moneda==="USD":a.moneda!=="USD");const arsCuentas=cuentas.filter(c=>c.moneda!=="USD");const mostUsed=nuevoOpUSD?cuentas.find(c=>c.moneda==="USD"):arsCuentas.sort((a,b)=>(cuentaUsage[b.id]||0)-(cuentaUsage[a.id]||0))[0];if(mostUsed)setFm(f=>({...f,cuenta:mostUsed.id}))}} style={{width:16,height:16,accentColor:"#34d399",cursor:"pointer",flexShrink:0}}/>
+          <input type="checkbox" checked={opUSD} onChange={e=>setOpUSD(e.target.checked)} style={{width:16,height:16,accentColor:"#34d399",cursor:"pointer",flexShrink:0}}/>
           <div>
             <div style={{fontSize:13,fontWeight:600,color:opUSD?"#34d399":"#64748b"}}>Operación en dólares</div>
             <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Muestra solo cuentas en USD</div>
@@ -964,10 +965,6 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
     const newCuentaId=editForm.cuenta_id
     const cuentaChanged=newCuentaId!==orig.cuenta_id
     // Reverse old effect on original account
-    // For egreso: original impact was -orig.monto (debited), so reversal is +orig.monto
-    // For egreso with negative monto (devolucion): original impact was +|monto| (credited), so reversal is -|monto| = orig.monto
-    // In both cases: reversal = +orig.monto for egreso (undoes the -monto that was applied)
-    // For ingreso: original impact was +orig.monto, so reversal is -orig.monto
     if(orig?.cuenta_id){
       const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",orig.cuenta_id).single()
       if(fresh){
