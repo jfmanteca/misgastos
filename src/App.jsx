@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { supabase } from "./supabase.js"
+import OneSignal from "react-onesignal"
 
 // ── CONSTANTS ──
 const EGRESO_CATS=["Salidas","Compras","Departamento","Auto","Apps","Entrenamiento","Transporte","Préstamo","Boca Juniors","Módulo","Cuidado Personal","Regalos","Comida laboral","Estudios","Pago deuda","Gastos Tarjeta","Otros"]
@@ -1476,15 +1477,41 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   }
   useEffect(()=>{load()},[])
 
+  // Armar el texto de la notificación
+  const buildNotifBody=(cat,sub,importe)=>{
+    const nombre=sub||cat
+    let txt=`Recordá que hoy tenés que hacer un pago: ${nombre}.`
+    if(importe)txt+=`\nImporte: ${f$(parseFloat(importe))}.`
+    return txt
+  }
+
+  // Programar notificación en OneSignal via Edge Function
+  const scheduleNotif=async(fecha,hora,cat,sub,importe,frecuencia)=>{
+    try{
+      const subId=await OneSignal.User.PushSubscription.id
+      if(!subId)return
+      // send_after: fecha + hora en formato "YYYY-MM-DD HH:MM:SS GMT-0300"
+      const horaStr=hora||"09:00"
+      const send_after=frecuencia==="unica"?`${fecha} ${horaStr}:00 GMT-0300`:null
+      const cuerpo=buildNotifBody(cat,sub,importe)
+      await supabase.functions.invoke("onesignal-notify",{
+        body:{subscription_id:subId,titulo:"MisGastos — Recordatorio de pago",cuerpo,send_after}
+      })
+    }catch(e){console.warn("OneSignal schedule error",e)}
+  }
+
   const save=async()=>{
     if(!form.fecha||!form.categoria)return
     setSaving(true)
+    // Pedir permiso si no está otorgado
+    try{await OneSignal.Notifications.requestPermission()}catch(e){}
     await supabase.from("alertas").insert({
       user_id:userId,fecha:form.fecha,hora:form.hora||null,categoria:form.categoria,
       subcategoria:form.subcategoria||null,importe:form.importe?parseFloat(form.importe):null,
       nota:form.nota||null,frecuencia:form.frecuencia,
       dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,activa:true,
     })
+    await scheduleNotif(form.fecha,form.hora,form.categoria,form.subcategoria,form.importe,form.frecuencia)
     setOk(true);await load()
     setTimeout(()=>{setOk(false);setForm(f=>({...f,categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"}));setVista("guardadas")},1200)
     setSaving(false)
