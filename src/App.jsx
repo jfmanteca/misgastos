@@ -13,7 +13,7 @@ const fS=(n,u)=>{const p=u?"U$":"";return n>=1e6?`${p}${(n/1e6).toFixed(1)}M`:n>
 const today=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
-const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12",sun:"M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 1 0 0 12A6 6 0 0 0 12 6z",moon:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"}
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12",sun:"M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 1 0 0 12A6 6 0 0 0 12 6z",moon:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",bell:"M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"}
 const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace"}
 // Category emoji icons for visual identification
 const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
@@ -67,7 +67,6 @@ const AccIcon=({name,size=30})=>{
 // Category color map for badges
 const CAT_COLORS={"Salidas":"#f97316","Compras":"#3b82f6","Departamento":"#8b5cf6","Auto":"#ef4444","Apps":"#06b6d4","Entrenamiento":"#10b981","Transporte":"#f59e0b","Préstamo":"#64748b","Boca Juniors":"#facc15","Módulo":"#14b8a6","Cuidado Personal":"#ec4899","Regalos":"#a78bfa","Comida laboral":"#fb923c","Estudios":"#6366f1","Pago deuda":"#7f1d1d","Gastos Tarjeta":"#475569","Otros":"#334155","Sueldo":"#22c55e","Inversiones":"#eab308","Traspaso":"#60a5fa"}
 const catColor=c=>CAT_COLORS[c]||"#475569"
-const Badge=({text,color})=><span style={{display:"inline-block",padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:600,background:`${color||catColor(text)}22`,color:color||catColor(text),whiteSpace:"nowrap"}}>{text}</span>
 const S={
   sec:{fontSize:14,fontWeight:700,letterSpacing:1,color:"var(--text-muted)",marginBottom:14},
   crd:{background:"var(--card-bg)",borderRadius:20,border:"1px solid var(--card-border)",overflow:"hidden",boxShadow:"var(--card-shadow)"},
@@ -103,7 +102,6 @@ function LoginPage({darkMode=true}){
   }
 
   const bg=darkMode?"#0b1120":"#f0f4f8"
-  const cardBg=darkMode?"linear-gradient(145deg,#131a2b,#0f1623)":"#ffffff"
   const cardBorder=darkMode?"rgba(255,255,255,.06)":"rgba(0,0,0,.09)"
   const txtPrimary=darkMode?"#e2e8f0":"#0f172a"
   const txtMuted=darkMode?"#475569":"#64748b"
@@ -885,7 +883,7 @@ function DebtPage({deuda}){
           <div style={{width:80,textAlign:"center",fontSize:11,color:"var(--text-muted)",textTransform:"uppercase",fontWeight:600}}>Saldo USD</div>
         </div>
         <div style={{maxHeight:500,overflowY:"auto"}}>
-          {[...histConSaldo].reverse().map((e,i)=>{
+          {[...histConSaldo].reverse().map((e)=>{
             const montoUSD=getMontoUSD(e)
             const sUSD=e._saldo
             return(
@@ -906,7 +904,7 @@ function DebtPage({deuda}){
 }
 
 // ══════════════ MOVIMIENTOS ══════════════
-function MovimientosPage({movimientos,cuentas,userId,onSaved}){
+function MovimientosPage({movimientos,cuentas,onSaved}){
   const[selMonth,setSelMonth]=useState(monthOf(today()))
   const[filterTipo,setFilterTipo]=useState("")
   const[filterCat,setFilterCat]=useState("")
@@ -1459,6 +1457,203 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
   )
 }
 
+// ══════════════ ALERTAS ══════════════
+function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
+  const[alertas,setAlertas]=useState([])
+  const[form,setForm]=useState({fecha:today(),hora:"09:00",categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica",dia_mes:""})
+  const[saving,setSaving]=useState(false)
+  const[ok,setOk]=useState(false)
+  const[editId,setEditId]=useState(null)
+  const[editForm,setEditForm]=useState({})
+  const[notifPerm,setNotifPerm]=useState(typeof Notification!=="undefined"?Notification.permission:"unsupported")
+  const allCats=[...egresoCats,...ingresoCats]
+  const subs=(egresoSubs[form.categoria]||[])
+  const editSubs=(egresoSubs[editForm.categoria]||[])
+
+  const load=async()=>{
+    const{data}=await supabase.from("alertas").select("*").eq("user_id",userId).order("fecha").order("hora")
+    setAlertas(data||[])
+  }
+  useEffect(()=>{load()},[])
+
+  const requestNotif=async()=>{
+    if(typeof Notification==="undefined")return
+    const p=await Notification.requestPermission()
+    setNotifPerm(p)
+  }
+
+  const save=async()=>{
+    if(!form.fecha||!form.categoria){return}
+    setSaving(true)
+    const payload={
+      user_id:userId,
+      fecha:form.fecha,
+      hora:form.hora||null,
+      categoria:form.categoria,
+      subcategoria:form.subcategoria||null,
+      importe:form.importe?parseFloat(form.importe):null,
+      nota:form.nota||null,
+      frecuencia:form.frecuencia,
+      dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,
+      activa:true,
+    }
+    await supabase.from("alertas").insert(payload)
+    setOk(true);await load()
+    setTimeout(()=>{setOk(false);setForm(f=>({...f,categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"}))},1200)
+    setSaving(false)
+  }
+
+  const del=async(id)=>{
+    if(!confirm("¿Eliminar esta alerta?"))return
+    await supabase.from("alertas").delete().eq("id",id)
+    load()
+  }
+
+  const startEdit=(a)=>{
+    setEditId(a.id)
+    setEditForm({fecha:a.fecha,hora:a.hora||"",categoria:a.categoria,subcategoria:a.subcategoria||"",importe:a.importe||"",nota:a.nota||"",frecuencia:a.frecuencia||"unica",activa:a.activa})
+  }
+  const saveEdit=async()=>{
+    await supabase.from("alertas").update({
+      fecha:editForm.fecha,hora:editForm.hora||null,categoria:editForm.categoria,
+      subcategoria:editForm.subcategoria||null,importe:editForm.importe?parseFloat(editForm.importe):null,
+      nota:editForm.nota||null,frecuencia:editForm.frecuencia,activa:editForm.activa,
+      dia_mes:editForm.frecuencia==="mensual"?parseInt(editForm.fecha.split("-")[2],10):null,
+    }).eq("id",editId)
+    setEditId(null);setEditForm({});load()
+  }
+
+  const toggleActiva=async(a)=>{
+    await supabase.from("alertas").update({activa:!a.activa}).eq("id",a.id)
+    load()
+  }
+
+  const FREC={unica:"Una vez",diaria:"Diaria",semanal:"Semanal",mensual:"Mensual",anual:"Anual"}
+  const fmtFecha=f=>{if(!f)return"";const[y,m,d]=f.split("-");const ml=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];return`${parseInt(d)} ${ml[parseInt(m)-1]} ${y}`}
+
+  return(
+    <div className="page-inner">
+      {/* Banner de permisos */}
+      {notifPerm!=="granted"&&<div style={{...S.crdP,marginBottom:20,background:"rgba(245,158,11,.06)",border:"1px solid rgba(245,158,11,.2)"}}>
+        <div style={{fontSize:13,color:"#f59e0b",fontWeight:600,marginBottom:6}}>🔔 Activá las notificaciones</div>
+        <div style={{fontSize:12,color:"var(--text-muted)",marginBottom:12}}>
+          {notifPerm==="unsupported"?"Tu navegador no soporta notificaciones.":"Necesitás dar permiso para recibir alertas cuando la app esté abierta."}
+        </div>
+        {notifPerm!=="unsupported"&&<button onClick={requestNotif} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#f59e0b",color:"#000",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          Dar permiso
+        </button>}
+      </div>}
+
+      {/* Formulario nueva alerta */}
+      <div style={{...S.crdP,marginBottom:20}}>
+        <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:14,fontWeight:700}}>Nueva Alerta</div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <div><label style={S.lbl}>Fecha</label>
+            <input type="date" value={form.fecha} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
+          </div>
+          <div><label style={S.lbl}>Hora</label>
+            <input type="time" value={form.hora} onChange={e=>setForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
+          </div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <label style={S.lbl}>Recurrencia</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {Object.entries(FREC).map(([v,l])=>(
+              <button key={v} onClick={()=>setForm(f=>({...f,frecuencia:v}))} style={S.btn(form.frecuencia===v,"#f59e0b")}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <label style={S.lbl}>Categoría <span style={{color:"#f87171"}}>*</span></label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {allCats.map(c=><button key={c} onClick={()=>setForm(f=>({...f,categoria:c,subcategoria:""}))} style={S.btn(form.categoria===c,"#f59e0b")}>{c}</button>)}
+          </div>
+        </div>
+
+        {subs.length>0&&<div style={{marginBottom:12}}>
+          <label style={S.lbl}>Subcategoría</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {subs.map(s=><button key={s} onClick={()=>setForm(f=>({...f,subcategoria:s}))} style={S.btn(form.subcategoria===s,"#a78bfa")}>{s}</button>)}
+          </div>
+        </div>}
+
+        <div style={{marginBottom:12}}>
+          <label style={S.lbl}>Importe (opcional)</label>
+          <input type="text" inputMode="decimal" value={form.importe} onChange={e=>setForm(f=>({...f,importe:e.target.value}))} placeholder="Ej: 50000" style={{...S.inp,...mo}}/>
+        </div>
+
+        <div style={{marginBottom:16}}>
+          <label style={S.lbl}>Nota adicional (opcional)</label>
+          <textarea value={form.nota} onChange={e=>setForm(f=>({...f,nota:e.target.value}))} placeholder="Ej: Pagar antes de las 18hs" rows={2} style={{...S.inp,resize:"vertical",lineHeight:1.5}}/>
+        </div>
+
+        <button onClick={save} disabled={saving||!form.categoria} style={{width:"100%",padding:14,borderRadius:14,border:"none",fontSize:15,fontWeight:700,cursor:"pointer",background:ok?"#16a34a":"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",opacity:form.categoria?1:.4}}>
+          {ok?"✓ Guardada":saving?"Guardando...":"Guardar alerta"}
+        </button>
+      </div>
+
+      {/* Lista de alertas */}
+      <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:10,fontWeight:700}}>
+        Alertas guardadas ({alertas.length})
+      </div>
+
+      {alertas.length===0&&<div style={{...S.crdP,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin alertas. Creá la primera arriba.</div>}
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {alertas.map(a=>(
+          editId===a.id?
+          <div key={a.id} style={{...S.crdP,border:"1px solid rgba(245,158,11,.3)"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+              <div><label style={S.lbl}>Fecha</label><input type="date" value={editForm.fecha} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,fontSize:13,display:"block",width:"100%"}}/></div>
+              <div><label style={S.lbl}>Hora</label><input type="time" value={editForm.hora} onChange={e=>setEditForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,fontSize:13,display:"block",width:"100%"}}/></div>
+            </div>
+            <div style={{marginBottom:8}}>
+              <label style={S.lbl}>Recurrencia</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                {Object.entries(FREC).map(([v,l])=><button key={v} onClick={()=>setEditForm(f=>({...f,frecuencia:v}))} style={S.btn(editForm.frecuencia===v,"#f59e0b")}>{l}</button>)}
+              </div>
+            </div>
+            <input value={editForm.categoria} onChange={e=>setEditForm(f=>({...f,categoria:e.target.value,subcategoria:""}))} style={{...S.inp,fontSize:13,marginBottom:8}} placeholder="Categoría"/>
+            {editSubs.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+              {editSubs.map(s=><button key={s} onClick={()=>setEditForm(f=>({...f,subcategoria:s}))} style={S.btn(editForm.subcategoria===s,"#a78bfa")}>{s}</button>)}
+            </div>}
+            <input type="text" inputMode="decimal" value={editForm.importe} onChange={e=>setEditForm(f=>({...f,importe:e.target.value}))} placeholder="Importe (opcional)" style={{...S.inp,fontSize:13,...mo,marginBottom:8}}/>
+            <textarea value={editForm.nota||""} onChange={e=>setEditForm(f=>({...f,nota:e.target.value}))} placeholder="Nota adicional" rows={2} style={{...S.inp,fontSize:13,resize:"vertical",lineHeight:1.5,marginBottom:10}}/>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={saveEdit} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"#f59e0b",color:"#000"}}>Guardar</button>
+              <button onClick={()=>setEditId(null)} style={{padding:"8px 14px",borderRadius:8,border:"none",fontSize:13,cursor:"pointer",background:"var(--btn-bg)",color:"var(--text-secondary)"}}>Cancelar</button>
+            </div>
+          </div>
+          :
+          <div key={a.id} style={{...S.crdP,opacity:a.activa?1:.5,border:`1px solid ${a.activa?"var(--card-border)":"rgba(255,255,255,.03)"}`}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+              <div style={{fontSize:22,flexShrink:0}}>{catIcon(a.categoria)}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--text-primary)",marginBottom:2}}>{a.subcategoria||a.categoria}</div>
+                {a.subcategoria&&<div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>{a.categoria}</div>}
+                <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+                  <span style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>📅 {fmtFecha(a.fecha)}{a.hora?` · ${a.hora.slice(0,5)}`:""}</span>
+                  <span style={{fontSize:10,background:"rgba(245,158,11,.15)",color:"#f59e0b",padding:"2px 8px",borderRadius:20,fontWeight:600}}>{FREC[a.frecuencia]||a.frecuencia}</span>
+                </div>
+                {a.importe&&<div style={{fontSize:13,fontWeight:700,color:"#4ade80",...mo,marginTop:4}}>{f$(a.importe)}</div>}
+                {a.nota&&<div style={{fontSize:11,color:"#60a5fa",marginTop:4}}>📝 {a.nota}</div>}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
+                <button onClick={()=>toggleActiva(a)} style={{background:"none",border:"none",fontSize:16,cursor:"pointer",padding:2}} title={a.activa?"Desactivar":"Activar"}>{a.activa?"🔔":"🔕"}</button>
+                <button onClick={()=>startEdit(a)} style={{background:"none",border:"none",color:"#60a5fa",cursor:"pointer",padding:2}}><Ic d={IC.edit} s={14}/></button>
+                <button onClick={()=>del(a.id)} style={{background:"none",border:"none",color:"#f87171",cursor:"pointer",padding:2}}>×</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ══════════════ ABM CONFIGURACIÓN ══════════════
 function ABMPage({cuentas,userId,onSaved}){
   const[tab,setTab]=useState("cuentas")
@@ -1766,6 +1961,48 @@ export default function App(){
   const toggleTheme=()=>setDarkMode(d=>{localStorage.setItem("theme",d?"light":"dark");return!d})
   const[isMobile,setIsMobile]=useState(()=>window.innerWidth<900)
   useEffect(()=>{const h=()=>setIsMobile(window.innerWidth<900);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h)},[])
+
+  // Chequeo periódico de alertas para notificaciones
+  useEffect(()=>{
+    if(!user)return
+    const checkAlertas=async()=>{
+      if(typeof Notification==="undefined"||Notification.permission!=="granted")return
+      const now=new Date()
+      const hoy=today()
+      const hhmm=`${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`
+      const{data:alertas}=await supabase.from("alertas").select("*").eq("user_id",user.id).eq("activa",true)
+      if(!alertas)return
+      for(const a of alertas){
+        // Calcular si la alerta aplica hoy
+        let aplica=false
+        if(a.frecuencia==="unica"&&a.fecha===hoy)aplica=true
+        else if(a.frecuencia==="diaria")aplica=true
+        else if(a.frecuencia==="mensual"&&a.dia_mes===now.getDate())aplica=true
+        else if(a.frecuencia==="semanal"){const d=new Date(a.fecha);aplica=d.getDay()===now.getDay()}
+        else if(a.frecuencia==="anual"){const d=new Date(a.fecha);aplica=d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()}
+        if(!aplica)continue
+        // Verificar la hora (dentro de ±1 minuto)
+        const alertaHora=a.hora?a.hora.slice(0,5):null
+        if(alertaHora&&alertaHora!==hhmm)continue
+        // Verificar que no se notificó hoy ya
+        if(a.ultima_notificacion){
+          const ult=new Date(a.ultima_notificacion)
+          if(ult.toDateString()===now.toDateString())continue
+        }
+        // Disparar notificación
+        const titulo="MisGastos — Recordatorio de pago"
+        const sub=a.subcategoria||a.categoria
+        let cuerpo=`Recordá que hoy tenés que hacer un pago: ${sub}.`
+        if(a.importe)cuerpo+=`\nImporte: ${f$(a.importe)}.`
+        if(a.nota)cuerpo+=`\n${a.nota}`
+        new Notification(titulo,{body:cuerpo,icon:"/icon-192.png"})
+        await supabase.from("alertas").update({ultima_notificacion:now.toISOString()}).eq("id",a.id)
+      }
+    }
+    checkAlertas()
+    const interval=setInterval(checkAlertas,60000)
+    return()=>clearInterval(interval)
+  },[user])
   const[cuentas,setCuentas]=useState([])
   const[movimientos,setMovimientos]=useState([])
   const[deuda,setDeuda]=useState([])
@@ -1814,7 +2051,7 @@ export default function App(){
   const dynInvTypes=tiposInv.length>0?tiposInv.map(t=>t.nombre):INV_TYPES
 
   const isAdmin=user.email==="juanfmanteca@gmail.com"
-  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},...(isAdmin?[{id:"debt",ic:IC.debt,l:"Deuda"}]:[]),{id:"ext",ic:IC.upload,l:"Extracto"},{id:"abm",ic:IC.settings,l:"Configuración"}]
+  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},...(isAdmin?[{id:"debt",ic:IC.debt,l:"Deuda"}]:[]),{id:"ext",ic:IC.upload,l:"Extracto"},{id:"alertas",ic:IC.bell,l:"Alertas"},{id:"abm",ic:IC.settings,l:"Configuración"}]
   const viewMonth=k=>{setDetailMonth(k);setDetailTipo(null);setPg("md")}
   const viewMonthInv=k=>{setDetailMonth(k);setDetailTipo("inversion");setPg("md")}
   const viewMonthIng=k=>{setDetailMonth(k);setDetailTipo("ingreso");setPg("md")}
@@ -1828,6 +2065,7 @@ export default function App(){
   else if(pg==="md")C=<MonthDetail monthKey={detailMonth} filterTipo={detailTipo} movimientos={movimientos} cuentas={cuentas} onBack={()=>setPg("dash")}/>
   else if(pg==="debt"&&isAdmin)C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs}/>
+  else if(pg==="alertas")C=<AlertasPage userId={user.id} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
@@ -1901,7 +2139,7 @@ export default function App(){
         {/* Desktop header — solo en desktop */}
         {!isMobile&&<div style={{padding:"28px 48px 20px",borderBottom:"1px solid var(--header-border,rgba(255,255,255,.04))"}}>
           <h2 style={{fontSize:18,fontWeight:700,color:"var(--text-primary)",margin:0}}>
-            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":pg==="abm"?"Configuración":""}
+            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":pg==="alertas"?"Alertas":pg==="abm"?"Configuración":""}
           </h2>
         </div>}
 
