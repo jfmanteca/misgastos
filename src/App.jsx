@@ -151,18 +151,19 @@ function HomePage({cuentas,movimientos}){
       <div style={S.sec}>Cuentas</div>
       <div style={{...S.crd,marginBottom:28}}>
         {/* Header */}
-        <div style={{display:"flex",padding:"8px 18px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+        <div style={{display:"flex",padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
+          <div style={{width:30,flexShrink:0}}/>
           <div style={{flex:1}}/>
-          <div style={{width:140,textAlign:"right",fontSize:10,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>$</div>
-          <div style={{width:130,textAlign:"right",fontSize:10,color:"#34d399",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
+          <div style={{width:110,textAlign:"right",fontSize:10,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>$</div>
+          <div style={{width:100,textAlign:"right",fontSize:10,color:"#34d399",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
         </div>
         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
         {grupos.map((g,i)=>(
-          <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"14px 18px",gap:12,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{accLogo(g.nombre)}</div>
-            <div style={{flex:1,fontSize:14,color:"var(--text-primary)",fontWeight:600}}>{g.nombre}</div>
-            <div style={{width:140,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"var(--text-primary)",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
-            <div style={{width:130,textAlign:"right"}}><div style={{fontSize:15,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
+          <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"12px 10px",gap:8,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
+            <div style={{width:30,height:30,borderRadius:8,background:"rgba(96,165,250,.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{accLogo(g.nombre)}</div>
+            <div style={{flex:1,minWidth:0,fontSize:13,color:"var(--text-primary)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.nombre}</div>
+            <div style={{width:110,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
+            <div style={{width:100,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
           </div>
         ))}
       </div>
@@ -1940,7 +1941,11 @@ export default function App(){
 
         .page-inner{padding:0 0 40px}
         .patrimonio-grid{grid-template-columns:1fr!important}
-        .mobile-header{padding:14px 24px 12px;border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))}
+        .mobile-header{
+          padding:14px 24px 12px;
+          padding-top:calc(14px + env(safe-area-inset-top));
+          border-bottom:1px solid var(--header-border,rgba(255,255,255,.04))
+        }
         .main-content{width:100%;max-width:100%;overflow-x:hidden;position:relative}
         .page-content{padding:20px 24px 40px}
 
