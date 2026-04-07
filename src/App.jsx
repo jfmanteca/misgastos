@@ -52,9 +52,9 @@ const ACC_EMOJI={"Efectivo":"💵","Ahorro":"🏦","Inversión":"📈"}
 const AccIcon=({name,size=30})=>{
   const domain=Object.entries(ACC_DOMAINS).find(([k])=>name?.toLowerCase().includes(k.toLowerCase()))?.[1]
   const emoji=Object.entries(ACC_EMOJI).find(([k])=>name?.toLowerCase().includes(k.toLowerCase()))?.[1]
-  const [err,setErr]=useState(false)
+  const[err,setErr]=useState(false)
   if(domain&&!err){
-    return<img src={`https://logo.clearbit.com/${domain}`} onError={()=>setErr(true)} alt={name} style={{width:size,height:size,borderRadius:8,objectFit:"contain",background:"#fff",padding:2}}/>
+    return<img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} onError={()=>setErr(true)} alt={name} style={{width:size,height:size,borderRadius:6,objectFit:"contain"}}/>
   }
   return<span style={{fontSize:Math.round(size*.6)}}>{emoji||"💰"}</span>
 }
