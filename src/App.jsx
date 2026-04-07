@@ -1544,13 +1544,15 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
       <div style={{...S.crdP}}>
         <div style={{fontSize:13,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:16,fontWeight:700}}>Nueva Alerta</div>
 
-        <div style={{marginBottom:12}}>
-          <label style={S.lbl}>Fecha</label>
-          <input type="date" value={form.fecha} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
-        </div>
-        <div style={{marginBottom:12}}>
-          <label style={S.lbl}>Hora</label>
-          <input type="time" value={form.hora} onChange={e=>setForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <div style={{minWidth:0}}>
+            <label style={S.lbl}>Fecha</label>
+            <input type="date" value={form.fecha} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,padding:"10px 8px",fontSize:13,boxSizing:"border-box",width:"100%",WebkitAppearance:"none"}}/>
+          </div>
+          <div style={{minWidth:0}}>
+            <label style={S.lbl}>Hora</label>
+            <input type="time" value={form.hora} onChange={e=>setForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,padding:"10px 8px",fontSize:13,boxSizing:"border-box",width:"100%",WebkitAppearance:"none"}}/>
+          </div>
         </div>
 
         <div style={{marginBottom:12}}>
@@ -1601,13 +1603,15 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
           editId===a.id?
           <div key={a.id} style={{...S.crdP,border:"1px solid rgba(245,158,11,.35)"}}>
             <div style={{fontSize:12,color:"#f59e0b",textTransform:"uppercase",fontWeight:700,marginBottom:12}}>Editando alerta</div>
-            <div style={{marginBottom:10}}>
-              <label style={S.lbl}>Fecha</label>
-              <input type="date" value={editForm.fecha} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
-            </div>
-            <div style={{marginBottom:10}}>
-              <label style={S.lbl}>Hora</label>
-              <input type="time" value={editForm.hora} onChange={e=>setEditForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,display:"block",width:"100%"}}/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              <div style={{minWidth:0}}>
+                <label style={S.lbl}>Fecha</label>
+                <input type="date" value={editForm.fecha} onChange={e=>setEditForm(f=>({...f,fecha:e.target.value}))} style={{...S.inp,padding:"10px 8px",fontSize:13,boxSizing:"border-box",width:"100%",WebkitAppearance:"none"}}/>
+              </div>
+              <div style={{minWidth:0}}>
+                <label style={S.lbl}>Hora</label>
+                <input type="time" value={editForm.hora} onChange={e=>setEditForm(f=>({...f,hora:e.target.value}))} style={{...S.inp,padding:"10px 8px",fontSize:13,boxSizing:"border-box",width:"100%",WebkitAppearance:"none"}}/>
+              </div>
             </div>
             <div style={{marginBottom:10}}>
               <label style={S.lbl}>Recurrencia</label>
