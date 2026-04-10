@@ -291,12 +291,14 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
       }else{
         if(!fm.amt||!fm.cat){setSaving(false);return}
         const rawAmt=parseFloat(fm.amt)
-        const amt=mt==="egreso"&&recupero?-Math.abs(rawAmt):rawAmt
+        const amt=mt==="egreso"&&recupero?-Math.abs(rawAmt):(mt==="ingreso"?Math.abs(rawAmt):rawAmt)
         const tcDolar=fm.tcDolar?parseFloat(fm.tcDolar):null
         await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:mt,categoria:fm.cat,subcategoria:fm.sub||null,monto:amt,cuenta_id:fm.cuenta,tc:fm.tc||null,tc_dolar:tcDolar,nota:fm.nota||null})
         const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.cuenta).single()
         if(fresh){
-          const delta=mt==="egreso"?-amt:amt
+          // egreso: resta (amt puede ser negativo si es recupero, en ese caso suma)
+          // ingreso: siempre suma el monto absoluto
+          const delta=mt==="egreso"?-amt:Math.abs(amt)
           await supabase.from("cuentas").update({saldo:fresh.saldo+delta}).eq("id",fm.cuenta)
         }
         if(mt==="egreso"&&fm.cat==="Pago deuda"&&fm.sub==="Edgardo"){
@@ -1045,6 +1047,15 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos $</div>
           <div style={{fontSize:18,fontWeight:700,color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"+":"-"}{f$(Math.abs(totalEgresos))}</div>
         </div>
+        {(()=>{const saldoMes=totalIngresos-totalEgresos;const pos=saldoMes>=0;return(
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:`1px solid ${pos?"rgba(74,222,128,.2)":"rgba(248,113,113,.2)"}`,background:pos?"rgba(74,222,128,.04)":"rgba(248,113,113,.04)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{fontSize:11,color:pos?"#4ade80":"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Saldo del Mes</div>
+            <span style={{fontSize:13}}>{pos?"📈":"📉"}</span>
+          </div>
+          <div style={{fontSize:18,fontWeight:700,color:pos?"#4ade80":"#f87171",...mo}}>{pos?"+":""}{f$(saldoMes)}</div>
+        </div>
+        )})()}
         <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(248,113,113,.15)"}}>
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos USD</div>
           <div style={{fontSize:18,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</div>
