@@ -944,6 +944,8 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const egresosFiltrados=filtered.filter(m=>m.tipo==="egreso")
   const totalEgresos=egresosFiltrados.filter(m=>!isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
+  const totalInversiones=filtered.filter(m=>m.tipo==="inversion").reduce((s,m)=>s+m.monto,0)
+  const totalIngresosUSD=filtered.filter(m=>m.tipo==="ingreso"&&isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
 
   const prevMk=prevMonth(selMonth)
   const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
@@ -955,6 +957,7 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const ingresosThisItems=allThisMonth.filter(m=>m.tipo==="ingreso"&&(m.categoria!=="Sueldo"||dayNM(m.fecha)<=15))
   const ingresosThisMonth=ingresosThisItems.reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
+  const saldoDelMes=totalIngresos-totalEgresos-totalInversiones
   const ingresoDesglose=[...sueldosPrevForThis.map(m=>({label:`Sueldo mes ant. (${m.fecha})`,monto:m.monto})),...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
 
   const startEdit=(e)=>{setEditId(e.id);setEditForm({fecha:e.fecha,tipo:e.tipo,categoria:e.categoria,subcategoria:e.subcategoria||"",monto:e.monto,cuenta_id:e.cuenta_id,nota:e.nota||""})}
@@ -991,17 +994,30 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
     // Find the movement to reverse its saldo impact
     const mov=movimientos.find(m=>m.id===id)
     if(mov&&mov.cuenta_id){
-      const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_id).single()
-      if(fresh){
-        let reversal=0
-        if(mov.tipo==="egreso") reversal=mov.monto  // egreso was -monto, so add it back
-        else if(mov.tipo==="ingreso") reversal=-mov.monto  // ingreso was +monto, so subtract
-        if(reversal!==0) await supabase.from("cuentas").update({saldo:fresh.saldo+reversal}).eq("id",mov.cuenta_id)
-      }
-      // If traspaso, also reverse the destination
-      if(mov.tipo==="traspaso"&&mov.cuenta_destino_id){
-        const{data:freshDest}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_destino_id).single()
-        if(freshDest) await supabase.from("cuentas").update({saldo:freshDest.saldo-mov.monto}).eq("id",mov.cuenta_destino_id)
+      // Compra USD (inversion con cuenta_destino_id): revierte ambas cuentas
+      if(mov.tipo==="inversion"&&mov.cuenta_destino_id){
+        const{data:freshFrom}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_id).single()
+        if(freshFrom) await supabase.from("cuentas").update({saldo:freshFrom.saldo+mov.monto}).eq("id",mov.cuenta_id)
+        const tcMatch=mov.detalle?.match(/TC:([\d.]+)/)
+        if(tcMatch){
+          const tc=parseFloat(tcMatch[1])
+          const importeUSD=mov.monto/tc
+          const{data:freshDest}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_destino_id).single()
+          if(freshDest) await supabase.from("cuentas").update({saldo:freshDest.saldo-importeUSD}).eq("id",mov.cuenta_destino_id)
+        }
+      } else {
+        const{data:fresh}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_id).single()
+        if(fresh){
+          let reversal=0
+          if(mov.tipo==="egreso") reversal=mov.monto  // egreso was -monto, so add it back
+          else if(mov.tipo==="ingreso") reversal=-mov.monto  // ingreso was +monto, so subtract
+          if(reversal!==0) await supabase.from("cuentas").update({saldo:fresh.saldo+reversal}).eq("id",mov.cuenta_id)
+        }
+        // If traspaso, also reverse the destination
+        if(mov.tipo==="traspaso"&&mov.cuenta_destino_id){
+          const{data:freshDest}=await supabase.from("cuentas").select("saldo").eq("id",mov.cuenta_destino_id).single()
+          if(freshDest) await supabase.from("cuentas").update({saldo:freshDest.saldo-mov.monto}).eq("id",mov.cuenta_destino_id)
+        }
       }
     }
     await supabase.from("movimientos").delete().eq("id",id);onSaved()
@@ -1033,6 +1049,18 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos USD</div>
           <div style={{fontSize:18,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</div>
         </div>
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(245,158,11,.15)"}}>
+          <div style={{fontSize:11,color:"#f59e0b",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Inversiones</div>
+          <div style={{fontSize:18,fontWeight:700,color:"#f59e0b",...mo}}>-{f$(Math.abs(totalInversiones))}</div>
+        </div>
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:`1px solid ${saldoDelMes>=0?"rgba(74,222,128,.2)":"rgba(248,113,113,.2)"}`}}>
+          <div style={{fontSize:11,color:saldoDelMes>=0?"#4ade80":"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Saldo del mes</div>
+          <div style={{fontSize:18,fontWeight:700,color:saldoDelMes>=0?"#4ade80":"#f87171",...mo}}>{saldoDelMes>=0?"+":""}{f$(saldoDelMes)}</div>
+        </div>
+        {totalIngresosUSD>0&&<div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(74,222,128,.15)"}}>
+          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Ingresos USD</div>
+          <div style={{fontSize:18,fontWeight:700,color:"#4ade80",...mo}}>+{f$(Math.abs(totalIngresosUSD),true)}</div>
+        </div>}
       </div>
       {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
         {ingresoDesglose.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.03)",fontSize:13}}>
@@ -2156,7 +2184,7 @@ export default function App(){
         {/* Hamburger overlay — fixed, no empuja el contenido */}
         {menuOpen&&<>
           <div onClick={()=>setMenuOpen(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:40}}/>
-          <div style={{position:"fixed",top:0,left:0,bottom:0,width:260,background:"var(--sidebar-bg,#0a1020)",borderRight:"1px solid var(--card-border)",zIndex:41,padding:"20px 12px",overflowY:"auto"}}>
+          <div style={{position:"fixed",top:0,left:0,bottom:0,width:260,background:"var(--sidebar-bg,#0a1020)",borderRight:"1px solid var(--card-border)",zIndex:41,padding:"52px 12px 20px",overflowY:"auto"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,paddingLeft:8}}>
               <h1 style={{fontSize:20,fontWeight:800,margin:0,background:"linear-gradient(135deg,#60a5fa,#a78bfa)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>MisGastos</h1>
               <button onClick={()=>setMenuOpen(false)} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:4}}><Ic d={IC.close} s={20}/></button>
