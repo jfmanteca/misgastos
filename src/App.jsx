@@ -1532,11 +1532,14 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
     setSaving(true)
     // Pedir permiso si no está otorgado
     try{await OneSignal.Notifications.requestPermission()}catch(e){}
+    let subId=null
+    try{subId=await OneSignal.User.PushSubscription.id}catch(e){}
     await supabase.from("alertas").insert({
       user_id:userId,fecha:form.fecha,hora:form.hora||null,categoria:form.categoria,
       subcategoria:form.subcategoria||null,importe:form.importe?parseFloat(form.importe):null,
       nota:form.nota||null,frecuencia:form.frecuencia,
       dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,activa:true,
+      onesignal_sub_id:subId||null,
     })
     await scheduleNotif(form.fecha,form.hora,form.categoria,form.subcategoria,form.importe,form.frecuencia)
     setOk(true);await load()
@@ -1554,17 +1557,24 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
     setEditForm({fecha:a.fecha,hora:a.hora||"09:00",categoria:a.categoria,subcategoria:a.subcategoria||"",importe:a.importe||"",nota:a.nota||"",frecuencia:a.frecuencia||"unica"})
   }
   const saveEdit=async()=>{
+    let subId=null
+    try{subId=await OneSignal.User.PushSubscription.id}catch(e){}
     await supabase.from("alertas").update({
       fecha:editForm.fecha,hora:editForm.hora||null,categoria:editForm.categoria,
       subcategoria:editForm.subcategoria||null,importe:editForm.importe?parseFloat(editForm.importe):null,
       nota:editForm.nota||null,frecuencia:editForm.frecuencia,
       dia_mes:editForm.frecuencia==="mensual"?parseInt(editForm.fecha.split("-")[2],10):null,
+      ...(subId&&{onesignal_sub_id:subId}),
     }).eq("id",editId)
     setEditId(null);setEditForm({});load()
   }
 
   const toggleActiva=async(a)=>{
-    await supabase.from("alertas").update({activa:!a.activa}).eq("id",a.id);load()
+    const newActiva=!a.activa
+    const updates={activa:newActiva}
+    // Al reactivar, refrescar el subscription_id por si el dispositivo cambió
+    if(newActiva){try{const s=await OneSignal.User.PushSubscription.id;if(s)updates.onesignal_sub_id=s}catch(e){}}
+    await supabase.from("alertas").update(updates).eq("id",a.id);load()
   }
 
   const FREC={unica:"Una vez",diaria:"Diaria",semanal:"Semanal",mensual:"Mensual",anual:"Anual"}
