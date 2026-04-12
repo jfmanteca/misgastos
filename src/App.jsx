@@ -1047,19 +1047,6 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos $</div>
           <div style={{fontSize:18,fontWeight:700,color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"+":"-"}{f$(Math.abs(totalEgresos))}</div>
         </div>
-        {(()=>{const saldoMes=totalIngresos-totalEgresos;const pos=saldoMes>=0;return(
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:`1px solid ${pos?"rgba(74,222,128,.2)":"rgba(248,113,113,.2)"}`,background:pos?"rgba(74,222,128,.04)":"rgba(248,113,113,.04)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{fontSize:11,color:pos?"#4ade80":"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Saldo del Mes</div>
-            <span style={{fontSize:13}}>{pos?"📈":"📉"}</span>
-          </div>
-          <div style={{fontSize:18,fontWeight:700,color:pos?"#4ade80":"#f87171",...mo}}>{pos?"+":""}{f$(saldoMes)}</div>
-        </div>
-        )})()}
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(248,113,113,.15)"}}>
-          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos USD</div>
-          <div style={{fontSize:18,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</div>
-        </div>
         <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(245,158,11,.15)"}}>
           <div style={{fontSize:11,color:"#f59e0b",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Inversiones</div>
           <div style={{fontSize:18,fontWeight:700,color:"#f59e0b",...mo}}>-{f$(Math.abs(totalInversiones))}</div>
@@ -1068,10 +1055,10 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <div style={{fontSize:11,color:saldoDelMes>=0?"#4ade80":"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Saldo del mes</div>
           <div style={{fontSize:18,fontWeight:700,color:saldoDelMes>=0?"#4ade80":"#f87171",...mo}}>{saldoDelMes>=0?"+":""}{f$(saldoDelMes)}</div>
         </div>
-        {totalIngresosUSD>0&&<div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(74,222,128,.15)"}}>
-          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Ingresos USD</div>
-          <div style={{fontSize:18,fontWeight:700,color:"#4ade80",...mo}}>+{f$(Math.abs(totalIngresosUSD),true)}</div>
-        </div>}
+        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(248,113,113,.15)"}}>
+          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos USD</div>
+          <div style={{fontSize:18,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</div>
+        </div>
       </div>
       {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
         {ingresoDesglose.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.03)",fontSize:13}}>
