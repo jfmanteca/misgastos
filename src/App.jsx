@@ -159,9 +159,8 @@ function HomePage({cuentas,movimientos}){
   const tP=cuentas.filter(c=>c.moneda!=="USD").reduce((s,c)=>s+c.saldo,0)
   const tU=cuentas.filter(c=>c.moneda==="USD").reduce((s,c)=>s+c.saldo,0)
   const curMonth=monthOf(today())
-  const recent=movimientos.filter(m=>monthOf(m.fecha)<=curMonth).slice(0,12)
+  const recent=movimientos.filter(m=>monthOf(m.fecha)<=curMonth).slice(0,10)
   const h=v=>hide?"••••••":v
-  // Group accounts by name — each row shows $ and USD side by side
   const grupos=[]
   const seen={}
   cuentas.forEach(c=>{
@@ -173,66 +172,72 @@ function HomePage({cuentas,movimientos}){
 
   return(
     <div className="page-inner">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={S.sec}>Patrimonio Total</div>
-        <button onClick={()=>setHide(!hide)} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:4}}>
-          <Ic d={hide?IC.eyeOff:IC.eye} s={18}/>
-        </button>
-      </div>
-      <div className="patrimonio-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:28}}>
-        <div style={{background:"linear-gradient(135deg,#0c1929 0%,#1e40af 50%,#7c3aed 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(96,165,250,.15)",boxShadow:"0 8px 32px rgba(37,99,235,.15)"}}>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>PESOS</div>
-          <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tP))}</div>
+
+      {/* ── HERO: Patrimonio ── */}
+      <div className="hp-hero">
+        <div className="hp-hero-glow-tl"/>
+        <div className="hp-hero-glow-br"/>
+        <div className="hp-hero-top">
+          <span className="hp-hero-label">Patrimonio Total</span>
+          <button onClick={()=>setHide(!hide)} className="hp-eye-btn">
+            <Ic d={hide?IC.eyeOff:IC.eye} s={15}/>
+          </button>
         </div>
-        <div style={{background:"linear-gradient(135deg,#052e16 0%,#059669 50%,#14b8a6 100%)",borderRadius:20,padding:"22px 18px",border:"1px solid rgba(74,222,128,.15)",boxShadow:"0 8px 32px rgba(5,150,105,.15)"}}>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:6,fontWeight:600,letterSpacing:1}}>DÓLARES</div>
-          <div style={{fontSize:24,fontWeight:800,color:"#fff",...mo}}>{h(f$(tU,true))}</div>
+        <div className="hp-hero-body">
+          <div className="hp-hero-block">
+            <div className="hp-tag hp-tag-ars">ARS</div>
+            <div className="hp-hero-amount">{h(f$(tP))}</div>
+          </div>
+          <div className="hp-hero-sep"/>
+          <div className="hp-hero-block">
+            <div className="hp-tag hp-tag-usd">USD</div>
+            <div className="hp-hero-amount-usd">{h(f$(tU,true))}</div>
+          </div>
         </div>
+        <div className="hp-hero-stripe"/>
       </div>
 
-      <div style={S.sec}>Cuentas</div>
-      <div style={{...S.crd,marginBottom:28}}>
-        {/* Header */}
-        <div style={{display:"flex",padding:"8px 10px",borderBottom:"1px solid rgba(255,255,255,.06)"}}>
-          <div style={{width:30,flexShrink:0}}/>
-          <div style={{flex:1}}/>
-          <div style={{width:110,textAlign:"right",fontSize:10,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>$</div>
-          <div style={{width:100,textAlign:"right",fontSize:10,color:"#34d399",textTransform:"uppercase",letterSpacing:1.5,fontWeight:600}}>USD</div>
-        </div>
+      {/* ── CUENTAS ── */}
+      <div className="hp-sec-hd">Cuentas</div>
+      <div className="hp-card hp-accounts">
         {grupos.length===0&&<div style={{padding:24,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin cuentas. Agregá una en Configuración.</div>}
         {grupos.map((g,i)=>(
-          <div key={g.nombre} style={{display:"flex",alignItems:"center",padding:"12px 10px",gap:8,borderBottom:i<grupos.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
-            <div style={{width:30,height:30,borderRadius:8,overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(96,165,250,.08)"}}><AccIcon name={g.nombre} size={30}/></div>
-            <div style={{flex:1,minWidth:0,fontSize:13,color:"var(--text-primary)",fontWeight:600,lineHeight:1.3}}>{g.nombre}</div>
-            <div style={{width:110,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"var(--text-primary)",...mo}}>{g.ars?h(f$(g.ars.saldo)):<span style={{color:"#334155"}}>—</span>}</div></div>
-            <div style={{width:100,textAlign:"right",flexShrink:0}}><div style={{fontSize:12,fontWeight:700,color:"#a7f3d0",...mo}}>{g.usd?h(f$(g.usd.saldo,true)):<span style={{color:"#334155"}}>—</span>}</div></div>
+          <div key={g.nombre} className={`hp-acc-row${i<grupos.length-1?" hp-acc-sep":""}`}>
+            <div className="hp-acc-icon"><AccIcon name={g.nombre} size={36}/></div>
+            <div className="hp-acc-name">{g.nombre}</div>
+            <div className="hp-acc-amounts">
+              {g.ars&&<span className="hp-acc-ars">{h(f$(g.ars.saldo))}</span>}
+              {g.usd&&<span className="hp-acc-usd">{h(f$(g.usd.saldo,true))}</span>}
+              {!g.ars&&<span className="hp-acc-nil">—</span>}
+            </div>
           </div>
         ))}
       </div>
 
-      <div style={S.sec}>Últimos Movimientos</div>
-      <div style={S.crd}>
+      {/* ── MOVIMIENTOS ── */}
+      <div className="hp-sec-hd">Últimos movimientos</div>
+      <div className="hp-card hp-txns">
         {recent.length===0&&<div style={{padding:30,textAlign:"center",color:"var(--text-muted)",fontSize:13}}>Sin movimientos. Cargá tu primer gasto.</div>}
         {recent.map((e,i)=>{
           const enUSD=cuentas.find(c=>c.id===e.cuenta_id)?.moneda==="USD"
           const cuentaNom=cuentas.find(c=>c.id===e.cuenta_id)?.nombre||""
           const devolucion=e.tipo==="egreso"&&e.monto<0
           const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
-          const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
+          const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"−":"↔"
           const monto=sign+f$(Math.abs(e.monto),enUSD)
           return(
-          <div key={e.id} style={{display:"flex",alignItems:"center",padding:"10px 14px",borderBottom:i<recent.length-1?"1px solid var(--card-border)":"none",gap:10,overflow:"hidden"}}>
-            <div style={{width:34,height:34,borderRadius:9,background:`${catColor(e.categoria)}18`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-              {catIcon(e.categoria)}
+          <div key={e.id} className={`hp-txn${i<recent.length-1?" hp-txn-sep":""}`}>
+            <div className="hp-txn-accent" style={{background:catColor(e.categoria)}}/>
+            <div className="hp-txn-icon" style={{background:`${catColor(e.categoria)}22`}}>{catIcon(e.categoria)}</div>
+            <div className="hp-txn-info">
+              <div className="hp-txn-name">{e.subcategoria||e.categoria}</div>
+              <div className="hp-txn-meta">{e.fecha?.slice(5)||""} · {cuentaNom}</div>
             </div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,color:"var(--text-primary)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||e.categoria}</div>
-              <div style={{fontSize:10,color:"var(--text-muted)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.fecha?.slice(5)||""} · {cuentaNom}</div>
-            </div>
-            <div style={{fontSize:13,fontWeight:700,color:col,...mo,whiteSpace:"nowrap",flexShrink:0}}>{hide?"••••":monto}</div>
+            <div className="hp-txn-amt" style={{color:col,...mo}}>{hide?"••••":monto}</div>
           </div>)
         })}
       </div>
+
     </div>
   )
 }
@@ -2236,6 +2241,142 @@ export default function App(){
 
       <style>{`
         *{box-sizing:border-box}
+
+        /* ── HOME PAGE ── */
+        .hp-hero{
+          position:relative;
+          background:linear-gradient(145deg,#060c1c 0%,#0c1530 45%,#130d30 100%);
+          border-radius:24px;
+          padding:22px 20px 18px;
+          margin-bottom:24px;
+          border:1px solid rgba(255,255,255,.09);
+          overflow:hidden;
+        }
+        [data-theme="light"] .hp-hero{
+          background:linear-gradient(145deg,#1a2f5e 0%,#1e3a7e 45%,#2a1a6e 100%);
+        }
+        .hp-hero-glow-tl{
+          position:absolute;top:-50px;left:-30px;width:180px;height:180px;
+          background:radial-gradient(circle,rgba(96,165,250,.18) 0%,transparent 65%);
+          pointer-events:none;
+        }
+        .hp-hero-glow-br{
+          position:absolute;bottom:-40px;right:-20px;width:140px;height:140px;
+          background:radial-gradient(circle,rgba(52,211,153,.12) 0%,transparent 65%);
+          pointer-events:none;
+        }
+        .hp-hero-top{
+          display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;
+        }
+        .hp-hero-label{
+          font-size:10px;font-weight:700;letter-spacing:2px;
+          text-transform:uppercase;color:rgba(255,255,255,.38);
+        }
+        .hp-eye-btn{
+          background:none;border:none;color:rgba(255,255,255,.3);
+          cursor:pointer;padding:4px;display:flex;align-items:center;
+        }
+        .hp-hero-body{
+          display:flex;align-items:center;gap:0;margin-bottom:18px;
+        }
+        .hp-hero-block{flex:1;}
+        .hp-hero-sep{
+          width:1px;height:52px;
+          background:rgba(255,255,255,.1);
+          margin:0 18px;flex-shrink:0;
+        }
+        .hp-tag{
+          font-size:9px;font-weight:800;letter-spacing:2.5px;
+          text-transform:uppercase;margin-bottom:5px;
+        }
+        .hp-tag-ars{color:rgba(96,165,250,.75);}
+        .hp-tag-usd{color:rgba(52,211,153,.75);}
+        .hp-hero-amount{
+          font-size:26px;font-weight:800;color:#fff;letter-spacing:-1px;
+          font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace;
+        }
+        .hp-hero-amount-usd{
+          font-size:20px;font-weight:700;color:rgba(255,255,255,.78);letter-spacing:-0.5px;
+          font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace;
+        }
+        .hp-hero-stripe{
+          height:3px;border-radius:2px;
+          background:linear-gradient(90deg,#3b82f6 0%,#8b5cf6 50%,#34d399 100%);
+          opacity:.5;
+        }
+
+        /* section heading */
+        .hp-sec-hd{
+          font-size:11px;font-weight:700;letter-spacing:1.5px;
+          text-transform:uppercase;color:var(--text-muted);
+          margin-bottom:10px;margin-top:2px;
+        }
+
+        /* shared card */
+        .hp-card{
+          background:var(--card-bg);
+          border:1px solid var(--card-border);
+          border-radius:20px;overflow:hidden;
+          box-shadow:var(--card-shadow);
+          margin-bottom:24px;
+        }
+
+        /* accounts */
+        .hp-acc-row{
+          display:flex;align-items:center;
+          padding:12px 14px;gap:12px;
+        }
+        .hp-acc-sep{border-bottom:1px solid var(--card-border);}
+        .hp-acc-icon{
+          width:36px;height:36px;flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;
+        }
+        .hp-acc-name{
+          flex:1;min-width:0;
+          font-size:13px;font-weight:600;color:var(--text-primary);
+        }
+        .hp-acc-amounts{
+          display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+        }
+        .hp-acc-ars{
+          font-size:12px;font-weight:700;color:var(--text-primary);
+          font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+        .hp-acc-usd{
+          font-size:11px;font-weight:600;color:#6ee7b7;
+          font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+        .hp-acc-nil{color:#334155;font-size:12px;}
+
+        /* transactions */
+        .hp-txn{
+          display:flex;align-items:center;
+          padding:10px 14px 10px 18px;
+          gap:10px;position:relative;
+        }
+        .hp-txn-sep{border-bottom:1px solid var(--card-border);}
+        .hp-txn-accent{
+          position:absolute;left:0;top:7px;bottom:7px;
+          width:3px;border-radius:0 2px 2px 0;opacity:.75;
+        }
+        .hp-txn-icon{
+          width:34px;height:34px;border-radius:10px;
+          display:flex;align-items:center;justify-content:center;
+          font-size:15px;flex-shrink:0;
+        }
+        .hp-txn-info{flex:1;min-width:0;}
+        .hp-txn-name{
+          font-size:13px;font-weight:600;color:var(--text-primary);
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .hp-txn-meta{
+          font-size:10px;color:var(--text-muted);margin-top:2px;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .hp-txn-amt{
+          font-size:13px;font-weight:700;
+          flex-shrink:0;white-space:nowrap;
+        }
 
         /* ── DARK THEME (default) ── */
         [data-theme="dark"]{
