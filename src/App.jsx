@@ -342,153 +342,254 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
   }
 
   const cn=id=>cuentas.find(c=>c.id===id)?.nombre||""
-  const tabC={egreso:"#dc2626",ingreso:"#16a34a",traspaso:"#3b82f6",inversion:"#f59e0b"}
-  const tabL={egreso:"Egreso",ingreso:"Ingreso",traspaso:"Traspaso",inversion:"Inversiones"}
+  const TD={
+    egreso: {emoji:"💸",label:"Egreso",   color:"#f87171",bg:"rgba(248,113,113,.12)",border:"rgba(248,113,113,.3)",glow:"rgba(248,113,113,.2)"},
+    ingreso:{emoji:"💰",label:"Ingreso",  color:"#4ade80",bg:"rgba(74,222,128,.12)", border:"rgba(74,222,128,.3)", glow:"rgba(74,222,128,.2)"},
+    traspaso:{emoji:"🔄",label:"Traspaso",color:"#60a5fa",bg:"rgba(96,165,250,.12)",border:"rgba(96,165,250,.3)", glow:"rgba(96,165,250,.2)"},
+    inversion:{emoji:"📈",label:"Inversión",color:"#fbbf24",bg:"rgba(251,191,36,.12)",border:"rgba(251,191,36,.3)",glow:"rgba(251,191,36,.2)"},
+  }
+  const td=TD[mt]
 
   return(
     <div className="page-inner">
-      {/* Confirm modal for Compra USD */}
-      {showConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-        <div style={{background:"#141c28",borderRadius:20,padding:28,width:"100%",maxWidth:360,border:"1px solid rgba(245,158,11,.2)"}}>
-          <div style={{fontSize:16,fontWeight:700,color:"#f59e0b",marginBottom:20,textAlign:"center"}}>Confirmar Compra USD</div>
-          <div style={{background:"#0b1120",borderRadius:12,padding:16,marginBottom:16,display:"flex",flexDirection:"column",gap:10}}>
+
+      {/* ── Confirm modal Compra USD ── */}
+      {showConfirm&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{background:"#0f1625",borderRadius:24,padding:28,width:"100%",maxWidth:360,border:"1px solid rgba(251,191,36,.25)"}}>
+          <div style={{fontSize:15,fontWeight:800,color:"#fbbf24",marginBottom:20,textAlign:"center",letterSpacing:.3}}>Confirmar Compra USD</div>
+          <div style={{background:"rgba(255,255,255,.03)",borderRadius:14,padding:16,marginBottom:16,display:"flex",flexDirection:"column",gap:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:13,color:"var(--text-muted)"}}>Debitás</span>
-              <span style={{fontSize:15,fontWeight:700,color:"#f87171",...mo}}>- {f$(parseFloat(fm.amt))}</span>
+              <span style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>Debitás</span>
+              <span style={{fontSize:16,fontWeight:800,color:"#f87171",...mo}}>− {f$(parseFloat(fm.amt))}</span>
             </div>
-            <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"right"}}>{cn(fm.from)}</div>
-            <div style={{borderTop:"1px solid rgba(255,255,255,.05)",paddingTop:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:13,color:"var(--text-muted)"}}>Acreditás</span>
-              <span style={{fontSize:15,fontWeight:700,color:"#4ade80",...mo}}>+ {f$(usdCalc,true)}</span>
+            <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"right",marginTop:-8}}>{cn(fm.from)}</div>
+            <div style={{borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>Acreditás</span>
+              <span style={{fontSize:16,fontWeight:800,color:"#4ade80",...mo}}>+ {f$(usdCalc,true)}</span>
             </div>
-            <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"right"}}>{cn(fm.to)}</div>
-            <div style={{borderTop:"1px solid rgba(255,255,255,.05)",paddingTop:10,display:"flex",justifyContent:"space-between"}}>
-              <span style={{fontSize:13,color:"var(--text-muted)"}}>TC</span>
-              <span style={{fontSize:13,color:"var(--text-secondary)",...mo}}>{f$(parseFloat(fm.tc))}</span>
+            <div style={{fontSize:11,color:"var(--text-muted)",textAlign:"right",marginTop:-8}}>{cn(fm.to)}</div>
+            <div style={{borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:12,display:"flex",justifyContent:"space-between"}}>
+              <span style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>TC</span>
+              <span style={{fontSize:14,fontWeight:700,color:"var(--text-secondary)",...mo}}>{f$(parseFloat(fm.tc))}</span>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <button onClick={()=>setShowConfirm(false)} style={{padding:14,borderRadius:12,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-secondary)",fontSize:14,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
-            <button onClick={confirmarUSD} disabled={saving} style={{padding:14,borderRadius:12,border:"none",background:"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",fontSize:14,fontWeight:700,cursor:"pointer"}}>{saving?"Guardando...":"Confirmar"}</button>
+            <button onClick={()=>setShowConfirm(false)} style={{padding:14,borderRadius:14,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-secondary)",fontSize:14,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+            <button onClick={confirmarUSD} disabled={saving} style={{padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",fontSize:14,fontWeight:800,cursor:"pointer"}}>{saving?"Guardando...":"Confirmar"}</button>
           </div>
         </div>
       </div>}
 
-      <div style={S.sec}>Nuevo Movimiento</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:20}}>
-        {["egreso","ingreso","traspaso","inversion"].map(t=><button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}} style={{padding:"12px 0",borderRadius:12,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:mt===t?tabC[t]:"var(--btn-bg)",color:mt===t?"#fff":"var(--text-muted)"}}>{tabL[t]}</button>)}
+      {/* ── Type selector ── */}
+      <div className="ap-types">
+        {["egreso","ingreso","traspaso","inversion"].map(t=>{
+          const d=TD[t];const on=mt===t
+          return(<button key={t} onClick={()=>{setMt(t);setFm(f=>({...f,cat:"",sub:"",it:""}));setUsdCalc(null);setRecupero(false);setOpUSD(false)}}
+            className={`ap-type-card${on?" ap-on":""}`}
+            style={on?{background:d.bg,borderColor:d.border}:{}}
+          >
+            <span className="ap-type-icon">{d.emoji}</span>
+            <span className="ap-type-name" style={on?{color:d.color}:{}}>{d.label}</span>
+          </button>)
+        })}
       </div>
 
-      {/* Generic fields for non-inversion tabs */}
-      {mt!=="inversion"&&<>
-        {mt==="egreso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,padding:"12px 14px",borderRadius:12,background:recupero?"rgba(74,222,128,.06)":"rgba(220,38,38,.04)",border:`1px solid ${recupero?"rgba(74,222,128,.2)":"rgba(220,38,38,.1)"}`,cursor:"pointer"}}>
+      {/* ── Hero: Importe + Fecha ── */}
+      {mt!=="inversion"&&(
+        <div className="ap-hero" style={{borderColor:td.border}}>
+          <span className="ap-hero-tag" style={{color:td.color}}>IMPORTE</span>
+          <div className="ap-hero-row">
+            <span className="ap-hero-prefix" style={{color:td.color}}>$</span>
+            <input type="text" inputMode="decimal" value={fm.amt}
+              onChange={e=>setFm(f=>({...f,amt:e.target.value}))}
+              placeholder="0" className="ap-hero-input" style={{color:td.color}}/>
+          </div>
+          <input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} className="ap-date-in"/>
+        </div>
+      )}
+
+      {/* ── Flags ── */}
+      {mt==="egreso"&&(
+        <label className="ap-flag" style={recupero?{background:"rgba(74,222,128,.06)",borderColor:"rgba(74,222,128,.25)"}:{}}>
           <input type="checkbox" checked={recupero} onChange={e=>setRecupero(e.target.checked)} style={{width:16,height:16,accentColor:"#4ade80",cursor:"pointer",flexShrink:0}}/>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:recupero?"#4ade80":"#fca5a5"}}>¿Recupero de dinero?</div>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Sumará como un ingreso por devolución</div>
-          </div>
-        </label>}
-        {mt!=="traspaso"&&<label style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"12px 14px",borderRadius:12,background:opUSD?"rgba(52,211,153,.06)":"rgba(255,255,255,.02)",border:`1px solid ${opUSD?"rgba(52,211,153,.2)":"rgba(255,255,255,.06)"}`,cursor:"pointer"}}>
+          <div><div className="ap-flag-ttl" style={{color:recupero?"#4ade80":"#fca5a5"}}>¿Recupero de dinero?</div>
+          <div className="ap-flag-desc">Sumará como un ingreso por devolución</div></div>
+        </label>
+      )}
+      {mt!=="traspaso"&&mt!=="inversion"&&(
+        <label className="ap-flag" style={opUSD?{background:"rgba(52,211,153,.06)",borderColor:"rgba(52,211,153,.25)"}:{}}>
           <input type="checkbox" checked={opUSD} onChange={e=>setOpUSD(e.target.checked)} style={{width:16,height:16,accentColor:"#34d399",cursor:"pointer",flexShrink:0}}/>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:opUSD?"#34d399":"#64748b"}}>Operación en dólares</div>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Muestra solo cuentas en USD</div>
+          <div><div className="ap-flag-ttl" style={{color:opUSD?"#34d399":"#64748b"}}>Operación en dólares</div>
+          <div className="ap-flag-desc">Muestra solo cuentas en USD</div></div>
+        </label>
+      )}
+
+      {/* ── EGRESO ── */}
+      {mt==="egreso"&&<>
+        <div className="ap-sec">
+          <div className="ap-sec-hd">
+            <span className="ap-sec-title">Categoría</span>
+            <div className="ap-sort">
+              <button onClick={()=>setCatSort("uso")} className={`ap-sort-btn${catSort==="uso"?" on":""}`}>Más usadas</button>
+              <button onClick={()=>setCatSort("az")}  className={`ap-sort-btn${catSort==="az"?" on":""}`}>A–Z</button>
+            </div>
           </div>
-        </label>}
-        <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-        <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,display:"block",width:"100%",WebkitAppearance:"none"}}/></div>
+          <div className="ap-chips">
+            {sortCats(egresoCats).map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))}
+              className={`ap-chip${fm.cat===c?" on":""}`}
+              style={fm.cat===c?{background:"rgba(96,165,250,.18)",borderColor:"rgba(96,165,250,.45)",color:"#93c5fd"}:{}}
+            >{c}</button>)}
+          </div>
+        </div>
+        {subs.length>0&&<div className="ap-sec">
+          <span className="ap-sec-title">Detalle</span>
+          <div className="ap-chips" style={{marginTop:10}}>
+            {subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))}
+              className={`ap-chip${fm.sub===s?" on":""}`}
+              style={fm.sub===s?{background:"rgba(167,139,250,.18)",borderColor:"rgba(167,139,250,.45)",color:"#c4b5fd"}:{}}
+            >{s}</button>)}
+          </div>
+        </div>}
+        <div className="ap-row2">
+          <div><label className="ap-lbl">TC</label>
+            <select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} className="ap-sel">
+              <option value="">—</option><option value="V">V</option><option value="M">M</option>
+            </select>
+          </div>
+          <div><label className="ap-lbl">Cuenta</label>
+            <select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} className="ap-sel">
+              {cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
+            </select>
+          </div>
+        </div>
+        {fm.cat==="Pago deuda"&&fm.sub==="Edgardo"&&<>
+          <div className="ap-field"><label className="ap-lbl">TC Dólar</label>
+            <input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" className="ap-inp" style={{...mo}}/>
+          </div>
+          {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div className="ap-preview">
+            <span className="ap-preview-lbl">Pago en USD</span>
+            <span className="ap-preview-val" style={{color:"#34d399",...mo}}>{f$(Math.abs(parseFloat(fm.amt))/parseFloat(fm.tcDolar),true)}</span>
+          </div>}
+        </>}
+        <div className="ap-field"><label className="ap-lbl">Nota</label>
+          <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Detalle opcional…" rows={2} className="ap-inp ap-ta"/>
+        </div>
       </>}
 
-      {mt==="egreso"&&<>
-        <div style={{marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-            <label style={{...S.lbl,marginBottom:0}}>Categoría</label>
-            <div style={{display:"flex",gap:4}}>
-              <button onClick={()=>setCatSort("uso")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="uso"?"#3b82f6":"var(--btn-bg)",color:catSort==="uso"?"#fff":"var(--text-muted)"}}>Más usadas</button>
-              <button onClick={()=>setCatSort("az")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="az"?"#3b82f6":"var(--btn-bg)",color:catSort==="az"?"#fff":"var(--text-muted)"}}>A-Z</button>
-            </div>
-          </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sortCats(egresoCats).map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c,sub:""}))} style={S.btn(fm.cat===c,"#3b82f6")}>{c}</button>)}</div>
-        </div>
-        {subs.length>0&&<div style={{marginBottom:16}}><label style={S.lbl}>Detalle</label><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{subs.map(s=><button key={s} onClick={()=>setFm(f=>({...f,sub:s}))} style={S.btn(fm.sub===s,"#8b5cf6")}>{s}</button>)}</div></div>}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:12,marginBottom:16}}>
-          <div><label style={S.lbl}>TC</label><select value={fm.tc} onChange={e=>setFm(f=>({...f,tc:e.target.value}))} style={S.inp}><option value="">—</option><option value="V">V</option><option value="M">M</option></select></div>
-          <div><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
-        </div>
-        {fm.cat==="Pago deuda"&&fm.sub==="Edgardo"&&<div style={{marginBottom:16}}>
-          <label style={S.lbl}>TC Dólar (para convertir a USD en Deuda)</label>
-          <input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/>
-          {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{marginTop:8,padding:"10px 14px",borderRadius:10,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)",display:"flex",justifyContent:"space-between"}}>
-            <span style={{fontSize:13,color:"var(--text-muted)"}}>Pago en USD</span>
-            <span style={{fontSize:16,fontWeight:700,color:"#34d399",...mo}}>{f$(Math.abs(parseFloat(fm.amt))/parseFloat(fm.tcDolar),true)}</span>
-          </div>}
-        </div>}
-        <div style={{marginBottom:16}}>
-          <label style={S.lbl}>Nota adicional</label>
-          <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Opcional — cualquier detalle extra" rows={2} style={{...S.inp,resize:"vertical",lineHeight:1.5}}/>
-        </div>
-      </>}
+      {/* ── INGRESO ── */}
       {mt==="ingreso"&&<>
-        <div style={{marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-            <label style={{...S.lbl,marginBottom:0}}>Categoría</label>
-            <div style={{display:"flex",gap:4}}>
-              <button onClick={()=>setCatSort("uso")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="uso"?"#16a34a":"var(--btn-bg)",color:catSort==="uso"?"#fff":"var(--text-muted)"}}>Más usadas</button>
-              <button onClick={()=>setCatSort("az")} style={{padding:"4px 10px",borderRadius:8,border:"none",fontSize:10,fontWeight:600,cursor:"pointer",background:catSort==="az"?"#16a34a":"var(--btn-bg)",color:catSort==="az"?"#fff":"var(--text-muted)"}}>A-Z</button>
-            </div>
+        <div className="ap-sec">
+          <div className="ap-sec-hd">
+            <span className="ap-sec-title">Categoría</span>
           </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{sortCats(ingresoCats).map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))} style={S.btn(fm.cat===c,"#16a34a")}>{c}</button>)}</div>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:12,marginBottom:16}}>
-          <div><label style={S.lbl}>Cuenta destino</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
-          <div><label style={S.lbl}>TC Dólar</label><input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="Ej: 1450" style={{...S.inp,...mo}}/></div>
-        </div>
-        {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div style={{...S.crdP,marginBottom:16,background:"rgba(52,211,153,.05)",border:"1px solid rgba(52,211,153,.15)"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:13,color:"var(--text-muted)"}}>Equivalente en USD</span>
-            <span style={{fontSize:18,fontWeight:700,color:"#34d399",...mo}}>{f$(parseFloat(fm.amt)/parseFloat(fm.tcDolar),true)}</span>
+          <div className="ap-chips">
+            {sortCats(ingresoCats).map(c=><button key={c} onClick={()=>setFm(f=>({...f,cat:c}))}
+              className={`ap-chip${fm.cat===c?" on":""}`}
+              style={fm.cat===c?{background:"rgba(74,222,128,.18)",borderColor:"rgba(74,222,128,.45)",color:"#86efac"}:{}}
+            >{c}</button>)}
           </div>
+        </div>
+        <div className="ap-row2" style={{gridTemplateColumns:"2fr 1fr"}}>
+          <div><label className="ap-lbl">Cuenta destino</label>
+            <select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} className="ap-sel">
+              {cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
+            </select>
+          </div>
+          <div><label className="ap-lbl">TC Dólar</label>
+            <input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="1450" className="ap-inp" style={{...mo}}/>
+          </div>
+        </div>
+        {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div className="ap-preview">
+          <span className="ap-preview-lbl">Equivalente USD</span>
+          <span className="ap-preview-val" style={{color:"#34d399",...mo}}>{f$(parseFloat(fm.amt)/parseFloat(fm.tcDolar),true)}</span>
         </div>}
       </>}
-      {mt==="traspaso"&&<div style={{marginBottom:16}}>
-        <label style={S.lbl}>Cuenta Origen</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select>
-        <div style={{textAlign:"center",padding:"10px 0",color:"#3b82f6",fontSize:20}}>↓</div>
-        <label style={S.lbl}>Cuenta Destino</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select>
+
+      {/* ── TRASPASO ── */}
+      {mt==="traspaso"&&<div className="ap-sec">
+        <label className="ap-lbl">Cuenta Origen</label>
+        <select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} className="ap-sel" style={{marginBottom:10}}>
+          {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
+        </select>
+        <div style={{textAlign:"center",padding:"8px 0",color:"#60a5fa",fontSize:22,opacity:.8}}>↓</div>
+        <label className="ap-lbl">Cuenta Destino</label>
+        <select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} className="ap-sel">
+          {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
+        </select>
       </div>}
 
+      {/* ── INVERSIÓN ── */}
       {mt==="inversion"&&<>
-        {/* Step 1: Type selector */}
-        <div style={{marginBottom:20}}>
-          <label style={S.lbl}>Tipo de Inversión</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {invTypes.map(t=><button key={t} onClick={()=>{const isUsdType=t.toLowerCase().includes("usd");setFm(f=>({...f,it:t,amt:"",tc:"",...(isUsdType?{from:cuentas.find(c=>c.nombre==="BAPRO $")?.id||cuentas.find(c=>c.moneda!=="USD")?.id||f.from,to:cuentas.find(c=>c.nombre==="Efectivo USD")?.id||cuentas.find(c=>c.moneda==="USD")?.id||f.to}:{})}));setUsdCalc(null)}} style={{...S.btn(fm.it===t,"#f59e0b"),padding:"12px 16px",fontSize:13}}>{t}</button>)}
+        <div className="ap-sec">
+          <span className="ap-sec-title">Tipo de Inversión</span>
+          <div className="ap-chips" style={{marginTop:10}}>
+            {invTypes.map(t=><button key={t} onClick={()=>{
+              const isUsdType=t.toLowerCase().includes("usd")
+              setFm(f=>({...f,it:t,amt:"",tc:"",...(isUsdType?{from:cuentas.find(c=>c.nombre==="BAPRO $")?.id||cuentas.find(c=>c.moneda!=="USD")?.id||f.from,to:cuentas.find(c=>c.nombre==="Efectivo USD")?.id||cuentas.find(c=>c.moneda==="USD")?.id||f.to}:{})}))
+              setUsdCalc(null)
+            }} className={`ap-chip${fm.it===t?" on":""}`}
+              style={fm.it===t?{background:"rgba(251,191,36,.18)",borderColor:"rgba(251,191,36,.45)",color:"#fcd34d"}:{}}
+            >{t}</button>)}
           </div>
         </div>
 
-        {/* Step 2a: Standard inversion form */}
         {fm.it&&!isUSD&&<>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Importe</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,display:"block",width:"100%",WebkitAppearance:"none"}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta</label><select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
+          <div className="ap-hero" style={{borderColor:"rgba(251,191,36,.3)"}}>
+            <span className="ap-hero-tag" style={{color:"#fbbf24"}}>IMPORTE</span>
+            <div className="ap-hero-row">
+              <span className="ap-hero-prefix" style={{color:"#fbbf24"}}>$</span>
+              <input type="text" inputMode="decimal" value={fm.amt} onChange={e=>setFm(f=>({...f,amt:e.target.value}))} placeholder="0" className="ap-hero-input" style={{color:"#fbbf24"}}/>
+            </div>
+            <input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} className="ap-date-in"/>
+          </div>
+          <div className="ap-field"><label className="ap-lbl">Cuenta</label>
+            <select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} className="ap-sel">
+              {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
+            </select>
+          </div>
         </>}
 
-        {/* Step 2b: Compra USD form */}
         {fm.it&&isUSD&&<>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Fecha</label><input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} style={{...S.inp,display:"block",width:"100%",WebkitAppearance:"none"}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Importe en Pesos</label><input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:24,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Tipo de Cambio</label><input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" style={{...S.inp,fontSize:20,fontWeight:700,...mo}}/></div>
-          <div style={{marginBottom:16}}><label style={S.lbl}>Cuenta a Debitar</label><select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
-          <div style={{marginBottom:20}}><label style={S.lbl}>Cuenta a Acreditar</label><select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} style={S.inp}>{cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}</select></div>
-          {usdCalc!==null&&<div style={{...S.crdP,marginBottom:16,textAlign:"center",border:"1px solid rgba(245,158,11,.25)"}}>
-            <div style={{fontSize:11,color:"var(--text-muted)",textTransform:"uppercase",marginBottom:4}}>Resultado</div>
-            <div style={{fontSize:26,fontWeight:800,color:"#f59e0b",...mo}}>{f$(usdCalc,true)}</div>
+          <div className="ap-hero" style={{borderColor:"rgba(251,191,36,.3)"}}>
+            <span className="ap-hero-tag" style={{color:"#fbbf24"}}>IMPORTE EN PESOS</span>
+            <div className="ap-hero-row">
+              <span className="ap-hero-prefix" style={{color:"#fbbf24"}}>$</span>
+              <input type="text" inputMode="decimal" value={fm.amt} onChange={e=>{setFm(f=>({...f,amt:e.target.value}));setUsdCalc(null)}} placeholder="0" className="ap-hero-input" style={{color:"#fbbf24"}}/>
+            </div>
+            <input type="date" value={fm.date} onChange={e=>setFm(f=>({...f,date:e.target.value}))} className="ap-date-in"/>
+          </div>
+          <div className="ap-field"><label className="ap-lbl">Tipo de Cambio</label>
+            <input type="text" inputMode="decimal" value={fm.tc} onChange={e=>{setFm(f=>({...f,tc:e.target.value}));setUsdCalc(null)}} placeholder="0" className="ap-inp" style={{...mo,fontSize:22,fontWeight:700,color:"#fbbf24"}}/>
+          </div>
+          <div className="ap-row2">
+            <div><label className="ap-lbl">Debitar de</label>
+              <select value={fm.from} onChange={e=>setFm(f=>({...f,from:e.target.value}))} className="ap-sel">
+                {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
+              </select>
+            </div>
+            <div><label className="ap-lbl">Acreditar en</label>
+              <select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} className="ap-sel">
+                {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
+              </select>
+            </div>
+          </div>
+          {usdCalc!==null&&<div className="ap-preview" style={{borderColor:"rgba(251,191,36,.3)"}}>
+            <span className="ap-preview-lbl">Resultado</span>
+            <span className="ap-preview-val" style={{color:"#fbbf24",...mo,fontSize:22}}>{f$(usdCalc,true)}</span>
           </div>}
-          <button onClick={calcularUSD} disabled={!fm.amt||!fm.tc||!fm.from||fm.from===fm.to} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",opacity:fm.amt&&fm.tc?1:.4,marginBottom:8}}>Calcular</button>
+          <button onClick={calcularUSD} disabled={!fm.amt||!fm.tc||!fm.from||fm.from===fm.to}
+            className="ap-calc-btn" style={{opacity:fm.amt&&fm.tc?1:.35}}>
+            Calcular
+          </button>
         </>}
       </>}
 
-      {/* Save button (hidden for Compra USD — uses modal confirm instead) */}
-      {!isUSD&&<button onClick={go} disabled={saving} style={{width:"100%",padding:16,borderRadius:14,border:"none",fontSize:16,fontWeight:700,cursor:"pointer",background:ok?"#16a34a":"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",opacity:ok||fm.amt?1:.4}}>{ok?"✓ Guardado":saving?"Guardando...":"Guardar"}</button>}
+      {/* ── Save ── */}
+      {!isUSD&&<button onClick={go} disabled={saving}
+        className={`ap-save${ok?" ap-save-ok":""}`}
+        style={!ok?{background:td.color,boxShadow:`0 6px 24px ${td.glow}`,opacity:(ok||fm.amt)?1:.35}:{}}
+      >{ok?"✓ Guardado":saving?"Guardando...":"Guardar"}</button>}
+
     </div>
   )
 }
@@ -2377,6 +2478,134 @@ export default function App(){
           font-size:13px;font-weight:700;
           flex-shrink:0;white-space:nowrap;
         }
+
+        /* ── ADD PAGE ── */
+        .ap-types{
+          display:grid;grid-template-columns:1fr 1fr;
+          gap:10px;margin-bottom:16px;
+        }
+        .ap-type-card{
+          display:flex;flex-direction:column;align-items:center;gap:5px;
+          padding:15px 0 12px;border-radius:18px;
+          border:1px solid rgba(255,255,255,.07);
+          background:var(--btn-bg);cursor:pointer;transition:all .15s;
+        }
+        [data-theme="light"] .ap-type-card{border-color:rgba(0,0,0,.08);}
+        .ap-type-icon{font-size:22px;line-height:1;}
+        .ap-type-name{font-size:12px;font-weight:700;letter-spacing:.3px;color:var(--text-muted);}
+
+        /* Hero amount */
+        .ap-hero{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:20px;padding:18px 18px 14px;margin-bottom:12px;
+        }
+        .ap-hero-tag{
+          font-size:9px;font-weight:800;letter-spacing:2px;
+          text-transform:uppercase;opacity:.75;display:block;margin-bottom:6px;
+        }
+        .ap-hero-row{display:flex;align-items:center;gap:6px;margin-bottom:14px;}
+        .ap-hero-prefix{
+          font-size:26px;font-weight:300;opacity:.55;line-height:1;
+          font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+        .ap-hero-input{
+          flex:1;background:none;border:none;outline:none;
+          font-size:42px;font-weight:800;letter-spacing:-2px;padding:0;width:100%;
+          font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace;
+        }
+        .ap-hero-input::placeholder{opacity:.2;}
+        .ap-date-in{
+          width:100%;background:none;border:none;
+          border-top:1px solid rgba(255,255,255,.07);
+          padding:10px 0 0;color:var(--text-muted);font-size:13px;outline:none;
+          -webkit-appearance:none;
+        }
+        [data-theme="light"] .ap-date-in{border-top-color:rgba(0,0,0,.08);color:#475569;}
+
+        /* Flags */
+        .ap-flag{
+          display:flex;align-items:center;gap:12px;
+          padding:11px 14px;border-radius:13px;
+          background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);
+          cursor:pointer;margin-bottom:10px;
+        }
+        [data-theme="light"] .ap-flag{background:rgba(0,0,0,.02);border-color:rgba(0,0,0,.07);}
+        .ap-flag-ttl{font-size:13px;font-weight:600;}
+        .ap-flag-desc{font-size:11px;color:var(--text-muted);margin-top:2px;}
+
+        /* Section card */
+        .ap-sec{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:18px;padding:14px;margin-bottom:10px;
+        }
+        .ap-sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+        .ap-sec-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
+        .ap-sort{display:flex;gap:4px;}
+        .ap-sort-btn{
+          padding:3px 9px;border-radius:8px;border:none;
+          font-size:10px;font-weight:600;cursor:pointer;
+          background:var(--btn-bg);color:var(--text-muted);
+        }
+        .ap-sort-btn.on{background:#3b82f6;color:#fff;}
+
+        /* Chips */
+        .ap-chips{display:flex;flex-wrap:wrap;gap:6px;}
+        .ap-chip{
+          padding:7px 13px;border-radius:20px;
+          border:1px solid rgba(255,255,255,.08);
+          background:rgba(255,255,255,.03);
+          color:var(--text-secondary);font-size:12px;font-weight:500;cursor:pointer;
+        }
+        [data-theme="light"] .ap-chip{border-color:rgba(0,0,0,.1);background:rgba(0,0,0,.03);}
+
+        /* 2-col row */
+        .ap-row2{display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:10px;}
+
+        /* Field */
+        .ap-field{margin-bottom:10px;}
+        .ap-lbl{
+          font-size:10px;font-weight:700;letter-spacing:1.5px;
+          text-transform:uppercase;color:var(--text-muted);
+          display:block;margin-bottom:6px;
+        }
+        .ap-inp{
+          width:100%;padding:12px 14px;
+          background:var(--inp-bg);border:1px solid var(--inp-border);
+          border-radius:12px;color:var(--text-primary);font-size:15px;
+          outline:none;box-sizing:border-box;
+        }
+        .ap-sel{
+          width:100%;padding:11px 12px;
+          border-radius:12px;color:var(--text-primary);
+          font-size:13px;outline:none;box-sizing:border-box;
+        }
+        .ap-ta{resize:vertical;line-height:1.5;font-size:14px;}
+
+        /* Preview */
+        .ap-preview{
+          display:flex;justify-content:space-between;align-items:center;
+          padding:12px 16px;border-radius:13px;
+          background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.15);
+          margin-bottom:10px;
+        }
+        .ap-preview-lbl{font-size:13px;color:var(--text-muted);}
+        .ap-preview-val{font-size:18px;font-weight:700;}
+
+        /* Calc button */
+        .ap-calc-btn{
+          width:100%;padding:14px;border-radius:14px;border:none;
+          font-size:15px;font-weight:700;cursor:pointer;
+          background:linear-gradient(135deg,#f59e0b,#b45309);color:#000;
+          margin-bottom:10px;
+        }
+
+        /* Save button */
+        .ap-save{
+          width:100%;padding:17px;border-radius:18px;border:none;
+          font-size:16px;font-weight:800;cursor:pointer;color:#fff;
+          margin-top:10px;letter-spacing:.3px;transition:opacity .15s,box-shadow .2s;
+        }
+        .ap-save-ok{background:#16a34a!important;box-shadow:0 6px 24px rgba(22,163,74,.3)!important;}
 
         /* ── DARK THEME (default) ── */
         [data-theme="dark"]{
