@@ -744,7 +744,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         {/* % cards below each month */}
         <div style={{display:"flex",gap:6,marginTop:10}}>
           {vis.map(k=>{
-            const ing=(monthly[k]?.ingP||0)+(monthly[k]?.ingU||0)
+            const ing=getMonthIngresos(k)
             const inv=monthly[k]?.inv||0
             const pct=ing>0?Math.round((inv/ing)*100):0
             const isGood=pct>=20
