@@ -1177,6 +1177,12 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <span className="mv-sum-lbl" style={{color:"#4ade80"}}>Ingresos ▾</span>
           <span className="mv-sum-val" style={{color:"#4ade80",...mo}}>{f$(totalIngresos)}</span>
         </div>
+        {showIngDet&&<div style={{background:"rgba(74,222,128,.04)",border:"1px solid rgba(74,222,128,.12)",borderRadius:12,padding:"6px 14px 2px",marginTop:-2}}>
+          {ingresoDesglose.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.03)",fontSize:12}}>
+            <span style={{color:"var(--text-secondary)"}}>{d.label}</span>
+            <span style={{color:"#4ade80",fontWeight:600,...mo}}>{f$(d.monto)}</span>
+          </div>)}
+        </div>}
         <div className="mv-sum-card">
           <div className="mv-sum-bar" style={{background:"#f87171"}}/>
           <span className="mv-sum-lbl" style={{color:"#f87171"}}>Egresos $</span>
@@ -1198,12 +1204,6 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <span className="mv-sum-val" style={{color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</span>
         </div>
       </div>
-      {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
-        {ingresoDesglose.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.03)",fontSize:13}}>
-          <span style={{color:"var(--text-secondary)"}}>{d.label}</span>
-          <span style={{color:"#4ade80",fontWeight:600,...mo}}>{f$(d.monto)}</span>
-        </div>)}
-      </div>}
 
       <div className="mv-filter-card">
         <div className="mv-filter-hd">Filtros</div>
