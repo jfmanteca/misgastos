@@ -285,14 +285,14 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
       if(mt==="traspaso"){
         if(!fm.amt||fm.from===fm.to){setSaving(false);return}
         const amt=parseFloat(fm.amt)
-        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"traspaso",categoria:"Traspaso",subcategoria:`${cuentas.find(c=>c.id===fm.from)?.nombre} → ${cuentas.find(c=>c.id===fm.to)?.nombre}`,monto:amt,cuenta_id:fm.from,cuenta_destino_id:fm.to})
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"traspaso",categoria:"Traspaso",subcategoria:`${cuentas.find(c=>c.id===fm.from)?.nombre} → ${cuentas.find(c=>c.id===fm.to)?.nombre}`,monto:amt,cuenta_id:fm.from,cuenta_destino_id:fm.to,nota:fm.nota||null})
         const{data:fromFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.from).single()
         const{data:toFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.to).single()
         if(fromFresh)await supabase.from("cuentas").update({saldo:fromFresh.saldo-amt}).eq("id",fm.from)
         if(toFresh)await supabase.from("cuentas").update({saldo:toFresh.saldo+amt}).eq("id",fm.to)
       }else if(mt==="inversion"){
         if(!fm.amt||!fm.it){setSaving(false);return}
-        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:parseFloat(fm.amt),cuenta_id:fm.cuenta})
+        await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:parseFloat(fm.amt),cuenta_id:fm.cuenta,nota:fm.nota||null})
       }else{
         if(!fm.amt||!fm.cat){setSaving(false);return}
         const rawAmt=parseFloat(fm.amt)
@@ -330,7 +330,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
     try{
       const importePesos=parseFloat(fm.amt)
       const importeUSD=usdCalc
-      await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:importePesos,cuenta_id:fm.from,cuenta_destino_id:fm.to,detalle:`TC:${fm.tc}`})
+      await supabase.from("movimientos").insert({user_id:userId,fecha:fm.date,tipo:"inversion",categoria:"Inversiones",subcategoria:fm.it,monto:importePesos,cuenta_id:fm.from,cuenta_destino_id:fm.to,detalle:`TC:${fm.tc}`,nota:fm.nota||null})
       const{data:fromFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.from).single()
       if(fromFresh)await supabase.from("cuentas").update({saldo:fromFresh.saldo-importePesos}).eq("id",fm.from)
       const{data:toFresh}=await supabase.from("cuentas").select("saldo").eq("id",fm.to).single()
@@ -503,6 +503,9 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
           <span className="ap-preview-lbl">Equivalente USD</span>
           <span className="ap-preview-val" style={{color:"#34d399",...mo}}>{f$(parseFloat(fm.amt)/parseFloat(fm.tcDolar),true)}</span>
         </div>}
+        <div className="ap-field"><label className="ap-lbl">Nota</label>
+          <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Detalle opcional…" rows={2} className="ap-inp ap-ta"/>
+        </div>
       </>}
 
       {/* ── TRASPASO ── */}
@@ -513,9 +516,11 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
         </select>
         <div style={{textAlign:"center",padding:"8px 0",color:"#60a5fa",fontSize:22,opacity:.8}}>↓</div>
         <label className="ap-lbl">Cuenta Destino</label>
-        <select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} className="ap-sel">
+        <select value={fm.to} onChange={e=>setFm(f=>({...f,to:e.target.value}))} className="ap-sel" style={{marginBottom:14}}>
           {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
         </select>
+        <label className="ap-lbl">Nota</label>
+        <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Detalle opcional…" rows={2} className="ap-inp ap-ta"/>
       </div>}
 
       {/* ── INVERSIÓN ── */}
@@ -546,6 +551,9 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
             <select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} className="ap-sel">
               {cuentas.map(a=><option key={a.id} value={a.id}>{a.nombre} ({a.moneda})</option>)}
             </select>
+          </div>
+          <div className="ap-field"><label className="ap-lbl">Nota</label>
+            <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Detalle opcional…" rows={2} className="ap-inp ap-ta"/>
           </div>
         </>}
 
@@ -581,6 +589,9 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
             className="ap-calc-btn" style={{opacity:fm.amt&&fm.tc?1:.35}}>
             Calcular
           </button>
+          <div className="ap-field"><label className="ap-lbl">Nota</label>
+            <textarea value={fm.nota} onChange={e=>setFm(f=>({...f,nota:e.target.value}))} placeholder="Detalle opcional…" rows={2} className="ap-inp ap-ta"/>
+          </div>
         </>}
       </>}
 
@@ -655,13 +666,20 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
 
   return(
     <div className="page-inner">
-      <div style={S.sec}>Dashboard</div>
+
+      <div className="db-hd">
+        <div className="db-hd-icon">📈</div>
+        <div>
+          <div className="db-hd-text">Dashboard</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Análisis de tus finanzas</div>
+        </div>
+      </div>
 
       {/* Ingresos vs Egresos */}
-      <div style={{...S.crdP,marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div className="db-chart-card">
+        <div className="db-chart-hd">
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>Ingresos vs Egresos</div>
+            <span className="db-chart-title">Ingresos vs Egresos</span>
             <div style={{display:"flex",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#4ade80"}}/><span style={{fontSize:10,color:"var(--text-muted)"}}>Ing</span></div>
               <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#f87171"}}/><span style={{fontSize:10,color:"var(--text-muted)"}}>Eg</span></div>
@@ -704,9 +722,9 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
       </div>
 
       {/* Inversiones + % debajo de cada mes */}
-      {vis.some(k=>monthly[k]?.inv>0)&&<div style={{...S.crdP,marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>Inversiones mensuales</div>
+      {vis.some(k=>monthly[k]?.inv>0)&&<div className="db-chart-card db-inv-card">
+        <div className="db-chart-hd">
+          <span className="db-chart-title" style={{color:"rgba(251,191,36,.85)"}}>Inversiones mensuales</span>
           <div style={{display:"flex",gap:4}}>
             <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
             <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
@@ -772,9 +790,11 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         const selTotal=selData?.total||0
         const maxBreak=Math.max(...breakdown.map(i=>i.monto),1)
         return(
-          <div style={{...S.crdP,marginBottom:20}}>
-            <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Gastos Fijos — últimos 6 meses</div>
-            <div style={{fontSize:10,color:"#334155",marginBottom:10}}>Tocá un mes para ver el discriminado</div>
+          <div className="db-chart-card db-fijo-card">
+            <div className="db-chart-hd" style={{marginBottom:4}}>
+              <span className="db-chart-title" style={{color:"rgba(251,191,36,.85)"}}>Gastos Fijos — últimos 6 meses</span>
+            </div>
+            <div style={{fontSize:10,color:"#4b5563",marginBottom:10}}>Tocá un mes para ver el discriminado</div>
             {/* Chart wrapper: padding-top reserves space for HTML amount labels */}
             <div style={{position:"relative",paddingTop:18,marginBottom:4}}>
               {/* Amount labels — HTML, positioned absolutely over SVG */}
@@ -834,9 +854,9 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
       })()}
 
       {/* Pie */}
-      <div style={S.crdP}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1}}>Gastos por categoría</div>
+      <div className="db-chart-card db-pie-card">
+        <div className="db-chart-hd" style={{marginBottom:16}}>
+          <span className="db-chart-title">Gastos por categoría</span>
           <select value={pieIdx} onChange={e=>setPi(parseInt(e.target.value))} style={{...S.inp,width:"auto",padding:"8px 14px",fontSize:13,fontWeight:600,background:"rgba(255,255,255,.04)"}}>
             {allMonths.map((m,idx)=><option key={m} value={idx}>{fmtMonth(m)}</option>)}
           </select>
@@ -1136,34 +1156,46 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
 
   return(
     <div className="page-inner">
-      <div style={S.sec}>Movimientos</div>
 
-      <div style={{marginBottom:16}}>
-        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false);setPage(0)}} style={{...S.inp,fontSize:16,fontWeight:600}}>
+      <div className="mv-hd">
+        <div className="mv-hd-icon">📊</div>
+        <div>
+          <div className="mv-hd-text">Movimientos</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Historial y análisis mensual</div>
+        </div>
+      </div>
+
+      <div style={{marginBottom:14}}>
+        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false);setPage(0)}} style={{...S.inp,fontSize:15,fontWeight:700}}>
           {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
         </select>
       </div>
 
-      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",cursor:"pointer"}} onClick={()=>setShowIngDet(v=>!v)}>
-          <div style={{fontSize:11,color:"#4ade80",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Ingresos ▾</div>
-          <div style={{fontSize:18,fontWeight:700,color:"#4ade80",...mo}}>{f$(totalIngresos)}</div>
+      <div className="mv-sum-grid">
+        <div className="mv-sum-card mv-sum-card-click" onClick={()=>setShowIngDet(v=>!v)}>
+          <div className="mv-sum-bar" style={{background:"#4ade80"}}/>
+          <span className="mv-sum-lbl" style={{color:"#4ade80"}}>Ingresos ▾</span>
+          <span className="mv-sum-val" style={{color:"#4ade80",...mo}}>{f$(totalIngresos)}</span>
         </div>
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px"}}>
-          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos $</div>
-          <div style={{fontSize:18,fontWeight:700,color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"+":"-"}{f$(Math.abs(totalEgresos))}</div>
+        <div className="mv-sum-card">
+          <div className="mv-sum-bar" style={{background:"#f87171"}}/>
+          <span className="mv-sum-lbl" style={{color:"#f87171"}}>Egresos $</span>
+          <span className="mv-sum-val" style={{color:totalEgresos<0?"#4ade80":"#f87171",...mo}}>{totalEgresos<0?"+":"-"}{f$(Math.abs(totalEgresos))}</span>
         </div>
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(245,158,11,.15)"}}>
-          <div style={{fontSize:11,color:"#f59e0b",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Inversiones</div>
-          <div style={{fontSize:18,fontWeight:700,color:"#f59e0b",...mo}}>-{f$(Math.abs(totalInversiones))}</div>
+        <div className="mv-sum-card">
+          <div className="mv-sum-bar" style={{background:"#f59e0b"}}/>
+          <span className="mv-sum-lbl" style={{color:"#f59e0b"}}>Inversiones</span>
+          <span className="mv-sum-val" style={{color:"#f59e0b",...mo}}>-{f$(Math.abs(totalInversiones))}</span>
         </div>
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:`1px solid ${saldoDelMes>=0?"rgba(74,222,128,.2)":"rgba(248,113,113,.2)"}`}}>
-          <div style={{fontSize:11,color:saldoDelMes>=0?"#4ade80":"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Saldo del mes</div>
-          <div style={{fontSize:18,fontWeight:700,color:saldoDelMes>=0?"#4ade80":"#f87171",...mo}}>{saldoDelMes>=0?"+":""}{f$(saldoDelMes)}</div>
+        <div className="mv-sum-card" style={{background:saldoDelMes>=0?"rgba(74,222,128,.05)":"rgba(248,113,113,.05)",borderColor:saldoDelMes>=0?"rgba(74,222,128,.22)":"rgba(248,113,113,.22)"}}>
+          <div className="mv-sum-bar" style={{background:saldoDelMes>=0?"#4ade80":"#f87171"}}/>
+          <span className="mv-sum-lbl" style={{color:saldoDelMes>=0?"#4ade80":"#f87171"}}>Saldo del mes</span>
+          <span className="mv-sum-val" style={{color:saldoDelMes>=0?"#4ade80":"#f87171",...mo}}>{saldoDelMes>=0?"+":""}{f$(saldoDelMes)}</span>
         </div>
-        <div style={{...S.crdP,display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",border:"1px solid rgba(248,113,113,.15)"}}>
-          <div style={{fontSize:11,color:"#f87171",textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>Egresos USD</div>
-          <div style={{fontSize:18,fontWeight:700,color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</div>
+        <div className="mv-sum-card">
+          <div className="mv-sum-bar" style={{background:"#f87171",opacity:.5}}/>
+          <span className="mv-sum-lbl" style={{color:"#f87171",opacity:.7}}>Egresos USD</span>
+          <span className="mv-sum-val" style={{color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</span>
         </div>
       </div>
       {showIngDet&&<div style={{...S.crdP,marginBottom:12,marginTop:-12}}>
@@ -1173,13 +1205,13 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
         </div>)}
       </div>}
 
-      <div style={{...S.crdP,marginBottom:20}}>
-        <div style={{fontSize:12,color:"var(--text-muted)",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Filtros</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
-          {[{v:"",l:"Todos"},{v:"egreso",l:"Egresos"},{v:"ingreso",l:"Ingresos"},{v:"traspaso",l:"Traspasos"},{v:"inversion",l:"Inversiones"}].map(t=>(
-            <button key={t.v} onClick={()=>setFilterTipo(t.v)} style={{padding:"7px 12px",borderRadius:10,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
-              background:filterTipo===t.v?(t.v==="egreso"?"#dc2626":t.v==="ingreso"?"#16a34a":t.v==="traspaso"?"#3b82f6":t.v==="inversion"?"#f59e0b":"#3b82f6"):"rgba(255,255,255,.04)",
-              color:filterTipo===t.v?"#fff":"#64748b"}}>{t.l}</button>
+      <div className="mv-filter-card">
+        <div className="mv-filter-hd">Filtros</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+          {[{v:"",l:"Todos",c:"#3b82f6"},{v:"egreso",l:"Egresos",c:"#dc2626"},{v:"ingreso",l:"Ingresos",c:"#16a34a"},{v:"traspaso",l:"Traspasos",c:"#3b82f6"},{v:"inversion",l:"Inversiones",c:"#f59e0b"}].map(t=>(
+            <button key={t.v} onClick={()=>setFilterTipo(t.v)} style={{padding:"6px 13px",borderRadius:20,border:filterTipo===t.v?`1px solid ${t.c}66`:"1px solid transparent",fontSize:11,fontWeight:600,cursor:"pointer",
+              background:filterTipo===t.v?`${t.c}22`:"rgba(255,255,255,.04)",
+              color:filterTipo===t.v?t.c:"#64748b",transition:"all .15s"}}>{t.l}</button>
           ))}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
@@ -1257,21 +1289,24 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
               <button onClick={()=>deleteRow(e.id)} style={{padding:"8px 16px",borderRadius:8,border:"none",fontSize:12,cursor:"pointer",background:"#7f1d1d",color:"#f87171"}}>Eliminar</button>
             </div>
           </div>
-          :<div key={e.id} style={{display:"flex",alignItems:"center",padding:"10px 12px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none",gap:8,overflow:"hidden"}}>
-            <div style={{width:32,height:32,borderRadius:8,background:`${catColor(e.categoria)}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{catIcon(e.categoria)}</div>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,color:"var(--text-primary)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subcategoria||e.categoria}</div>
-              <div style={{fontSize:10,color:"var(--text-muted)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
-              {e.nota&&<div style={{fontSize:10,color:"#60a5fa",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:1}}>📝 {e.nota}</div>}
-            </div>
+          :<div key={e.id} className="mv-txn-row" style={{borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,.04)":"none"}}>
             {(()=>{
               const enUSD=isUSDCuenta(e.cuenta_id)
               const devolucion=e.tipo==="egreso"&&e.monto<0
-              const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":"#f87171"
+              const col=e.tipo==="ingreso"||devolucion?"#4ade80":e.tipo==="traspaso"?"#60a5fa":e.tipo==="inversion"?"#f59e0b":"#f87171"
               const sign=e.tipo==="ingreso"||devolucion?"+":e.tipo==="egreso"?"-":"↔"
-              return <div style={{fontSize:14,fontWeight:700,color:col,...mo,whiteSpace:"nowrap",flexShrink:0,marginLeft:4}}>{sign}{f$(Math.abs(parseFloat(e.monto)||0),enUSD)}</div>
+              return<>
+                <div className="mv-txn-bar" style={{background:col}}/>
+                <div className="mv-txn-ico" style={{background:`${catColor(e.categoria)}18`}}>{catIcon(e.categoria)}</div>
+                <div className="mv-txn-body">
+                  <div className="mv-txn-name">{e.subcategoria||e.categoria}</div>
+                  <div className="mv-txn-meta">{e.fecha?.slice(5)||""} · {cuentaNombre(e.cuenta_id)}{e.tc?` · ${e.tc}`:""}</div>
+                  {e.nota&&<div className="mv-txn-note">📝 {e.nota}</div>}
+                </div>
+                <div className="mv-txn-amt" style={{color:col,...mo}}>{sign}{f$(Math.abs(parseFloat(e.monto)||0),enUSD)}</div>
+                <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:"2px 6px",flexShrink:0}}><Ic d={IC.edit} s={12}/></button>
+              </>
             })()}
-            <button onClick={()=>startEdit(e)} style={{background:"none",border:"none",color:"var(--text-muted)",cursor:"pointer",padding:2,flexShrink:0}}><Ic d={IC.edit} s={12}/></button>
           </div>
         ))}
       </div>
@@ -2326,8 +2361,8 @@ export default function App(){
 
         <div className="page-content">{C}</div>
 
-        {/* FAB: acceso rápido a Cargar desde Inicio */}
-        {pg==="home"&&(
+        {/* FAB: acceso rápido a Cargar */}
+        {(pg==="home"||pg==="mov"||pg==="dash")&&(
           <button onClick={()=>setPg("add")} className="fab-add" style={{
             position:"fixed",bottom:28,right:20,width:56,height:56,borderRadius:"50%",
             background:"linear-gradient(135deg,#3b82f6,#8b5cf6)",border:"none",cursor:"pointer",
@@ -2606,6 +2641,135 @@ export default function App(){
           margin-top:10px;letter-spacing:.3px;transition:opacity .15s,box-shadow .2s;
         }
         .ap-save-ok{background:#16a34a!important;box-shadow:0 6px 24px rgba(22,163,74,.3)!important;}
+
+        /* ── MOVIMIENTOS PAGE ── */
+        .mv-hd{
+          display:flex;align-items:center;gap:12px;
+          margin-bottom:18px;padding-bottom:16px;
+          border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        [data-theme="light"] .mv-hd{border-bottom-color:rgba(0,0,0,.07);}
+        .mv-hd-icon{
+          width:40px;height:40px;border-radius:13px;flex-shrink:0;
+          background:linear-gradient(135deg,rgba(96,165,250,.2),rgba(139,92,246,.15));
+          display:flex;align-items:center;justify-content:center;font-size:19px;
+        }
+        .mv-hd-text{font-size:21px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px;}
+
+        /* Summary cards */
+        .mv-sum-grid{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;}
+        .mv-sum-card{
+          display:flex;align-items:center;gap:12px;
+          padding:12px 16px;border-radius:14px;
+          background:var(--card-bg);border:1px solid var(--card-border);
+          position:relative;overflow:hidden;
+        }
+        .mv-sum-card-click{cursor:pointer;}
+        .mv-sum-card-click:active{transform:scale(.98);}
+        .mv-sum-bar{
+          position:absolute;left:0;top:0;bottom:0;width:3px;
+        }
+        .mv-sum-lbl{
+          flex:1;font-size:11px;font-weight:700;letter-spacing:1px;
+          text-transform:uppercase;
+        }
+        .mv-sum-val{
+          font-size:17px;font-weight:800;
+          font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+
+        /* Transaction rows */
+        .mv-txn-row{
+          display:flex;align-items:center;
+          padding:11px 14px 11px 18px;
+          position:relative;overflow:hidden;gap:0;
+        }
+        .mv-txn-bar{
+          position:absolute;left:0;top:8px;bottom:8px;
+          width:3px;border-radius:0 2px 2px 0;
+        }
+        .mv-txn-ico{
+          width:34px;height:34px;border-radius:10px;flex-shrink:0;
+          display:flex;align-items:center;justify-content:center;
+          font-size:15px;margin-right:10px;
+        }
+        .mv-txn-body{flex:1;min-width:0;}
+        .mv-txn-name{
+          font-size:13px;font-weight:600;color:var(--text-primary);
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .mv-txn-meta{
+          font-size:10px;color:var(--text-muted);margin-top:2px;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .mv-txn-note{
+          font-size:10px;color:#60a5fa;margin-top:2px;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+        }
+        .mv-txn-amt{
+          font-size:14px;font-weight:700;
+          flex-shrink:0;white-space:nowrap;margin-left:6px;
+          font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+
+        /* Filter card */
+        .mv-filter-card{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:18px;padding:14px 14px 10px;margin-bottom:20px;
+          box-shadow:var(--card-shadow);
+        }
+        .mv-filter-hd{
+          font-size:10px;font-weight:700;letter-spacing:1.5px;
+          text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;
+        }
+
+        /* ── DASHBOARD PAGE ── */
+        .db-hd{
+          display:flex;align-items:center;gap:12px;
+          margin-bottom:18px;padding-bottom:16px;
+          border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        [data-theme="light"] .db-hd{border-bottom-color:rgba(0,0,0,.07);}
+        .db-hd-icon{
+          width:40px;height:40px;border-radius:13px;flex-shrink:0;
+          background:linear-gradient(135deg,rgba(74,222,128,.18),rgba(52,211,153,.12));
+          display:flex;align-items:center;justify-content:center;font-size:19px;
+        }
+        .db-hd-text{font-size:21px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px;}
+        .db-chart-card{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:20px;padding:18px;margin-bottom:18px;
+          box-shadow:var(--card-shadow);overflow:hidden;position:relative;
+        }
+        .db-chart-card::before{
+          content:"";position:absolute;top:0;left:0;right:0;height:2px;
+          background:linear-gradient(90deg,rgba(96,165,250,.55),rgba(139,92,246,.35),transparent);
+          pointer-events:none;
+        }
+        .db-inv-card::before{
+          background:linear-gradient(90deg,rgba(251,191,36,.55),rgba(245,158,11,.3),transparent);
+        }
+        .db-fijo-card::before{
+          background:linear-gradient(90deg,rgba(251,191,36,.45),rgba(245,158,11,.2),transparent);
+        }
+        .db-pie-card{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:20px;padding:18px;margin-bottom:18px;
+          box-shadow:var(--card-shadow);overflow:hidden;position:relative;
+        }
+        .db-pie-card::before{
+          content:"";position:absolute;top:0;left:0;right:0;height:2px;
+          background:linear-gradient(90deg,rgba(248,113,113,.5),rgba(251,191,36,.3),rgba(74,222,128,.2));
+          pointer-events:none;
+        }
+        .db-chart-hd{
+          display:flex;justify-content:space-between;align-items:center;
+          margin-bottom:14px;
+        }
+        .db-chart-title{
+          font-size:11px;font-weight:700;letter-spacing:1.5px;
+          text-transform:uppercase;color:var(--text-muted);
+        }
 
         /* ── DARK THEME (default) ── */
         [data-theme="dark"]{
