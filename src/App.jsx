@@ -1073,7 +1073,7 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const totalEgresos=egresosFiltrados.filter(m=>!isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalInversiones=filtered.filter(m=>m.tipo==="inversion").reduce((s,m)=>s+m.monto,0)
-  const totalIngresosUSD=filtered.filter(m=>m.tipo==="ingreso"&&isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
+  const totalIngresosUSD=filtered.filter(m=>m.tipo==="ingreso").reduce((s,m)=>isUSDCuenta(m.cuenta_id)?s+m.monto:m.tc_dolar&&m.tc_dolar>0?s+m.monto/m.tc_dolar:s,0)
 
   const prevMk=prevMonth(selMonth)
   const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
@@ -1203,6 +1203,11 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <span className="mv-sum-lbl" style={{color:"#f87171",opacity:.7}}>Egresos USD</span>
           <span className="mv-sum-val" style={{color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</span>
         </div>
+        {totalIngresosUSD>0&&<div className="mv-sum-card">
+          <div className="mv-sum-bar" style={{background:"#34d399"}}/>
+          <span className="mv-sum-lbl" style={{color:"#34d399"}}>Ingresos USD</span>
+          <span className="mv-sum-val" style={{color:"#34d399",...mo}}>+{f$(totalIngresosUSD,true)}</span>
+        </div>}
       </div>
 
       <div className="mv-filter-card">
