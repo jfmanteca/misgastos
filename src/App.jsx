@@ -253,8 +253,26 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
   const[recupero,setRecupero]=useState(false)
   const[opUSD,setOpUSD]=useState(false)
   const[catSort,setCatSort]=useState("uso") // "uso" | "az"
+  const[tcOficial,setTcOficial]=useState("")
+  const[tcFetching,setTcFetching]=useState(false)
   const subs=egresoSubs[fm.cat]||[]
   const isUSD=mt==="inversion"&&fm.it.toLowerCase().includes("usd")
+
+  // Fetch TC oficial al montar
+  useEffect(()=>{
+    setTcFetching(true)
+    fetch("https://dolarapi.com/v1/dolares/oficial")
+      .then(r=>r.json())
+      .then(d=>{if(d?.venta)setTcOficial(String(Math.round(d.venta)))})
+      .catch(()=>{})
+      .finally(()=>setTcFetching(false))
+  },[])
+
+  // Auto-rellenar tcDolar al cambiar a ingreso (solo si está vacío)
+  useEffect(()=>{
+    if(mt==="ingreso"&&tcOficial&&!fm.tcDolar)
+      setFm(f=>({...f,tcDolar:tcOficial}))
+  },[mt,tcOficial])
 
   // Conteo de uso por categoría y por cuenta
   const catUsage={}
@@ -495,8 +513,16 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
               {cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
           </div>
-          <div><label className="ap-lbl">TC Dólar</label>
-            <input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="1450" className="ap-inp" style={{...mo}}/>
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <label className="ap-lbl" style={{margin:0}}>TC Dólar</label>
+              {tcFetching
+                ?<span style={{fontSize:9,color:"#64748b",fontWeight:600,letterSpacing:.5}}>cargando…</span>
+                :tcOficial
+                  ?<span style={{fontSize:9,fontWeight:700,letterSpacing:.5,color:"#34d399",background:"rgba(52,211,153,.1)",border:"1px solid rgba(52,211,153,.2)",borderRadius:4,padding:"1px 5px"}}>OFICIAL</span>
+                  :null}
+            </div>
+            <input type="text" inputMode="decimal" value={fm.tcDolar} onChange={e=>setFm(f=>({...f,tcDolar:e.target.value}))} placeholder="—" className="ap-inp" style={{...mo}}/>
           </div>
         </div>
         {fm.amt&&fm.tcDolar&&parseFloat(fm.tcDolar)>0&&<div className="ap-preview">
@@ -639,8 +665,15 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
     const ingThisMonth=allThisMonth.filter(m=>m.tipo==="ingreso"&&(m.categoria!=="Sueldo"||dayN(m.fecha)<=15)).reduce((s,m)=>s+m.monto,0)
     return sueldoPrev+ingThisMonth
   }
+  const toUSD=ms=>ms.reduce((s,m)=>isUSDCuenta(m.cuenta_id)?s+m.monto:m.tc_dolar&&m.tc_dolar>0?s+m.monto/m.tc_dolar:s,0)
+  const getMonthIngresosUSD=(k)=>{
+    const prevK=(()=>{const[y2,m2]=k.split("-").map(Number);const pm=m2===1?12:m2-1;const py=m2===1?y2-1:y2;return`${py}-${String(pm).padStart(2,"0")}`})()
+    const sueldosPrev=movimientos.filter(m=>monthOf(m.fecha)===prevK&&m.tipo==="ingreso"&&m.categoria==="Sueldo"&&dayN(m.fecha)>15)
+    const ingThis=movimientos.filter(m=>monthOf(m.fecha)===k&&m.tipo==="ingreso"&&(m.categoria!=="Sueldo"||dayN(m.fecha)<=15))
+    return toUSD(sueldosPrev)+toUSD(ingThis)
+  }
   const getEg=k=>showUSD?(monthly[k]?.egU||0):(monthly[k]?.egP||0)
-  const getIng=k=>showUSD?(monthly[k]?.ingU||0):getMonthIngresos(k)
+  const getIng=k=>showUSD?getMonthIngresosUSD(k):getMonthIngresos(k)
   const maxBar=Math.max(...vis.map(k=>Math.max(getEg(k),getIng(k))),1)
   const maxI=Math.max(...Object.values(monthly).map(m=>m.inv),1)
 
