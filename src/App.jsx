@@ -1709,21 +1709,28 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   const save=async()=>{
     if(!form.fecha||!form.categoria)return
     setSaving(true)
-    // Pedir permiso si no está otorgado
-    try{await OneSignal.Notifications.requestPermission()}catch(e){}
-    let subId=null
-    try{subId=await OneSignal.User.PushSubscription.id}catch(e){}
-    await supabase.from("alertas").insert({
-      user_id:userId,fecha:form.fecha,hora:form.hora||null,categoria:form.categoria,
-      subcategoria:form.subcategoria||null,importe:form.importe?parseFloat(form.importe):null,
-      nota:form.nota||null,frecuencia:form.frecuencia,
-      dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,activa:true,
-      onesignal_sub_id:subId||null,
-    })
-    await scheduleNotif(form.fecha,form.hora,form.categoria,form.subcategoria,form.importe,form.frecuencia)
-    setOk(true);await load()
-    setTimeout(()=>{setOk(false);setForm(f=>({...f,categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"}));setVista("guardadas")},1200)
-    setSaving(false)
+    try{
+      // Pedir permiso con timeout de 5s para no bloquear si el browser no muestra el dialog
+      try{
+        await Promise.race([
+          OneSignal.Notifications.requestPermission(),
+          new Promise(r=>setTimeout(r,5000))
+        ])
+      }catch(e){}
+      let subId=null
+      try{subId=await OneSignal.User.PushSubscription.id}catch(e){}
+      await supabase.from("alertas").insert({
+        user_id:userId,fecha:form.fecha,hora:form.hora||null,categoria:form.categoria,
+        subcategoria:form.subcategoria||null,importe:form.importe?parseFloat(form.importe):null,
+        nota:form.nota||null,frecuencia:form.frecuencia,
+        dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,activa:true,
+        onesignal_sub_id:subId||null,
+      })
+      await scheduleNotif(form.fecha,form.hora,form.categoria,form.subcategoria,form.importe,form.frecuencia)
+      setOk(true);await load()
+      setTimeout(()=>{setOk(false);setForm(f=>({...f,categoria:"",subcategoria:"",importe:"",nota:"",frecuencia:"unica"}));setVista("guardadas")},1200)
+    }catch(e){console.error("save alerta error",e)}
+    finally{setSaving(false)}
   }
 
   const del=async(id)=>{
