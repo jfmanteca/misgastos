@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { supabase } from "./supabase.js"
 import OneSignal from "react-onesignal"
+import { osReady } from "./main.jsx"
 
 // ── CONSTANTS ──
 const EGRESO_CATS=["Salidas","Compras","Departamento","Auto","Apps","Entrenamiento","Transporte","Préstamo","Boca Juniors","Módulo","Cuidado Personal","Regalos","Comida laboral","Estudios","Pago deuda","Gastos Tarjeta","Otros"]
@@ -1672,10 +1673,64 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   const[ok,setOk]=useState(false)
   const[editId,setEditId]=useState(null)
   const[editForm,setEditForm]=useState({})
-  const[vista,setVista]=useState("inicio") // "inicio" | "crear" | "guardadas"
+  const[vista,setVista]=useState("inicio")
+  const[subId,setSubId]=useState(null)
+  const[subStatus,setSubStatus]=useState("checking") // "checking"|"ok"|"no-perm"|"no-sub"
+  const[testSending,setTestSending]=useState(false)
+  const[testResult,setTestResult]=useState(null)
   const allCats=[...egresoCats,...ingresoCats]
   const subs=egresoSubs[form.categoria]||[]
   const editSubs=egresoSubs[editForm.categoria]||[]
+
+  // Esperar init de OneSignal y leer subscription ID
+  useEffect(()=>{
+    let cancelled=false
+    const check=async()=>{
+      try{
+        await osReady
+        const perm=OneSignal.Notifications.permissionNative
+        if(perm==="denied"){if(!cancelled){setSubStatus("no-perm");return}}
+        // Polling: OneSignal puede tardar unos segundos en exponer el ID
+        for(let i=0;i<10;i++){
+          const id=OneSignal.User.PushSubscription.id
+          if(id){if(!cancelled){setSubId(id);setSubStatus("ok")};return}
+          await new Promise(r=>setTimeout(r,600))
+        }
+        if(!cancelled)setSubStatus("no-sub")
+      }catch(e){if(!cancelled)setSubStatus("no-sub")}
+    }
+    check()
+    return()=>{cancelled=true}
+  },[])
+
+  // Solicitar permiso manualmente
+  const requestPerm=async()=>{
+    setSubStatus("checking")
+    try{
+      await osReady
+      await OneSignal.Notifications.requestPermission()
+      for(let i=0;i<12;i++){
+        const id=OneSignal.User.PushSubscription.id
+        if(id){setSubId(id);setSubStatus("ok");return}
+        await new Promise(r=>setTimeout(r,700))
+      }
+      setSubStatus("no-sub")
+    }catch(e){setSubStatus("no-sub")}
+  }
+
+  // Enviar notificación de prueba inmediata
+  const sendTest=async()=>{
+    if(!subId)return
+    setTestSending(true);setTestResult(null)
+    try{
+      const{error}=await supabase.functions.invoke("onesignal-notify",{
+        body:{subscription_id:subId,titulo:"MisGastos — Prueba",cuerpo:"✅ Las notificaciones están funcionando correctamente."}
+      })
+      setTestResult(error?"error":"ok")
+    }catch(e){setTestResult("error")}
+    setTestSending(false)
+    setTimeout(()=>setTestResult(null),4000)
+  }
 
   const load=async()=>{
     const{data}=await supabase.from("alertas").select("*").eq("user_id",userId).order("fecha").order("hora")
@@ -1710,21 +1765,30 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
     if(!form.fecha||!form.categoria)return
     setSaving(true)
     try{
-      // Pedir permiso con timeout de 5s para no bloquear si el browser no muestra el dialog
+      // Esperar init + pedir permiso con timeout
+      await osReady
       try{
         await Promise.race([
           OneSignal.Notifications.requestPermission(),
           new Promise(r=>setTimeout(r,5000))
         ])
       }catch(e){}
-      let subId=null
-      try{subId=await OneSignal.User.PushSubscription.id}catch(e){}
+      // Polling para obtener el subscription ID (puede tardar segundos tras el permiso)
+      let currentSubId=subId
+      if(!currentSubId){
+        for(let i=0;i<10;i++){
+          try{currentSubId=OneSignal.User.PushSubscription.id}catch(e){}
+          if(currentSubId)break
+          await new Promise(r=>setTimeout(r,600))
+        }
+      }
+      if(currentSubId&&currentSubId!==subId){setSubId(currentSubId);setSubStatus("ok")}
       await supabase.from("alertas").insert({
         user_id:userId,fecha:form.fecha,hora:form.hora||null,categoria:form.categoria,
         subcategoria:form.subcategoria||null,importe:form.importe?parseFloat(form.importe):null,
         nota:form.nota||null,frecuencia:form.frecuencia,
         dia_mes:form.frecuencia==="mensual"?parseInt(form.fecha.split("-")[2],10):null,activa:true,
-        onesignal_sub_id:subId||null,
+        onesignal_sub_id:currentSubId||null,
       })
       await scheduleNotif(form.fecha,form.hora,form.categoria,form.subcategoria,form.importe,form.frecuencia)
       setOk(true);await load()
@@ -1773,7 +1837,7 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   // ── INICIO ──
   if(vista==="inicio") return(
     <div className="page-inner">
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
         <button onClick={()=>setVista("crear")} style={{...S.crdP,border:"none",cursor:"pointer",textAlign:"center",padding:28,display:"flex",flexDirection:"column",alignItems:"center",gap:10,background:"var(--card-bg)",borderRadius:20,border:"1px solid var(--card-border)"}}>
           <span style={{fontSize:32}}>➕</span>
           <span style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>Crear alerta</span>
@@ -1783,6 +1847,35 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
           <span style={{fontSize:14,fontWeight:700,color:"var(--text-primary)"}}>Alertas guardadas</span>
           {alertas.length>0&&<span style={{position:"absolute",top:10,right:10,background:"#f59e0b",color:"#000",borderRadius:20,fontSize:11,fontWeight:700,padding:"2px 8px"}}>{alertas.length}</span>}
         </button>
+      </div>
+
+      {/* Panel de estado de notificaciones */}
+      <div style={{...S.crdP,border:`1px solid ${subStatus==="ok"?"rgba(74,222,128,.2)":subStatus==="checking"?"rgba(255,255,255,.06)":"rgba(248,113,113,.2)"}`}}>
+        <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",color:"var(--text-muted)",marginBottom:12}}>Estado de notificaciones</div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:subStatus!=="ok"?12:8}}>
+          <div style={{width:10,height:10,borderRadius:"50%",flexShrink:0,background:subStatus==="ok"?"#4ade80":subStatus==="checking"?"#f59e0b":"#f87171",boxShadow:subStatus==="ok"?"0 0 8px #4ade8088":subStatus==="checking"?"0 0 8px #f59e0b88":"0 0 8px #f8717188"}}/>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>
+              {subStatus==="ok"?"Notificaciones activas":subStatus==="checking"?"Verificando…":subStatus==="no-perm"?"Permisos denegados":"Sin suscripción"}
+            </div>
+            {subStatus==="ok"&&<div style={{fontSize:10,color:"var(--text-muted)",marginTop:2,wordBreak:"break-all"}}>ID: {subId?.slice(0,20)}…</div>}
+            {subStatus==="no-perm"&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Habilitá las notificaciones en Ajustes del sistema</div>}
+            {subStatus==="no-sub"&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Tocá el botón para vincular este dispositivo</div>}
+          </div>
+        </div>
+        {subStatus!=="ok"&&subStatus!=="checking"&&(
+          <button onClick={requestPerm} style={{width:"100%",padding:"10px 0",borderRadius:10,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",background:"linear-gradient(135deg,#f59e0b,#b45309)",color:"#000",marginBottom:0}}>
+            Habilitar notificaciones
+          </button>
+        )}
+        {subStatus==="ok"&&(
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={sendTest} disabled={testSending} style={{flex:1,padding:"8px 0",borderRadius:10,border:"1px solid rgba(74,222,128,.25)",background:"rgba(74,222,128,.06)",fontSize:12,fontWeight:600,cursor:"pointer",color:"#4ade80",opacity:testSending?.6:1}}>
+              {testSending?"Enviando…":"Enviar notificación de prueba"}
+            </button>
+            {testResult&&<span style={{fontSize:12,fontWeight:700,color:testResult==="ok"?"#4ade80":"#f87171"}}>{testResult==="ok"?"✓ Enviada":"✗ Error"}</span>}
+          </div>
+        )}
       </div>
     </div>
   )
