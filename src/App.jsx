@@ -1138,7 +1138,6 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const totalEgresos=egresosFiltrados.filter(m=>!isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalInversiones=filtered.filter(m=>m.tipo==="inversion").reduce((s,m)=>s+m.monto,0)
-  const totalIngresosUSD=filtered.filter(m=>m.tipo==="ingreso").reduce((s,m)=>isUSDCuenta(m.cuenta_id)?s+m.monto:m.tc_dolar&&m.tc_dolar>0?s+m.monto/m.tc_dolar:s,0)
   const ingresosEnUSD=filtered.filter(m=>m.tipo==="ingreso"&&isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
 
   const prevMk=prevMonth(selMonth)
@@ -1151,6 +1150,9 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const ingresosThisItems=allThisMonth.filter(m=>m.tipo==="ingreso"&&(m.categoria!=="Sueldo"||dayNM(m.fecha)<=15))
   const ingresosThisMonth=ingresosThisItems.reduce((s,m)=>s+m.monto,0)
   const totalIngresos=sueldoPrevMonth+ingresosThisMonth
+  // Ingresos dolarizados: misma fuente que totalIngresos pero convertidos a USD via tc_dolar
+  const toUSDMv=ms=>ms.reduce((s,m)=>isUSDCuenta(m.cuenta_id)?s+m.monto:m.tc_dolar&&m.tc_dolar>0?s+m.monto/m.tc_dolar:s,0)
+  const totalIngresosUSD=toUSDMv([...sueldosPrevForThis,...ingresosThisItems])
   const saldoDelMes=totalIngresos-totalEgresos-totalInversiones
   const ingresoDesglose=[...sueldosPrevForThis.map(m=>({label:`Sueldo mes ant. (${m.fecha})`,monto:m.monto})),...ingresosThisItems.map(m=>({label:`${m.subcategoria||m.categoria} (${m.fecha})`,monto:m.monto}))]
 
@@ -2053,9 +2055,10 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
 
 // ══════════════ PRESUPUESTOS ══════════════
 function PresupuestosPage({movimientos,userId,egresoCats,presupuestos,onSaved}){
+  const fmtMonthFull=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
   const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
   const[selMonth,setSelMonth]=useState(()=>monthOf(today()))
-  const[editing,setEditing]=useState(null) // categoria being edited
+  const[editing,setEditing]=useState(null)
   const[editVal,setEditVal]=useState("")
   const[saving,setSaving]=useState(false)
 
