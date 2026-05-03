@@ -2069,9 +2069,9 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
     gastoPorSub[key]=(gastoPorSub[key]||0)+Math.abs(m.monto)
   })
 
-  // presMap por "cat__sub"
+  // presMap por "cat__sub" filtrado por mes
   const presMap={}
-  ;(presupuestos||[]).forEach(p=>{presMap[`${p.categoria}__${p.subcategoria||""}`]=p})
+  ;(presupuestos||[]).filter(p=>p.mes===selMonth).forEach(p=>{presMap[`${p.categoria}__${p.subcategoria||""}`]=p})
 
   const totalPresupuestado=(presupuestos||[]).reduce((s,p)=>s+p.limite,0)
   const totalGastado=Object.entries(presMap).reduce((s,[k,p])=>{
@@ -2097,7 +2097,7 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
     if(existing){
       res=await supabase.from("presupuestos").update({limite:monto}).eq("id",existing.id)
     } else {
-      res=await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,limite:monto})
+      res=await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,limite:monto,mes:selMonth})
     }
     setSaving(false)
     if(res.error){setSaveErr(res.error.message);return}
