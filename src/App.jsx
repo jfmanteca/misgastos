@@ -2085,22 +2085,23 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
   const startEdit=(key,currentLimite)=>{setEditing(key);setEditVal(currentLimite?.toString()||"")}
   const cancelEdit=()=>{setEditing(null);setEditVal("")}
 
+  const[saveErr,setSaveErr]=useState("")
   const savePresupuesto=async(cat,sub)=>{
     const raw=editVal.replace(/\./g,"").replace(",",".")
     const monto=parseFloat(raw)
     if(!monto||monto<=0){cancelEdit();return}
-    setSaving(true)
+    setSaving(true);setSaveErr("")
     const key=`${cat}__${sub}`
     const existing=presMap[key]
-    try{
-      if(existing){
-        await supabase.from("presupuestos").update({monto_limite:monto}).eq("id",existing.id)
-      } else {
-        await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,monto_limite:monto})
-      }
-      cancelEdit();onSaved()
-    }catch(e){console.error("savePresupuesto",e)}
-    finally{setSaving(false)}
+    let res
+    if(existing){
+      res=await supabase.from("presupuestos").update({monto_limite:monto}).eq("id",existing.id)
+    } else {
+      res=await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,monto_limite:monto})
+    }
+    setSaving(false)
+    if(res.error){setSaveErr(res.error.message);return}
+    cancelEdit();onSaved()
   }
 
   const deletePresupuesto=async(cat,sub)=>{
@@ -2130,6 +2131,9 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
           {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
         </select>
       </div>
+      {saveErr&&<div style={{background:"rgba(248,113,113,.1)",border:"1px solid rgba(248,113,113,.3)",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#f87171"}}>
+        Error al guardar: {saveErr}
+      </div>}
 
       {totalPresupuestado>0&&<div className="pres-summary">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
