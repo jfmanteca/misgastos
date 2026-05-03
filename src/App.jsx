@@ -1264,26 +1264,27 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <span className="mv-sum-lbl" style={{color:saldoDelMes>=0?"#4ade80":"#f87171"}}>Saldo del mes</span>
           <span className="mv-sum-val" style={{color:saldoDelMes>=0?"#4ade80":"#f87171",...mo}}>{saldoDelMes>=0?"+":""}{f$(saldoDelMes)}</span>
         </div>
-        {(ingresosEnUSD>0||totalEgresosUSD>0||totalIngresosUSD>0)&&<div className="mv-usd-group">
-          <div className="mv-usd-group-hd">
-            <span className="mv-usd-group-icon">💵</span>
-            <span className="mv-usd-group-title">Resumen USD</span>
-          </div>
-          <div className="mv-usd-row">
-            <span className="mv-usd-lbl">Ingresos en USD</span>
-            <span className="mv-usd-val" style={{color:"#34d399",...mo}}>+{f$(ingresosEnUSD,true)}</span>
-          </div>
-          <div className="mv-usd-sep"/>
-          <div className="mv-usd-row">
-            <span className="mv-usd-lbl">Egresos en USD</span>
-            <span className="mv-usd-val" style={{color:totalEgresosUSD>0?"#f87171":"#4ade80",...mo}}>{totalEgresosUSD>0?"-":"+"}{f$(Math.abs(totalEgresosUSD),true)}</span>
-          </div>
-          <div className="mv-usd-sep"/>
-          <div className="mv-usd-row">
-            <span className="mv-usd-lbl">Ingresos dolarizados</span>
-            <span className="mv-usd-val" style={{color:"#67e8f9",...mo}}>+{f$(totalIngresosUSD,true)}</span>
-          </div>
-        </div>}
+      </div>
+
+      <div className="mv-usd-group">
+        <div className="mv-usd-group-hd">
+          <span className="mv-usd-group-icon">💵</span>
+          <span className="mv-usd-group-title">Resumen USD</span>
+        </div>
+        <div className="mv-usd-row">
+          <span className="mv-usd-lbl">Ingresos en USD</span>
+          <span className="mv-usd-val" style={{color:"#34d399",...mo}}>+{f$(ingresosEnUSD,true)}</span>
+        </div>
+        <div className="mv-usd-sep"/>
+        <div className="mv-usd-row">
+          <span className="mv-usd-lbl">Egresos en USD</span>
+          <span className="mv-usd-val" style={{color:totalEgresosUSD>0?"#f87171":"#4ade80",...mo}}>{totalEgresosUSD>0?"-":"+"}{f$(Math.abs(totalEgresosUSD),true)}</span>
+        </div>
+        <div className="mv-usd-sep"/>
+        <div className="mv-usd-row">
+          <span className="mv-usd-lbl">Ingresos dolarizados</span>
+          <span className="mv-usd-val" style={{color:"#67e8f9",...mo}}>+{f$(totalIngresosUSD,true)}</span>
+        </div>
       </div>
 
       <div className="mv-filter-card">
@@ -2865,6 +2866,7 @@ export default function App(){
           border:1px solid rgba(52,211,153,.2);
           padding:14px 16px 10px;
           position:relative;overflow:hidden;
+          margin-bottom:20px;
         }
         .mv-usd-group::before{
           content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
