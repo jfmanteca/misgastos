@@ -2054,59 +2054,65 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
 }
 
 // ══════════════ PRESUPUESTOS ══════════════
-function PresupuestosPage({movimientos,userId,egresoCats,presupuestos,onSaved}){
+function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos,onSaved}){
   const fmtMonthFull=k=>{const[y,m]=k.split("-");const ml=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];return`${ml[parseInt(m)-1]} ${y}`}
   const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
   const[selMonth,setSelMonth]=useState(()=>monthOf(today()))
-  const[editing,setEditing]=useState(null)
+  const[editing,setEditing]=useState(null) // key = "cat__sub"
   const[editVal,setEditVal]=useState("")
   const[saving,setSaving]=useState(false)
 
-  const egresosCats=egresoCats||[]
-
-  // Gasto real por categoría en el mes seleccionado
-  const gastoPorCat={}
+  // Gasto por "cat__sub" en el mes
+  const gastoPorSub={}
   movimientos.filter(m=>m.tipo==="egreso"&&monthOf(m.fecha)===selMonth&&m.categoria!=="Inversiones").forEach(m=>{
-    gastoPorCat[m.categoria]=(gastoPorCat[m.categoria]||0)+Math.abs(m.monto)
+    const key=`${m.categoria}__${m.subcategoria||""}`
+    gastoPorSub[key]=(gastoPorSub[key]||0)+Math.abs(m.monto)
   })
 
-  // Mapa categoria → presupuesto
+  // presMap por "cat__sub"
   const presMap={}
-  ;(presupuestos||[]).forEach(p=>{presMap[p.categoria]=p})
-
-  // Todas las categorías: las del ABM + las que tienen gasto aunque no tengan ABM
-  const todasCats=[...new Set([...egresosCats,...Object.keys(gastoPorCat)])].sort()
+  ;(presupuestos||[]).forEach(p=>{presMap[`${p.categoria}__${p.subcategoria||""}`]=p})
 
   const totalPresupuestado=(presupuestos||[]).reduce((s,p)=>s+p.monto_limite,0)
-  const totalGastado=Object.values(gastoPorCat).reduce((s,v)=>s+v,0)
-  const pctTotal=totalPresupuestado>0?Math.min((totalGastado/totalPresupuestado)*100,100):0
+  const totalGastado=Object.entries(presMap).reduce((s,[k,p])=>{
+    const gasto=gastoPorSub[k]||0
+    return s+Math.min(gasto,gasto) // contabiliza lo gastado donde hay presupuesto
+  },0)
+  const totalGastadoEnPresup=Object.keys(presMap).reduce((s,k)=>s+(gastoPorSub[k]||0),0)
+  const pctTotal=totalPresupuestado>0?Math.min((totalGastadoEnPresup/totalPresupuestado)*100,100):0
   const colorTotal=pctTotal>=90?"#f87171":pctTotal>=70?"#f59e0b":"#4ade80"
 
-  const startEdit=(cat)=>{
-    setEditing(cat)
-    setEditVal(presMap[cat]?.monto_limite?.toString()||"")
-  }
+  const startEdit=(key,currentLimite)=>{setEditing(key);setEditVal(currentLimite?.toString()||"")}
   const cancelEdit=()=>{setEditing(null);setEditVal("")}
 
-  const savePresupuesto=async(cat)=>{
-    const monto=parseFloat(editVal.replace(/\./g,"").replace(",","."))
+  const savePresupuesto=async(cat,sub)=>{
+    const raw=editVal.replace(/\./g,"").replace(",",".")
+    const monto=parseFloat(raw)
     if(!monto||monto<=0){cancelEdit();return}
     setSaving(true)
-    const existing=presMap[cat]
-    if(existing){
-      await supabase.from("presupuestos").update({monto_limite:monto}).eq("id",existing.id)
-    } else {
-      await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,monto_limite:monto})
-    }
-    setSaving(false);cancelEdit();onSaved()
+    const key=`${cat}__${sub}`
+    const existing=presMap[key]
+    try{
+      if(existing){
+        await supabase.from("presupuestos").update({monto_limite:monto}).eq("id",existing.id)
+      } else {
+        await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,monto_limite:monto})
+      }
+      cancelEdit();onSaved()
+    }catch(e){console.error("savePresupuesto",e)}
+    finally{setSaving(false)}
   }
 
-  const deletePresupuesto=async(cat)=>{
-    const existing=presMap[cat]
+  const deletePresupuesto=async(cat,sub)=>{
+    const existing=presMap[`${cat}__${sub}`]
     if(!existing)return
     await supabase.from("presupuestos").delete().eq("id",existing.id)
     onSaved()
   }
+
+  // Estructura: categorías del ABM + categorías con gasto
+  const catsConGasto=[...new Set(Object.keys(gastoPorSub).map(k=>k.split("__")[0]))]
+  const todasCats=[...new Set([...(egresoCats||[]),...catsConGasto])].sort()
 
   return(
     <div className="page-inner">
@@ -2115,7 +2121,7 @@ function PresupuestosPage({movimientos,userId,egresoCats,presupuestos,onSaved}){
         <div className="pres-hd-icon">🎯</div>
         <div>
           <div className="pres-hd-text">Presupuestos</div>
-          <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Control de gastos por categoría</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Control de gastos por subcategoría</div>
         </div>
       </div>
 
@@ -2125,84 +2131,99 @@ function PresupuestosPage({movimientos,userId,egresoCats,presupuestos,onSaved}){
         </select>
       </div>
 
-      {/* Resumen total */}
       {totalPresupuestado>0&&<div className="pres-summary">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
           <span style={{fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:"var(--text-muted)"}}>Total presupuestado</span>
-          <span style={{fontSize:11,color:"var(--text-muted)",...mo}}>{f$(totalGastado)} / {f$(totalPresupuestado)}</span>
+          <span style={{fontSize:11,color:"var(--text-muted)",...mo}}>{f$(totalGastadoEnPresup)} / {f$(totalPresupuestado)}</span>
         </div>
         <div className="pres-bar-bg">
           <div className="pres-bar-fill" style={{width:`${pctTotal}%`,background:colorTotal}}/>
         </div>
         <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
           <span style={{fontSize:11,color:colorTotal,fontWeight:700,...mo}}>{Math.round(pctTotal)}% utilizado</span>
-          <span style={{fontSize:11,color:totalPresupuestado-totalGastado>=0?"#4ade80":"#f87171",fontWeight:600,...mo}}>
-            {totalPresupuestado-totalGastado>=0?`Quedan ${f$(totalPresupuestado-totalGastado)}`:`Excedido ${f$(totalGastado-totalPresupuestado)}`}
+          <span style={{fontSize:11,color:totalPresupuestado-totalGastadoEnPresup>=0?"#4ade80":"#f87171",fontWeight:600,...mo}}>
+            {totalPresupuestado-totalGastadoEnPresup>=0?`Quedan ${f$(totalPresupuestado-totalGastadoEnPresup)}`:`Excedido ${f$(totalGastadoEnPresup-totalPresupuestado)}`}
           </span>
         </div>
       </div>}
 
-      {/* Categorías */}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {todasCats.map(cat=>{
-          const limite=presMap[cat]?.monto_limite||0
-          const gasto=gastoPorCat[cat]||0
-          const pct=limite>0?Math.min((gasto/limite)*100,100):0
-          const overBudget=limite>0&&gasto>limite
-          const color=pct>=90?"#f87171":pct>=70?"#f59e0b":"#4ade80"
-          const isEditingThis=editing===cat
+          const subsABM=((egresoSubs||{})[cat]||[])
+          const subsConGasto=[...new Set(Object.keys(gastoPorSub).filter(k=>k.startsWith(`${cat}__`)).map(k=>k.split("__")[1]))]
+          const todasSubs=[...new Set([...subsABM,...subsConGasto])].sort()
+          if(todasSubs.length===0)return null
+          const gastoTotal=todasSubs.reduce((s,sub)=>s+(gastoPorSub[`${cat}__${sub}`]||0),0)
 
           return(
-            <div key={cat} className="pres-card" style={{borderColor:overBudget?"rgba(248,113,113,.3)":limite>0?"var(--card-border)":"rgba(255,255,255,.05)"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:limite>0?10:0}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{cat}</div>
-                  {!isEditingThis&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>
-                    {gasto>0?<span style={{color:"var(--text-secondary)",...mo}}>{f$(gasto)} gastado</span>:<span>Sin movimientos este mes</span>}
-                    {limite>0&&<span style={{color:color,marginLeft:6,...mo}}> · {f$(limite)} límite</span>}
-                  </div>}
-                </div>
-                {!isEditingThis&&<div style={{display:"flex",gap:4}}>
-                  <button onClick={()=>startEdit(cat)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,.08)",background:"rgba(255,255,255,.04)",color:"#60a5fa",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                    {limite>0?"Editar":"+ Límite"}
-                  </button>
-                  {limite>0&&<button onClick={()=>deletePresupuesto(cat)} style={{padding:"6px 8px",borderRadius:8,border:"1px solid rgba(248,113,113,.15)",background:"rgba(248,113,113,.06)",color:"#f87171",fontSize:11,cursor:"pointer"}}>✕</button>}
-                </div>}
+            <div key={cat} className="pres-cat-group">
+              <div className="pres-cat-hd">
+                <span className="pres-cat-name">{cat}</span>
+                {gastoTotal>0&&<span style={{fontSize:11,color:"var(--text-muted)",...mo}}>{f$(gastoTotal)}</span>}
               </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {todasSubs.map(sub=>{
+                  const key=`${cat}__${sub}`
+                  const limite=presMap[key]?.monto_limite||0
+                  const gasto=gastoPorSub[key]||0
+                  const pct=limite>0?Math.min((gasto/limite)*100,100):0
+                  const over=limite>0&&gasto>limite
+                  const color=pct>=90?"#f87171":pct>=70?"#f59e0b":"#4ade80"
+                  const isEditingThis=editing===key
 
-              {isEditingThis&&<div style={{display:"flex",gap:8,alignItems:"center",marginTop:4}}>
-                <input
-                  autoFocus
-                  value={editVal}
-                  onChange={e=>setEditVal(e.target.value)}
-                  onKeyDown={e=>{if(e.key==="Enter")savePresupuesto(cat);if(e.key==="Escape")cancelEdit()}}
-                  placeholder="Límite mensual $"
-                  style={{...S.inp,flex:1,fontSize:14}}
-                />
-                <button onClick={()=>savePresupuesto(cat)} disabled={saving} style={{padding:"8px 14px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                  {saving?"...":"OK"}
-                </button>
-                <button onClick={cancelEdit} style={{padding:"8px 10px",borderRadius:10,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-muted)",fontSize:13,cursor:"pointer"}}>✕</button>
-              </div>}
-
-              {limite>0&&!isEditingThis&&<>
-                <div className="pres-bar-bg">
-                  <div className="pres-bar-fill" style={{width:`${pct}%`,background:color,transition:"width .4s ease"}}/>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
-                  <span style={{fontSize:10,color:color,fontWeight:600,...mo}}>{Math.round(pct)}%</span>
-                  <span style={{fontSize:10,color:overBudget?"#f87171":"var(--text-muted)",...mo}}>
-                    {overBudget?`+${f$(gasto-limite)} excedido`:`${f$(limite-gasto)} disponible`}
-                  </span>
-                </div>
-              </>}
+                  return(
+                    <div key={sub} className="pres-sub-row" style={{borderColor:over?"rgba(248,113,113,.25)":"rgba(255,255,255,.04)"}}>
+                      {isEditingThis?(
+                        <div style={{display:"flex",gap:6,alignItems:"center",width:"100%"}}>
+                          <span style={{fontSize:12,fontWeight:600,color:"var(--text-secondary)",minWidth:0,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sub}</span>
+                          <input
+                            autoFocus
+                            value={editVal}
+                            onChange={e=>setEditVal(e.target.value)}
+                            onKeyDown={e=>{if(e.key==="Enter")savePresupuesto(cat,sub);if(e.key==="Escape")cancelEdit()}}
+                            placeholder="$"
+                            style={{...S.inp,width:110,fontSize:13,padding:"6px 8px"}}
+                          />
+                          <button onClick={()=>savePresupuesto(cat,sub)} disabled={saving} style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                            {saving?"...":"OK"}
+                          </button>
+                          <button onClick={cancelEdit} style={{padding:"6px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-muted)",fontSize:12,cursor:"pointer",flexShrink:0}}>✕</button>
+                        </div>
+                      ):(
+                        <div style={{width:"100%"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:limite>0?6:0}}>
+                            <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)",flex:1}}>{sub}</span>
+                            {gasto>0&&<span style={{fontSize:11,color:"var(--text-secondary)",...mo}}>{f$(gasto)}</span>}
+                            {limite>0&&<span style={{fontSize:11,color:color,...mo}}>/ {f$(limite)}</span>}
+                            <button onClick={()=>startEdit(key,presMap[key]?.monto_limite)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(255,255,255,.08)",background:"rgba(255,255,255,.04)",color:"#60a5fa",fontSize:10,fontWeight:600,cursor:"pointer",flexShrink:0}}>
+                              {limite>0?"✎":"+ Límite"}
+                            </button>
+                            {limite>0&&<button onClick={()=>deletePresupuesto(cat,sub)} style={{padding:"3px 6px",borderRadius:6,border:"1px solid rgba(248,113,113,.15)",background:"rgba(248,113,113,.06)",color:"#f87171",fontSize:10,cursor:"pointer",flexShrink:0}}>✕</button>}
+                          </div>
+                          {limite>0&&<>
+                            <div className="pres-bar-bg">
+                              <div className="pres-bar-fill" style={{width:`${pct}%`,background:color,transition:"width .4s ease"}}/>
+                            </div>
+                            <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                              <span style={{fontSize:10,color:color,fontWeight:600,...mo}}>{Math.round(pct)}%</span>
+                              <span style={{fontSize:10,color:over?"#f87171":"var(--text-muted)",...mo}}>
+                                {over?`+${f$(gasto-limite)} excedido`:`${f$(limite-gasto)} disponible`}
+                              </span>
+                            </div>
+                          </>}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )
         })}
       </div>
 
       {todasCats.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"var(--text-muted)",fontSize:13}}>
-        No hay categorías de egreso configuradas.<br/>Creá categorías desde Configuración.
+        No hay categorías configuradas. Creá subcategorías desde Configuración.
       </div>}
 
     </div>
@@ -2623,7 +2644,7 @@ export default function App(){
   else if(pg==="debt"&&isAdmin)C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs}/>
   else if(pg==="alertas")C=<AlertasPage userId={user.id} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats}/>
-  else if(pg==="presupuesto")C=<PresupuestosPage movimientos={movimientos} userId={user.id} egresoCats={dynEgresoCats} presupuestos={presupuestos} onSaved={onSaved}/>
+  else if(pg==="presupuesto")C=<PresupuestosPage movimientos={movimientos} userId={user.id} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} presupuestos={presupuestos} onSaved={onSaved}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
@@ -3047,8 +3068,26 @@ export default function App(){
           border-radius:14px;padding:14px 16px;
           position:relative;overflow:hidden;
         }
+        .pres-cat-group{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:16px;padding:14px 16px;
+        }
+        .pres-cat-hd{
+          display:flex;justify-content:space-between;align-items:center;
+          margin-bottom:10px;padding-bottom:8px;
+          border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        .pres-cat-name{
+          font-size:11px;font-weight:700;letter-spacing:1px;
+          text-transform:uppercase;color:var(--text-muted);
+        }
+        .pres-sub-row{
+          padding:8px 10px;border-radius:10px;
+          border:1px solid rgba(255,255,255,.04);
+          background:rgba(255,255,255,.02);
+        }
         .pres-bar-bg{
-          height:6px;border-radius:3px;
+          height:5px;border-radius:3px;
           background:rgba(255,255,255,.06);overflow:hidden;
         }
         .pres-bar-fill{
