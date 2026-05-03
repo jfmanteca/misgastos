@@ -2073,7 +2073,7 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
   const presMap={}
   ;(presupuestos||[]).forEach(p=>{presMap[`${p.categoria}__${p.subcategoria||""}`]=p})
 
-  const totalPresupuestado=(presupuestos||[]).reduce((s,p)=>s+p.monto_limite,0)
+  const totalPresupuestado=(presupuestos||[]).reduce((s,p)=>s+p.limite,0)
   const totalGastado=Object.entries(presMap).reduce((s,[k,p])=>{
     const gasto=gastoPorSub[k]||0
     return s+Math.min(gasto,gasto) // contabiliza lo gastado donde hay presupuesto
@@ -2095,9 +2095,9 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
     const existing=presMap[key]
     let res
     if(existing){
-      res=await supabase.from("presupuestos").update({monto_limite:monto}).eq("id",existing.id)
+      res=await supabase.from("presupuestos").update({limite:monto}).eq("id",existing.id)
     } else {
-      res=await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,monto_limite:monto})
+      res=await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,subcategoria:sub,limite:monto})
     }
     setSaving(false)
     if(res.error){setSaveErr(res.error.message);return}
@@ -2168,7 +2168,7 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {todasSubs.map(sub=>{
                   const key=`${cat}__${sub}`
-                  const limite=presMap[key]?.monto_limite||0
+                  const limite=presMap[key]?.limite||0
                   const gasto=gastoPorSub[key]||0
                   const pct=limite>0?Math.min((gasto/limite)*100,100):0
                   const over=limite>0&&gasto>limite
@@ -2199,7 +2199,7 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
                             <span style={{fontSize:12,fontWeight:600,color:"var(--text-primary)",flex:1}}>{sub}</span>
                             {gasto>0&&<span style={{fontSize:11,color:"var(--text-secondary)",...mo}}>{f$(gasto)}</span>}
                             {limite>0&&<span style={{fontSize:11,color:color,...mo}}>/ {f$(limite)}</span>}
-                            <button onClick={()=>startEdit(key,presMap[key]?.monto_limite)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(255,255,255,.08)",background:"rgba(255,255,255,.04)",color:"#60a5fa",fontSize:10,fontWeight:600,cursor:"pointer",flexShrink:0}}>
+                            <button onClick={()=>startEdit(key,presMap[key]?.limite)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid rgba(255,255,255,.08)",background:"rgba(255,255,255,.04)",color:"#60a5fa",fontSize:10,fontWeight:600,cursor:"pointer",flexShrink:0}}>
                               {limite>0?"✎":"+ Límite"}
                             </button>
                             {limite>0&&<button onClick={()=>deletePresupuesto(cat,sub)} style={{padding:"3px 6px",borderRadius:6,border:"1px solid rgba(248,113,113,.15)",background:"rgba(248,113,113,.06)",color:"#f87171",fontSize:10,cursor:"pointer",flexShrink:0}}>✕</button>}
