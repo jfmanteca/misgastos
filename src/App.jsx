@@ -756,6 +756,67 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver movimientos</div>}
       </div>
 
+      {/* Tasa de ahorro */}
+      <div className="db-chart-card db-savings-card">
+        <div className="db-chart-hd">
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span className="db-chart-title" style={{color:"rgba(96,165,250,.9)"}}>Tasa de Ahorro</span>
+            <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:"50%",background:"#4ade80"}}/><span style={{fontSize:10,color:"var(--text-muted)"}}>meta 20%</span></div>
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
+            <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:150}}>
+          {vis.map((k,i)=>{
+            const last=si+i===months.length-1
+            const ing=getMonthIngresos(k)
+            const eg=monthly[k]?.egP||0
+            const tasa=ing>0?Math.max(0,Math.round(((ing-eg)/ing)*100)):0
+            const color=tasa>=20?"#4ade80":tasa>=10?"#f59e0b":"#f87171"
+            const h=Math.max(4,(tasa/100)*110)
+            const metaH=(20/100)*110
+            return(
+              <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
+                <span style={{fontSize:11,color:last?color:"#64748b",fontWeight:700,...mo}}>{tasa}%</span>
+                <div style={{width:"100%",position:"relative",height:110,display:"flex",alignItems:"flex-end"}}>
+                  <div style={{width:"100%",height:h,borderRadius:"4px 4px 2px 2px",background:last?`linear-gradient(180deg,${color},${color}88)`:`${color}28`,transition:"height .3s ease"}}/>
+                  {last&&<div style={{position:"absolute",bottom:metaH,left:0,right:0,borderTop:"1px dashed rgba(96,165,250,.4)",pointerEvents:"none"}}/>}
+                </div>
+                <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
+              </div>
+            )
+          })}
+        </div>
+        {vis.length>0&&(()=>{
+          const curK=vis[vis.length-1]
+          const prevK=vis[vis.length-2]
+          const ingC=getMonthIngresos(curK),egC=monthly[curK]?.egP||0
+          const tasaC=ingC>0?Math.round(((ingC-egC)/ingC)*100):0
+          const ingP=prevK?getMonthIngresos(prevK):0,egP=prevK?monthly[prevK]?.egP||0:0
+          const tasaP=ingP>0?Math.round(((ingP-egP)/ingP)*100):null
+          const diff=tasaP!==null?tasaC-tasaP:null
+          const color=tasaC>=20?"#4ade80":tasaC>=10?"#f59e0b":"#f87171"
+          return(
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:10,padding:"10px 14px",borderRadius:12,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.05)"}}>
+              <div>
+                <div style={{fontSize:22,fontWeight:800,color,...mo}}>{tasaC}%</div>
+                <div style={{fontSize:10,color:"var(--text-muted)",marginTop:2}}>ahorrado este mes</div>
+              </div>
+              {diff!==null&&<div style={{textAlign:"right"}}>
+                <div style={{fontSize:14,fontWeight:700,color:diff>=0?"#4ade80":"#f87171",...mo}}>{diff>=0?"+":""}{diff}pp</div>
+                <div style={{fontSize:10,color:"var(--text-muted)"}}>vs mes anterior</div>
+              </div>}
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:13,fontWeight:700,color:tasaC>=20?"#4ade80":"#64748b",...mo}}>{tasaC>=20?"✓ Meta":"Meta: 20%"}</div>
+                {tasaC<20&&<div style={{fontSize:10,color:"var(--text-muted)"}}>faltan {20-tasaC}pp</div>}
+              </div>
+            </div>
+          )
+        })()}
+      </div>
+
       {/* Inversiones + % debajo de cada mes */}
       {vis.some(k=>monthly[k]?.inv>0)&&<div className="db-chart-card db-inv-card">
         <div className="db-chart-hd">
@@ -1112,6 +1173,7 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const[editForm,setEditForm]=useState({})
   const[showIngDet,setShowIngDet]=useState(false)
   const[page,setPage]=useState(0)
+  const[q,setQ]=useState("")
   const perPage=20
   const cuentaNombre=id=>cuentas.find(c=>c.id===id)?.nombre||""
   const isUSDCuenta=id=>cuentas.find(c=>c.id===id)?.moneda==="USD"
@@ -1130,6 +1192,7 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
     if(filterFrom) filtered=filtered.filter(m=>m.fecha>=filterFrom)
     if(filterTo) filtered=filtered.filter(m=>m.fecha<=filterTo)
   }
+  if(q.trim()){const ql=q.trim().toLowerCase();filtered=filtered.filter(m=>(m.categoria||"").toLowerCase().includes(ql)||(m.subcategoria||"").toLowerCase().includes(ql)||(m.nota||"").toLowerCase().includes(ql)||(m.detalle||"").toLowerCase().includes(ql))}
   filtered.sort((a,b)=>b.fecha.localeCompare(a.fecha)||(b.created_at||"").localeCompare(a.created_at||""))
 
   const cats=[...new Set(movimientos.filter(m=>monthOf(m.fecha)===selMonth&&(!filterTipo||m.tipo===filterTipo)).map(m=>m.categoria))].sort()
@@ -1233,10 +1296,21 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
         </div>
       </div>
 
-      <div style={{marginBottom:14}}>
-        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false);setPage(0)}} style={{...S.inp,fontSize:15,fontWeight:700}}>
+      <div style={{marginBottom:10}}>
+        <select value={selMonth} onChange={e=>{setSelMonth(e.target.value);setSearched(false);setPage(0);setQ("")}} style={{...S.inp,fontSize:15,fontWeight:700}}>
           {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
         </select>
+      </div>
+
+      <div className="mv-search-wrap">
+        <svg className="mv-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input
+          value={q}
+          onChange={e=>{setQ(e.target.value);setPage(0)}}
+          placeholder="Buscar por categoría, subcategoría o nota…"
+          className="mv-search-inp"
+        />
+        {q&&<button onClick={()=>{setQ("");setPage(0)}} className="mv-search-clear">✕</button>}
       </div>
 
       <div className="mv-sum-grid">
@@ -2061,6 +2135,8 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
   const[editing,setEditing]=useState(null) // key = "cat__sub"
   const[editVal,setEditVal]=useState("")
   const[saving,setSaving]=useState(false)
+  const[copying,setCopying]=useState(false)
+  const prevMonthK=(k)=>{const[y,m]=k.split("-").map(Number);const pm=m===1?12:m-1;const py=m===1?y-1:y;return`${py}-${String(pm).padStart(2,"0")}`}
 
   // Gasto por "cat__sub" en el mes
   const gastoPorSub={}
@@ -2073,12 +2149,18 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
   const presMap={}
   ;(presupuestos||[]).filter(p=>p.mes===selMonth).forEach(p=>{presMap[`${p.categoria}__${p.subcategoria||""}`]=p})
 
-  const totalPresupuestado=(presupuestos||[]).reduce((s,p)=>s+p.limite,0)
-  const totalGastado=Object.entries(presMap).reduce((s,[k,p])=>{
-    const gasto=gastoPorSub[k]||0
-    return s+Math.min(gasto,gasto) // contabiliza lo gastado donde hay presupuesto
-  },0)
+  const prevMk=prevMonthK(selMonth)
+  const presupuestosPrevMes=(presupuestos||[]).filter(p=>p.mes===prevMk)
+  const totalPresupuestado=Object.values(presMap).reduce((s,p)=>s+p.limite,0)
   const totalGastadoEnPresup=Object.keys(presMap).reduce((s,k)=>s+(gastoPorSub[k]||0),0)
+
+  const copiarDelMesAnterior=async()=>{
+    if(presupuestosPrevMes.length===0||copying)return
+    setCopying(true)
+    const inserts=presupuestosPrevMes.map(p=>({user_id:userId,categoria:p.categoria,subcategoria:p.subcategoria,limite:p.limite,mes:selMonth}))
+    await supabase.from("presupuestos").insert(inserts)
+    setCopying(false);onSaved()
+  }
   const pctTotal=totalPresupuestado>0?Math.min((totalGastadoEnPresup/totalPresupuestado)*100,100):0
   const colorTotal=pctTotal>=90?"#f87171":pctTotal>=70?"#f59e0b":"#4ade80"
 
@@ -2126,10 +2208,20 @@ function PresupuestosPage({movimientos,userId,egresoCats,egresoSubs,presupuestos
         </div>
       </div>
 
-      <div style={{marginBottom:14}}>
-        <select value={selMonth} onChange={e=>setSelMonth(e.target.value)} style={{...S.inp,fontSize:15,fontWeight:700}}>
+      <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"center"}}>
+        <select value={selMonth} onChange={e=>setSelMonth(e.target.value)} style={{...S.inp,fontSize:15,fontWeight:700,flex:1}}>
           {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
         </select>
+        {presupuestosPrevMes.length>0&&Object.keys(presMap).length===0&&(
+          <button onClick={copiarDelMesAnterior} disabled={copying} style={{flexShrink:0,padding:"0 14px",height:42,borderRadius:12,border:"1px solid rgba(59,130,246,.4)",background:"rgba(59,130,246,.1)",color:"#60a5fa",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+            {copying?"Copiando…":"↙ Copiar mes ant."}
+          </button>
+        )}
+        {presupuestosPrevMes.length>0&&Object.keys(presMap).length>0&&(
+          <button onClick={copiarDelMesAnterior} disabled={copying} style={{flexShrink:0,padding:"0 10px",height:42,borderRadius:12,border:"1px solid rgba(255,255,255,.08)",background:"transparent",color:"#475569",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
+            {copying?"…":"↙"}
+          </button>
+        )}
       </div>
       {saveErr&&<div style={{background:"rgba(248,113,113,.1)",border:"1px solid rgba(248,113,113,.3)",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#f87171"}}>
         Error al guardar: {saveErr}
@@ -3168,6 +3260,32 @@ export default function App(){
           font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
         }
 
+        /* Search bar */
+        .mv-search-wrap{
+          position:relative;display:flex;align-items:center;
+          margin-bottom:14px;
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:14px;overflow:hidden;
+          transition:border-color .2s;
+        }
+        .mv-search-wrap:focus-within{border-color:rgba(96,165,250,.4);}
+        .mv-search-ico{
+          width:16px;height:16px;flex-shrink:0;
+          margin-left:14px;color:#475569;pointer-events:none;
+        }
+        .mv-search-inp{
+          flex:1;background:transparent;border:none;outline:none;
+          padding:12px 10px;font-size:14px;
+          color:var(--text-primary);
+        }
+        .mv-search-inp::placeholder{color:#334155;}
+        .mv-search-clear{
+          background:none;border:none;color:#475569;cursor:pointer;
+          padding:0 14px;font-size:14px;line-height:1;
+          transition:color .15s;
+        }
+        .mv-search-clear:hover{color:#94a3b8;}
+
         /* Filter card */
         .mv-filter-card{
           background:var(--card-bg);border:1px solid var(--card-border);
@@ -3201,6 +3319,9 @@ export default function App(){
           content:"";position:absolute;top:0;left:0;right:0;height:2px;
           background:linear-gradient(90deg,rgba(96,165,250,.55),rgba(139,92,246,.35),transparent);
           pointer-events:none;
+        }
+        .db-savings-card::before{
+          background:linear-gradient(90deg,rgba(96,165,250,.55),rgba(74,222,128,.25),transparent);
         }
         .db-inv-card::before{
           background:linear-gradient(90deg,rgba(251,191,36,.55),rgba(245,158,11,.3),transparent);
