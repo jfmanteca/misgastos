@@ -674,9 +674,10 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
     return toUSD(sueldosPrev)+toUSD(ingThis)
   }
   const getEg=k=>showUSD?(monthly[k]?.egU||0):(monthly[k]?.egP||0)
-  const getIng=k=>showUSD?getMonthIngresosUSD(k):getMonthIngresos(k)
+  const getIng=k=>showUSD?(monthly[k]?.ingU||0):getMonthIngresos(k)
   const maxBar=Math.max(...vis.map(k=>Math.max(getEg(k),getIng(k))),1)
   const maxI=Math.max(...Object.values(monthly).map(m=>m.inv),1)
+  const maxUSD=Math.max(...vis.map(k=>getMonthIngresosUSD(k)),1)
 
   // Pie chart
   const allMonths=months.length>0?months:[monthOf(today())]
@@ -792,6 +793,36 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
         </div>
         {vis.length>0&&<div style={{fontSize:10,color:"#334155",textAlign:"center",marginTop:8}}>Tocá una barra para ver inversiones del mes</div>}
       </div>}
+
+      {/* Ingresos Dolarizados */}
+      <div className="db-chart-card db-usd-card">
+        <div className="db-chart-hd">
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span className="db-chart-title" style={{color:"rgba(20,184,166,.9)"}}>Ingresos Dolarizados</span>
+            <div style={{display:"flex",alignItems:"center",gap:3}}><div style={{width:8,height:8,borderRadius:2,background:"#14b8a6"}}/><span style={{fontSize:10,color:"var(--text-muted)"}}>USD</span></div>
+          </div>
+          <div style={{display:"flex",gap:4}}>
+            <NavBtn dir="l" dis={si<=0} fn={()=>setBo(o=>Math.min(o+4,months.length-vb))}/>
+            <NavBtn dir="r" dis={bo<=0} fn={()=>setBo(o=>Math.max(o-4,0))}/>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:8,height:190}}>
+          {vis.map((k,i)=>{
+            const last=si+i===months.length-1
+            const val=getMonthIngresosUSD(k)
+            const h=Math.max(4,(val/maxUSD)*150)
+            return(
+              <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <span style={{fontSize:10,color:"#2dd4bf",fontWeight:600,...mo}}>{fS(val,true)}</span>
+                <div style={{width:"100%",display:"flex",alignItems:"flex-end",height:150}}>
+                  <div style={{width:"100%",height:h,borderRadius:"4px 4px 2px 2px",background:last?"linear-gradient(180deg,#2dd4bf,#0d9488)":"linear-gradient(180deg,#0f4f4a,#0a3330)"}}/>
+                </div>
+                <div style={{fontSize:11,color:last?"#60a5fa":"#94a3b8",fontWeight:last?700:500}}>{fmtMonth(k)}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
 
       {/* Proyección Gastos Fijos */}
       {(()=>{
@@ -1108,6 +1139,7 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
   const totalEgresosUSD=egresosFiltrados.filter(m=>isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
   const totalInversiones=filtered.filter(m=>m.tipo==="inversion").reduce((s,m)=>s+m.monto,0)
   const totalIngresosUSD=filtered.filter(m=>m.tipo==="ingreso").reduce((s,m)=>isUSDCuenta(m.cuenta_id)?s+m.monto:m.tc_dolar&&m.tc_dolar>0?s+m.monto/m.tc_dolar:s,0)
+  const ingresosEnUSD=filtered.filter(m=>m.tipo==="ingreso"&&isUSDCuenta(m.cuenta_id)).reduce((s,m)=>s+m.monto,0)
 
   const prevMk=prevMonth(selMonth)
   const allThisMonth=movimientos.filter(m=>monthOf(m.fecha)===selMonth)
@@ -1232,15 +1264,25 @@ function MovimientosPage({movimientos,cuentas,onSaved}){
           <span className="mv-sum-lbl" style={{color:saldoDelMes>=0?"#4ade80":"#f87171"}}>Saldo del mes</span>
           <span className="mv-sum-val" style={{color:saldoDelMes>=0?"#4ade80":"#f87171",...mo}}>{saldoDelMes>=0?"+":""}{f$(saldoDelMes)}</span>
         </div>
-        <div className="mv-sum-card">
-          <div className="mv-sum-bar" style={{background:"#f87171",opacity:.5}}/>
-          <span className="mv-sum-lbl" style={{color:"#f87171",opacity:.7}}>Egresos USD</span>
-          <span className="mv-sum-val" style={{color:totalEgresosUSD<0?"#4ade80":"#f87171",...mo}}>{totalEgresosUSD<0?"+":"-"}{f$(Math.abs(totalEgresosUSD),true)}</span>
-        </div>
-        {totalIngresosUSD>0&&<div className="mv-sum-card">
-          <div className="mv-sum-bar" style={{background:"#34d399"}}/>
-          <span className="mv-sum-lbl" style={{color:"#34d399"}}>Ingresos USD</span>
-          <span className="mv-sum-val" style={{color:"#34d399",...mo}}>+{f$(totalIngresosUSD,true)}</span>
+        {(ingresosEnUSD>0||totalEgresosUSD>0||totalIngresosUSD>0)&&<div className="mv-usd-group">
+          <div className="mv-usd-group-hd">
+            <span className="mv-usd-group-icon">💵</span>
+            <span className="mv-usd-group-title">Resumen USD</span>
+          </div>
+          <div className="mv-usd-row">
+            <span className="mv-usd-lbl">Ingresos en USD</span>
+            <span className="mv-usd-val" style={{color:"#34d399",...mo}}>+{f$(ingresosEnUSD,true)}</span>
+          </div>
+          <div className="mv-usd-sep"/>
+          <div className="mv-usd-row">
+            <span className="mv-usd-lbl">Egresos en USD</span>
+            <span className="mv-usd-val" style={{color:totalEgresosUSD>0?"#f87171":"#4ade80",...mo}}>{totalEgresosUSD>0?"-":"+"}{f$(Math.abs(totalEgresosUSD),true)}</span>
+          </div>
+          <div className="mv-usd-sep"/>
+          <div className="mv-usd-row">
+            <span className="mv-usd-lbl">Ingresos dolarizados</span>
+            <span className="mv-usd-val" style={{color:"#67e8f9",...mo}}>+{f$(totalIngresosUSD,true)}</span>
+          </div>
         </div>}
       </div>
 
@@ -2816,6 +2858,41 @@ export default function App(){
           font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
         }
 
+        /* USD grouped card */
+        .mv-usd-group{
+          border-radius:16px;
+          background:var(--card-bg);
+          border:1px solid rgba(52,211,153,.2);
+          padding:14px 16px 10px;
+          position:relative;overflow:hidden;
+        }
+        .mv-usd-group::before{
+          content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+          background:linear-gradient(180deg,#34d399,#06b6d4);
+        }
+        .mv-usd-group-hd{
+          display:flex;align-items:center;gap:6px;
+          margin-bottom:10px;padding-bottom:8px;
+          border-bottom:1px solid rgba(52,211,153,.1);
+        }
+        .mv-usd-group-icon{font-size:14px;}
+        .mv-usd-group-title{
+          font-size:10px;font-weight:700;letter-spacing:1.5px;
+          text-transform:uppercase;color:rgba(52,211,153,.65);
+        }
+        .mv-usd-row{
+          display:flex;align-items:center;justify-content:space-between;
+          padding:7px 0;
+        }
+        .mv-usd-sep{height:1px;background:rgba(255,255,255,.04);}
+        .mv-usd-lbl{
+          font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.4px;
+        }
+        .mv-usd-val{
+          font-size:16px;font-weight:800;
+          font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+
         /* Transaction rows */
         .mv-txn-row{
           display:flex;align-items:center;
@@ -2886,6 +2963,9 @@ export default function App(){
         }
         .db-inv-card::before{
           background:linear-gradient(90deg,rgba(251,191,36,.55),rgba(245,158,11,.3),transparent);
+        }
+        .db-usd-card::before{
+          background:linear-gradient(90deg,rgba(20,184,166,.6),rgba(6,182,212,.3),transparent);
         }
         .db-fijo-card::before{
           background:linear-gradient(90deg,rgba(251,191,36,.45),rgba(245,158,11,.2),transparent);
