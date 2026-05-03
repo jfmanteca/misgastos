@@ -813,7 +813,7 @@ function DashboardPage({movimientos,onViewMonth,onViewMonthInv,onViewMonthIng,cu
             const h=Math.max(4,(val/maxUSD)*150)
             return(
               <div key={k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <span style={{fontSize:10,color:"#2dd4bf",fontWeight:600,...mo}}>{fS(val,true)}</span>
+                <span style={{fontSize:10,color:"#2dd4bf",fontWeight:600,...mo}}>{val>=1e6?`U$${(val/1e6).toFixed(1)}M`:val>=1e3?`U$${(val/1e3).toFixed(1)}K`:`U$${val.toFixed(2)}`}</span>
                 <div style={{width:"100%",display:"flex",alignItems:"flex-end",height:150}}>
                   <div style={{width:"100%",height:h,borderRadius:"4px 4px 2px 2px",background:last?"linear-gradient(180deg,#2dd4bf,#0d9488)":"linear-gradient(180deg,#0f4f4a,#0a3330)"}}/>
                 </div>
