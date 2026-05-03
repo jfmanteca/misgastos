@@ -15,7 +15,7 @@ const fS=(n,u)=>{const p=u?"U$":"";return n>=1e6?`${p}${(n/1e6).toFixed(1)}M`:n>
 const today=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 const monthOf=d=>d?.slice(0,7)||""
 const Ic=({d,s=20})=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
-const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12",sun:"M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 1 0 0 12A6 6 0 0 0 12 6z",moon:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",bell:"M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"}
+const IC={home:"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",plus:"M12 5v14M5 12h14",list:"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",chart:"M18 20V10M12 20V4M6 20v-6",debt:"M1 4h22v16H1zM1 10h22",upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",left:"M15 18l-6-6 6-6",right:"M9 18l6-6-6-6",logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",eyeOff:"M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22",edit:"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z",settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",menu:"M3 12h18M3 6h18M3 18h18",close:"M18 6L6 18M6 6l12 12",sun:"M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 6a6 6 0 1 0 0 12A6 6 0 0 0 12 6z",moon:"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",bell:"M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0",target:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"}
 const mo={fontFamily:"'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',monospace"}
 // Category emoji icons for visual identification
 const CAT_ICON={"Salidas":"🍻","Compras":"🛒","Departamento":"🏠","Auto":"🚗","Apps":"📱","Entrenamiento":"💪","Transporte":"🚇","Préstamo":"🤝","Boca Juniors":"⚽","Módulo":"🏗️","Cuidado Personal":"💇","Regalos":"🎁","Comida laboral":"🍽️","Estudios":"📚","Pago deuda":"💳","Gastos Tarjeta":"🏦","Otros":"📌","Sueldo":"💰","Inversiones":"📈","Traspaso":"↔️","Inversiones - Intereses Ganados":"📊","Incentivado / SAC":"🎯","Otros Ingresos":"💵"}
@@ -2051,6 +2051,161 @@ function AlertasPage({userId,egresoCats,egresoSubs,ingresoCats}){
   )
 }
 
+// ══════════════ PRESUPUESTOS ══════════════
+function PresupuestosPage({movimientos,userId,egresoCats,presupuestos,onSaved}){
+  const allMonths=[...new Set(movimientos.map(m=>monthOf(m.fecha)))].sort().reverse()
+  const[selMonth,setSelMonth]=useState(()=>monthOf(today()))
+  const[editing,setEditing]=useState(null) // categoria being edited
+  const[editVal,setEditVal]=useState("")
+  const[saving,setSaving]=useState(false)
+
+  const egresosCats=egresoCats||[]
+
+  // Gasto real por categoría en el mes seleccionado
+  const gastoPorCat={}
+  movimientos.filter(m=>m.tipo==="egreso"&&monthOf(m.fecha)===selMonth&&m.categoria!=="Inversiones").forEach(m=>{
+    gastoPorCat[m.categoria]=(gastoPorCat[m.categoria]||0)+Math.abs(m.monto)
+  })
+
+  // Mapa categoria → presupuesto
+  const presMap={}
+  ;(presupuestos||[]).forEach(p=>{presMap[p.categoria]=p})
+
+  // Todas las categorías: las del ABM + las que tienen gasto aunque no tengan ABM
+  const todasCats=[...new Set([...egresosCats,...Object.keys(gastoPorCat)])].sort()
+
+  const totalPresupuestado=(presupuestos||[]).reduce((s,p)=>s+p.monto_limite,0)
+  const totalGastado=Object.values(gastoPorCat).reduce((s,v)=>s+v,0)
+  const pctTotal=totalPresupuestado>0?Math.min((totalGastado/totalPresupuestado)*100,100):0
+  const colorTotal=pctTotal>=90?"#f87171":pctTotal>=70?"#f59e0b":"#4ade80"
+
+  const startEdit=(cat)=>{
+    setEditing(cat)
+    setEditVal(presMap[cat]?.monto_limite?.toString()||"")
+  }
+  const cancelEdit=()=>{setEditing(null);setEditVal("")}
+
+  const savePresupuesto=async(cat)=>{
+    const monto=parseFloat(editVal.replace(/\./g,"").replace(",","."))
+    if(!monto||monto<=0){cancelEdit();return}
+    setSaving(true)
+    const existing=presMap[cat]
+    if(existing){
+      await supabase.from("presupuestos").update({monto_limite:monto}).eq("id",existing.id)
+    } else {
+      await supabase.from("presupuestos").insert({user_id:userId,categoria:cat,monto_limite:monto})
+    }
+    setSaving(false);cancelEdit();onSaved()
+  }
+
+  const deletePresupuesto=async(cat)=>{
+    const existing=presMap[cat]
+    if(!existing)return
+    await supabase.from("presupuestos").delete().eq("id",existing.id)
+    onSaved()
+  }
+
+  return(
+    <div className="page-inner">
+
+      <div className="pres-hd">
+        <div className="pres-hd-icon">🎯</div>
+        <div>
+          <div className="pres-hd-text">Presupuestos</div>
+          <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>Control de gastos por categoría</div>
+        </div>
+      </div>
+
+      <div style={{marginBottom:14}}>
+        <select value={selMonth} onChange={e=>setSelMonth(e.target.value)} style={{...S.inp,fontSize:15,fontWeight:700}}>
+          {allMonths.map(m=><option key={m} value={m}>{fmtMonthFull(m)}</option>)}
+        </select>
+      </div>
+
+      {/* Resumen total */}
+      {totalPresupuestado>0&&<div className="pres-summary">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
+          <span style={{fontSize:11,fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:"var(--text-muted)"}}>Total presupuestado</span>
+          <span style={{fontSize:11,color:"var(--text-muted)",...mo}}>{f$(totalGastado)} / {f$(totalPresupuestado)}</span>
+        </div>
+        <div className="pres-bar-bg">
+          <div className="pres-bar-fill" style={{width:`${pctTotal}%`,background:colorTotal}}/>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+          <span style={{fontSize:11,color:colorTotal,fontWeight:700,...mo}}>{Math.round(pctTotal)}% utilizado</span>
+          <span style={{fontSize:11,color:totalPresupuestado-totalGastado>=0?"#4ade80":"#f87171",fontWeight:600,...mo}}>
+            {totalPresupuestado-totalGastado>=0?`Quedan ${f$(totalPresupuestado-totalGastado)}`:`Excedido ${f$(totalGastado-totalPresupuestado)}`}
+          </span>
+        </div>
+      </div>}
+
+      {/* Categorías */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {todasCats.map(cat=>{
+          const limite=presMap[cat]?.monto_limite||0
+          const gasto=gastoPorCat[cat]||0
+          const pct=limite>0?Math.min((gasto/limite)*100,100):0
+          const overBudget=limite>0&&gasto>limite
+          const color=pct>=90?"#f87171":pct>=70?"#f59e0b":"#4ade80"
+          const isEditingThis=editing===cat
+
+          return(
+            <div key={cat} className="pres-card" style={{borderColor:overBudget?"rgba(248,113,113,.3)":limite>0?"var(--card-border)":"rgba(255,255,255,.05)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:limite>0?10:0}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"var(--text-primary)"}}>{cat}</div>
+                  {!isEditingThis&&<div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>
+                    {gasto>0?<span style={{color:"var(--text-secondary)",...mo}}>{f$(gasto)} gastado</span>:<span>Sin movimientos este mes</span>}
+                    {limite>0&&<span style={{color:color,marginLeft:6,...mo}}> · {f$(limite)} límite</span>}
+                  </div>}
+                </div>
+                {!isEditingThis&&<div style={{display:"flex",gap:4}}>
+                  <button onClick={()=>startEdit(cat)} style={{padding:"6px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,.08)",background:"rgba(255,255,255,.04)",color:"#60a5fa",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {limite>0?"Editar":"+ Límite"}
+                  </button>
+                  {limite>0&&<button onClick={()=>deletePresupuesto(cat)} style={{padding:"6px 8px",borderRadius:8,border:"1px solid rgba(248,113,113,.15)",background:"rgba(248,113,113,.06)",color:"#f87171",fontSize:11,cursor:"pointer"}}>✕</button>}
+                </div>}
+              </div>
+
+              {isEditingThis&&<div style={{display:"flex",gap:8,alignItems:"center",marginTop:4}}>
+                <input
+                  autoFocus
+                  value={editVal}
+                  onChange={e=>setEditVal(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")savePresupuesto(cat);if(e.key==="Escape")cancelEdit()}}
+                  placeholder="Límite mensual $"
+                  style={{...S.inp,flex:1,fontSize:14}}
+                />
+                <button onClick={()=>savePresupuesto(cat)} disabled={saving} style={{padding:"8px 14px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                  {saving?"...":"OK"}
+                </button>
+                <button onClick={cancelEdit} style={{padding:"8px 10px",borderRadius:10,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-muted)",fontSize:13,cursor:"pointer"}}>✕</button>
+              </div>}
+
+              {limite>0&&!isEditingThis&&<>
+                <div className="pres-bar-bg">
+                  <div className="pres-bar-fill" style={{width:`${pct}%`,background:color,transition:"width .4s ease"}}/>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:5}}>
+                  <span style={{fontSize:10,color:color,fontWeight:600,...mo}}>{Math.round(pct)}%</span>
+                  <span style={{fontSize:10,color:overBudget?"#f87171":"var(--text-muted)",...mo}}>
+                    {overBudget?`+${f$(gasto-limite)} excedido`:`${f$(limite-gasto)} disponible`}
+                  </span>
+                </div>
+              </>}
+            </div>
+          )
+        })}
+      </div>
+
+      {todasCats.length===0&&<div style={{textAlign:"center",padding:"40px 20px",color:"var(--text-muted)",fontSize:13}}>
+        No hay categorías de egreso configuradas.<br/>Creá categorías desde Configuración.
+      </div>}
+
+    </div>
+  )
+}
+
 // ══════════════ ABM CONFIGURACIÓN ══════════════
 function ABMPage({cuentas,userId,onSaved}){
   const[tab,setTab]=useState("cuentas")
@@ -2409,6 +2564,7 @@ export default function App(){
   const[subEgreso,setSubEgreso]=useState([])
   const[catIngreso,setCatIngreso]=useState([])
   const[tiposInv,setTiposInv]=useState([])
+  const[presupuestos,setPresupuestos]=useState([])
 
   // Auth listener
   useEffect(()=>{
@@ -2420,7 +2576,7 @@ export default function App(){
   // Load data
   const loadData=useCallback(async()=>{
     if(!user)return
-    const[{data:c},{data:m},{data:d},{data:ce},{data:se},{data:ci},{data:ti}]=await Promise.all([
+    const[{data:c},{data:m},{data:d},{data:ce},{data:se},{data:ci},{data:ti},{data:pr}]=await Promise.all([
       supabase.from("cuentas").select("*").order("nombre"),
       supabase.from("movimientos").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),
       supabase.from("deuda_edgardo").select("*").order("fecha",{ascending:true}),
@@ -2428,10 +2584,11 @@ export default function App(){
       supabase.from("subcategorias_egreso").select("*").order("nombre"),
       supabase.from("categorias_ingreso").select("*").order("nombre"),
       supabase.from("tipos_inversion").select("*").order("nombre"),
+      supabase.from("presupuestos").select("*").eq("user_id",user.id),
     ])
     const normNombre=s=>(s||"").replace(/[\s\u00A0]+/g," ").trim()
     setCuentas((c||[]).map(a=>({...a,nombre:normNombre(a.nombre)})));setMovimientos(m||[]);setDeuda(d||[])
-    setCatEgreso(ce||[]);setSubEgreso(se||[]);setCatIngreso(ci||[]);setTiposInv(ti||[])
+    setCatEgreso(ce||[]);setSubEgreso(se||[]);setCatIngreso(ci||[]);setTiposInv(ti||[]);setPresupuestos(pr||[])
   },[user])
 
   useEffect(()=>{loadData()},[loadData])
@@ -2448,7 +2605,7 @@ export default function App(){
   const dynInvTypes=tiposInv.length>0?tiposInv.map(t=>t.nombre):INV_TYPES
 
   const isAdmin=user.email==="juanfmanteca@gmail.com"
-  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},...(isAdmin?[{id:"debt",ic:IC.debt,l:"Deuda"}]:[]),{id:"ext",ic:IC.upload,l:"Extracto"},{id:"alertas",ic:IC.bell,l:"Alertas"},{id:"abm",ic:IC.settings,l:"Configuración"}]
+  const nav=[{id:"home",ic:IC.home,l:"Inicio"},{id:"add",ic:IC.plus,l:"Cargar"},{id:"mov",ic:IC.list,l:"Movimientos"},{id:"dash",ic:IC.chart,l:"Dashboard"},{id:"presupuesto",ic:IC.target,l:"Presupuestos"},...(isAdmin?[{id:"debt",ic:IC.debt,l:"Deuda"}]:[]),{id:"ext",ic:IC.upload,l:"Extracto"},{id:"alertas",ic:IC.bell,l:"Alertas"},{id:"abm",ic:IC.settings,l:"Configuración"}]
   const viewMonth=k=>{setDetailMonth(k);setDetailTipo(null);setPg("md")}
   const viewMonthInv=k=>{setDetailMonth(k);setDetailTipo("inversion");setPg("md")}
   const viewMonthIng=k=>{setDetailMonth(k);setDetailTipo("ingreso");setPg("md")}
@@ -2463,6 +2620,7 @@ export default function App(){
   else if(pg==="debt"&&isAdmin)C=<DebtPage deuda={deuda}/>
   else if(pg==="ext")C=<ExtractPage cuentas={cuentas} userId={user.id} onSaved={onSaved} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs}/>
   else if(pg==="alertas")C=<AlertasPage userId={user.id} egresoCats={dynEgresoCats} egresoSubs={dynEgresoSubs} ingresoCats={dynIngresoCats}/>
+  else if(pg==="presupuesto")C=<PresupuestosPage movimientos={movimientos} userId={user.id} egresoCats={dynEgresoCats} presupuestos={presupuestos} onSaved={onSaved}/>
   else if(pg==="abm")C=<ABMPage cuentas={cuentas} userId={user.id} onSaved={onSaved}/>
 
   return(
@@ -2536,7 +2694,7 @@ export default function App(){
         {/* Desktop header — solo en desktop */}
         {!isMobile&&<div style={{padding:"28px 48px 20px",borderBottom:"1px solid var(--header-border,rgba(255,255,255,.04))"}}>
           <h2 style={{fontSize:18,fontWeight:700,color:"var(--text-primary)",margin:0}}>
-            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":pg==="alertas"?"Alertas":pg==="abm"?"Configuración":""}
+            {pg==="home"?"Inicio":pg==="add"?"Cargar Movimiento":pg==="mov"?"Movimientos":pg==="dash"?"Dashboard":pg==="md"?"Detalle Mensual":pg==="debt"?"Deuda Edgardo":pg==="ext"?"Importar Extracto":pg==="alertas"?"Alertas":pg==="presupuesto"?"Presupuestos":pg==="abm"?"Configuración":""}
           </h2>
         </div>}
 
@@ -2857,6 +3015,41 @@ export default function App(){
         .mv-sum-val{
           font-size:17px;font-weight:800;
           font-family:'SF Mono',SFMono-Regular,Consolas,monospace;
+        }
+
+        /* ── PRESUPUESTOS PAGE ── */
+        .pres-hd{
+          display:flex;align-items:center;gap:12px;
+          margin-bottom:18px;padding-bottom:16px;
+          border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        .pres-hd-icon{
+          width:40px;height:40px;border-radius:13px;flex-shrink:0;
+          background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(139,92,246,.12));
+          display:flex;align-items:center;justify-content:center;font-size:19px;
+        }
+        .pres-hd-text{font-size:21px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px;}
+        .pres-summary{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:16px;padding:14px 16px;margin-bottom:16px;
+          position:relative;overflow:hidden;
+        }
+        .pres-summary::before{
+          content:"";position:absolute;top:0;left:0;right:0;height:2px;
+          background:linear-gradient(90deg,rgba(59,130,246,.6),rgba(139,92,246,.3),transparent);
+          pointer-events:none;
+        }
+        .pres-card{
+          background:var(--card-bg);border:1px solid var(--card-border);
+          border-radius:14px;padding:14px 16px;
+          position:relative;overflow:hidden;
+        }
+        .pres-bar-bg{
+          height:6px;border-radius:3px;
+          background:rgba(255,255,255,.06);overflow:hidden;
+        }
+        .pres-bar-fill{
+          height:100%;border-radius:3px;
         }
 
         /* USD grouped card */
