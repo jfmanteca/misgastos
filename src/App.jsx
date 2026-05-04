@@ -1489,6 +1489,9 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
   const[masterCuentaUSD,setMasterCuentaUSD]=useState("")
   const[saving,setSaving]=useState("")
   const[done,setDone]=useState("")
+  const[rawVisa,setRawVisa]=useState("")
+  const[rawMaster,setRawMaster]=useState("")
+  const[showRaw,setShowRaw]=useState("")
   const visaRef=useRef(null)
   const masterRef=useRef(null)
 
@@ -1602,9 +1605,8 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
         const sorted=Object.entries(lines).sort((a,b)=>Number(b[0])-Number(a[0]))
         fullText+=sorted.map(([,text])=>text.trim()).join("\n")+"\n"
       }
-      console.log("PDF extracted text preview:",fullText.substring(0,500))
-      if(type==="visa"){const r=parseVisa(fullText);setVisaItems(r.results);setVisaVto(r.vto);if(r.results.length===0)alert("No se encontraron consumos de Visa en este PDF. Verificá que sea un resumen de Visa BAPRO.")}
-      else{const r=parseMC(fullText);setMasterItems(r.results);setMasterVto(r.vto);if(r.results.length===0)alert("No se encontraron consumos de Mastercard en este PDF. Verificá que sea un resumen de Mastercard BAPRO.")}
+      if(type==="visa"){setRawVisa(fullText);const r=parseVisa(fullText);setVisaItems(r.results);setVisaVto(r.vto)}
+      else{setRawMaster(fullText);const r=parseMC(fullText);setMasterItems(r.results);setMasterVto(r.vto)}
     }catch(err){
       console.error("Error parsing PDF:",err)
       alert("Error al leer el PDF: "+err.message)
@@ -1683,6 +1685,13 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
           <button onClick={()=>fileRef.current?.click()} style={{width:"100%",padding:20,borderRadius:14,border:`2px dashed ${color}33`,background:`${color}08`,color,fontSize:14,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             <Ic d={IC.upload} s={20}/> Subir PDF {label}
           </button>
+          {(type==="visa"?rawVisa:rawMaster)&&<div style={{marginTop:10}}>
+            <div style={{fontSize:12,color:"#f87171",marginBottom:6}}>⚠ No se reconocieron movimientos. Revisá el texto extraído:</div>
+            <button onClick={()=>setShowRaw(showRaw===type?"":type)} style={{width:"100%",padding:8,borderRadius:8,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-muted)",fontSize:11,cursor:"pointer"}}>
+              {showRaw===type?"Ocultar texto extraído del PDF":"🔍 Ver texto extraído del PDF"}
+            </button>
+            {showRaw===type&&<textarea readOnly value={type==="visa"?rawVisa:rawMaster} style={{width:"100%",height:300,marginTop:8,borderRadius:8,border:"1px solid rgba(255,255,255,.1)",background:"rgba(0,0,0,.4)",color:"#94a3b8",fontSize:10,fontFamily:"monospace",padding:8,resize:"vertical",boxSizing:"border-box"}}/>}
+          </div>}
         </>:<>
           {vto&&<div style={{marginBottom:12}}><label style={S.lbl}>Fecha de débito</label><input type="date" value={vto} onChange={e=>setVto(e.target.value)} style={{...S.inp,fontSize:12}}/></div>}
 
@@ -1768,6 +1777,12 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
             <button onClick={()=>clearExtract(type)} style={{marginTop:10,width:"100%",padding:10,borderRadius:10,border:"1px solid rgba(248,113,113,.2)",background:"transparent",color:"#f87171",fontSize:12,fontWeight:600,cursor:"pointer"}}>
               Borrar extracto cargado
             </button>
+            {(type==="visa"?rawVisa:rawMaster)&&<>
+              <button onClick={()=>setShowRaw(showRaw===type?"":type)} style={{marginTop:8,width:"100%",padding:8,borderRadius:8,border:"1px solid rgba(255,255,255,.1)",background:"transparent",color:"var(--text-muted)",fontSize:11,cursor:"pointer"}}>
+                {showRaw===type?"Ocultar texto extraído del PDF":"🔍 Ver texto extraído del PDF"}
+              </button>
+              {showRaw===type&&<textarea readOnly value={type==="visa"?rawVisa:rawMaster} style={{width:"100%",height:300,marginTop:8,borderRadius:8,border:"1px solid rgba(255,255,255,.1)",background:"rgba(0,0,0,.4)",color:"#94a3b8",fontSize:10,fontFamily:"monospace",padding:8,resize:"vertical",boxSizing:"border-box"}}/>}
+            </>}
           </div>
         </>}
       </div>
