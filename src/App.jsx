@@ -1512,73 +1512,86 @@ function ExtractPage({cuentas,userId,onSaved,egresoCats,egresoSubs}){
   const autoCat=desc=>{const u=desc.toUpperCase();for(const[k,v] of Object.entries(catMap)){if(u.includes(k))return v};return""}
 
   const parseMC=(text)=>{
-    const vtoMatch=text.match(/Vencimiento\s+actual\s*:\s*(\d{2})\s*-\s*(\w+)\s*-\s*(\d{2})/)
+    // VTO: flexible match for "Vencimiento actual : DD-Mmm-YY" or similar
+    const vtoM=text.match(/[Vv]encimiento[^:\n]*:\s*(\d{2})\s*[-\/]\s*(\w+)\s*[-\/]\s*(\d{2})/)
     let vto=""
-    if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
+    if(vtoM){
+      const[,d,m,y]=vtoM
+      const mk3c=m.slice(0,3).charAt(0).toUpperCase()+m.slice(1,3).toLowerCase()
+      vto=`20${y}-${MM[mk3c]||MM[m.slice(0,3)]||"01"}-${d}`
+    }
     const results=[];const lines=text.split("\n");let inSection=false
     const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
     for(const line of lines){
-      if(line.includes("COMPRAS DEL MES")||line.includes("DEBITOS AUTOMATICOS")||line.includes("CUOTAS DEL MES")||line.includes("COMPRAS/DEBITOS"))inSection=true
-      if(line.includes("TOTAL TITULAR")||line.includes("INFORMACION INSTITUCIONAL"))break
+      const ln=line.replace(/\s+/g," ").trim()
+      // Section triggers — flexible to catch variations of BAPRO MC headers
+      if(/COMPRAS|DEBITOS\s*AUTO|CUOTAS\s*DEL|CONSUMOS\s*DEL|COMPRAS\/DEB/i.test(ln))inSection=true
+      if(/TOTAL\s*TITULAR|INFORMACION\s*INSTIT|TOTAL\s*CARD|SALDO\s*TOTAL/i.test(ln))break
       if(!inSection)continue
-      // Try strict format: DD-Mmm-YY description cupon pesos [dolares]
-      const m2=line.match(/(\d{2})\s*-\s*(\w{3})\s*-\s*(\d{2})\s+(.+?)\s+(\d{4,5})\s+([\d.,-]+)\s*([\d.,-]+)?/)
+      if(/SALDO\s*ANTERIOR|SU\s*PAGO|PAGO\s*ANTERIOR|DEV\.|CANCEL/i.test(ln))continue
+      // DD-Mmm-YY format (primary BAPRO MC format): date description [cupon] amount
+      const m2=ln.match(/^(\d{2})[-\s](\w{3,})\s*[-\s](\d{2})\s+(.+?)\s+([\d.]+,\d{2})(?:\s+[\d.,]+)?\s*_?\s*$/)
       if(m2){
-        const desc=m2[4].trim();const pesos=parseN(m2[6]);const usd=parseN(m2[7])
-        if(pesos!==0||usd!==0){const monto=Math.abs(pesos||usd);results.push({desc,pesos:pesos||0,usd:usd||0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+        const desc=m2[4]
+          .replace(/\s+\d{4,6}\s*$/,"")     // strip trailing coupon code
+          .replace(/\s+Cuota\s+\d+\/\d+$/i,"")
+          .replace(/\s+\d{7,}$/,"")
+          .trim()
+        const pesos=parseN(m2[5])
+        if(pesos>1){results.push({desc,pesos,usd:0,monto:pesos,sub:"",status:"pending",cat:autoCat(desc)})}
         continue
       }
-      // Looser format: just look for date + text + number
-      const m3=line.match(/(\d{2})\s*-\s*(\w{3})\s*-\s*(\d{2})\s+(.+?)\s+([\d.,-]+)$/)
+      // DD.MM.YY fallback (same bank, sometimes same layout as VISA)
+      const m3=ln.match(/^(\d{2})\.(\d{2})\.(\d{2})\s+\S+\s+(.+?)\s+([\d.]+,\d{2})(?:\s+[\d.,]+)?\s*_?\s*$/)
       if(m3){
-        const desc=m3[4].trim();const pesos=parseN(m3[5])
-        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,usd:0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+        const desc=m3[4]
+          .replace(/\s+Cuota\s+\d+\/\d+$/i,"")
+          .replace(/\s+\d{7,}$/,"")
+          .replace(/\s+[A-Z]$/,"")
+          .trim()
+        const pesos=parseN(m3[5])
+        if(pesos>1){results.push({desc,pesos,usd:0,monto:pesos,sub:"",status:"pending",cat:autoCat(desc)})}
       }
     }
     return{vto,results}
   }
 
   const parseVisa=(text)=>{
-    const vtoMatch=text.match(/VENCIMIENTO\s+(\d{2})\s+(\w+)\.?\s+(\d{2})/)
-    let vto=""
-    if(vtoMatch){const[,d,m,y]=vtoMatch;vto=`20${y}-${MM[m]||"01"}-${d}`}
-    const results=[];const lines=text.split("\n")
+    const lines=text.split("\n")
     const parseN=s=>{if(!s)return 0;return parseFloat(s.replace(/\./g,"").replace(",","."))}
-    let inCharges=false;let gastosBancarios=0
+    // VTO: line after "VENCIMIENTO ... SALDO" header contains "DD Mes YY amount..."
+    let vto=""
+    const vtoIdx=lines.findIndex(l=>l.includes("VENCIMIENTO")&&l.includes("SALDO"))
+    if(vtoIdx>=0){
+      for(let i=vtoIdx+1;i<Math.min(vtoIdx+4,lines.length);i++){
+        const vm=lines[i].match(/^(\d{2})\s+(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Set|Sep|Oct|Nov|Dic)\w*\s+(\d{2})/i)
+        if(vm){const mk=(vm[2].charAt(0).toUpperCase()+vm[2].slice(1).toLowerCase()).slice(0,3);vto=`20${vm[3]}-${MM[mk]||"01"}-${vm[1]}`;break}
+      }
+    }
+    const results=[];let inCharges=false;let gastosBancarios=0
     for(const line of lines){
       if(line.includes("Plan V:"))break
-      // After total line, switch to collecting bank charges only
-      if(line.includes("Total Consumos de")||line.includes("Tarjeta 5891")){inCharges=true;continue}
+      const ln=line.replace(/\s+/g," ").trim()
+      if(ln.includes("Tarjeta 5891")||ln.includes("Total Consumos de")){inCharges=true;continue}
       if(inCharges){
-        if(line.includes("IIBB PERCEP")||line.includes("IVA RG")||line.includes("DB.RG")){
-          const mBank=line.match(/([\d.]+,\d{2})\s*$/)
-          if(mBank)gastosBancarios+=parseN(mBank[1])
+        if(ln.includes("IIBB PERCEP")||ln.includes("IVA RG")||ln.includes("DB.RG")){
+          const mb=ln.match(/([\d.]+,\d{2})\s*$/);if(mb)gastosBancarios+=parseN(mb[1])
         }
         continue
       }
-      if(line.includes("SALDO ANTERIOR")||line.includes("SU PAGO")||line.includes("DEV.")||line.includes("CANCEL")||line.includes("INTERESES FINANC"))continue
-      // Visa format: YY Month DD comprobante type description [C.nn/nn] pesos [usd]
-      const m2=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)\s*([\d,.]+)?$/)
-      if(m2){
-        const desc=m2[6].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m2[7]);const usd=parseN(m2[8])
-        if(pesos!==0||usd!==0){const monto=pesos!==0?Math.abs(pesos):Math.abs(usd);results.push({desc,pesos:pesos||0,usd:usd||0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
-        continue
-      }
-      // Looser: YY Month DD comprobante description amount
-      const m3=line.match(/(\d{2})\s+(\w+\.?)\s+(\d{2})\s+(\d{5,6})\s+(.+?)\s+([\d.,-]+)$/)
-      if(m3){
-        const desc=m3[5].trim().replace(/\s+C\.\d+\/\d+$/,"").replace(/^[*KVPU]\s+/,"");const pesos=parseN(m3[6])
-        if(pesos!==0&&Math.abs(pesos)>1){const monto=Math.abs(pesos);results.push({desc,pesos,usd:0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
-        continue
-      }
-      // Continuation line: DD NNNNNN [*KVPU] DESCRIPTION AMOUNT [usd] (no year/month prefix)
-      const m4=line.match(/^(\d{2})\s+(\d{5,6})\s+([*KVPU])\s+(.+?)\s+([\d.,-]+)(?:\s+([\d,.]+))?$/)
-      if(m4){
-        const desc=m4[4].trim().replace(/\s+C\.\d+\/\d+$/,"");const pesos=parseN(m4[5]);const usd=parseN(m4[6])
-        if(pesos!==0||usd!==0){const monto=pesos!==0?Math.abs(pesos):Math.abs(usd);results.push({desc,pesos:pesos||0,usd:usd||0,monto,sub:"",status:"pending",cat:autoCat(desc)})}
+      if(ln.includes("SALDO ANTERIOR")||ln.includes("SU PAGO")||ln.includes("DEV.")||ln.includes("CANCEL"))continue
+      // Real BAPRO VISA format: DD.MM.YY  NNNNNN[type]  DESCRIPTION  [Cuota N/N]  AMOUNT  [USD]  [_]
+      const m=ln.match(/^(\d{2})\.(\d{2})\.(\d{2})\s+(\d{6}[*\w])\s+(.+?)\s+([\d.]+,\d{2})(?:\s+[\d.,\-]+)?\s*_?\s*$/)
+      if(m){
+        const desc=m[5]
+          .replace(/\s+Cuota\s+\d+\/\d+$/i,"")  // strip installment label
+          .replace(/\s+\d{7,}$/,"")              // strip trailing reference codes
+          .replace(/\s+[A-Z*]$/,"")              // strip trailing single type code
+          .trim()
+        const pesos=parseN(m[6])
+        if(pesos>1){results.push({desc,pesos,usd:0,monto:pesos,sub:"",status:"pending",cat:autoCat(desc)})}
       }
     }
-    // Group bank charges as a single item at the end
     if(gastosBancarios>0)results.push({desc:"Impuestos y cargos bancarios",pesos:gastosBancarios,usd:0,monto:gastosBancarios,sub:"Impuestos e intereses",status:"pending",cat:"Gastos Tarjeta"})
     return{vto,results}
   }
