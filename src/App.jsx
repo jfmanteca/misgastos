@@ -437,7 +437,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
       )}
       {mt!=="traspaso"&&mt!=="inversion"&&(
         <label className="ap-flag" style={opUSD?{background:"rgba(52,211,153,.06)",borderColor:"rgba(52,211,153,.25)"}:{}}>
-          <input type="checkbox" checked={opUSD} onChange={e=>setOpUSD(e.target.checked)} style={{width:16,height:16,accentColor:"#34d399",cursor:"pointer",flexShrink:0}}/>
+          <input type="checkbox" checked={opUSD} onChange={e=>{setOpUSD(e.target.checked);setFm(f=>({...f,cuenta:""}))}} style={{width:16,height:16,accentColor:"#34d399",cursor:"pointer",flexShrink:0}}/>
           <div><div className="ap-flag-ttl" style={{color:opUSD?"#34d399":"#64748b"}}>Operación en dólares</div>
           <div className="ap-flag-desc">Muestra solo cuentas en USD</div></div>
         </label>
@@ -477,6 +477,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
           </div>
           <div><label className="ap-lbl">Cuenta</label>
             <select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} className="ap-sel">
+              <option value="">— elegir —</option>
               {cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
           </div>
@@ -511,6 +512,7 @@ function AddPage({cuentas,movimientos=[],userId,onSaved,egresoCats,egresoSubs,in
         <div className="ap-row2" style={{gridTemplateColumns:"2fr 1fr"}}>
           <div><label className="ap-lbl">Cuenta destino</label>
             <select value={fm.cuenta} onChange={e=>setFm(f=>({...f,cuenta:e.target.value}))} className="ap-sel">
+              <option value="">— elegir —</option>
               {cuentas.filter(a=>opUSD?a.moneda==="USD":a.moneda!=="USD").map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}
             </select>
           </div>
